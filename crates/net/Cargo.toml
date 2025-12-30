@@ -1,0 +1,40 @@
+[package]
+name = "rustgram-net"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+tokio-util = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+# Cryptography
+aes = { workspace = true }
+rand = { workspace = true }
+sha1 = { workspace = true }
+sha2 = { workspace = true }
+
+# Additional dependencies
+bytes = "1.5"
+futures = "0.3"
+async-trait = "0.1"
+parking_lot = "0.12"
+socket2 = "0.5"
+
+[dev-dependencies]
+proptest = { workspace = true }
+criterion = { workspace = true }
+tokio-test = "0.4"
+
+[[bench]]
+name = "query_benchmark"
+harness = false

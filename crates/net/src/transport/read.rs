@@ -1,0 +1,689 @@
+// Copyright (c) 2024 rustgram-client contributors
+//
+// Licensed under MIT OR Apache-2.0
+
+//! MTProto transport reading operations.
+//!
+//! Based on TDLib's `td/mtproto/Transport.cpp` read implementation.
+
+use bytes::Bytes;
+
+use crate::crypto::{aes_ige_decrypt, kdf, kdf2, KdfOutput};
+use crate::packet::{PacketInfo, PacketType};
+use crate::transport::header::{
+    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader,
+};
+
+/// Result of reading from the transport.
+///
+/// Represents the different possible outcomes when reading MTProto packets.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ReadResult {
+    /// No operation - no packet available
+    Nop,
+
+    /// A complete packet was received
+    Packet(Bytes),
+
+    /// An error occurred
+    Error(i32),
+
+    /// A quick acknowledgment was received
+    QuickAck(u32),
+}
+
+impl ReadResult {
+    /// Creates a `Nop` result.
+    #[must_use]
+    pub const fn nop() -> Self {
+        Self::Nop
+    }
+
+    /// Creates a `Packet` result.
+    #[must_use]
+    pub fn packet(data: Vec<u8>) -> Self {
+        Self::Packet(Bytes::from(data))
+    }
+
+    /// Creates a `Packet` result from `Bytes`.
+    #[must_use]
+    pub const fn packet_bytes(data: Bytes) -> Self {
+        Self::Packet(data)
+    }
+
+    /// Creates an `Error` result.
+    #[must_use]
+    pub const fn error(code: i32) -> Self {
+        Self::Error(code)
+    }
+
+    /// Creates a `QuickAck` result.
+    #[must_use]
+    pub const fn quick_ack(ack: u32) -> Self {
+        Self::QuickAck(ack)
+    }
+
+    /// Returns `true` if this is a `Nop` result.
+    #[must_use]
+    pub const fn is_nop(&self) -> bool {
+        matches!(self, Self::Nop)
+    }
+
+    /// Returns `true` if this is a `Packet` result.
+    #[must_use]
+    pub const fn is_packet(&self) -> bool {
+        matches!(self, Self::Packet(..))
+    }
+
+    /// Returns `true` if this is an `Error` result.
+    #[must_use]
+    pub const fn is_error(&self) -> bool {
+        matches!(self, Self::Error(..))
+    }
+
+    /// Returns `true` if this is a `QuickAck` result.
+    #[must_use]
+    pub const fn is_quick_ack(&self) -> bool {
+        matches!(self, Self::QuickAck(..))
+    }
+
+    /// Returns the packet data if this is a `Packet` result.
+    #[must_use]
+    pub fn packet_data(&self) -> Option<&Bytes> {
+        match self {
+            Self::Packet(data) => Some(data),
+            _ => None,
+        }
+    }
+
+    /// Returns the error code if this is an `Error` result.
+    #[must_use]
+    pub const fn error_code(&self) -> Option<i32> {
+        match self {
+            Self::Error(code) => Some(*code),
+            _ => None,
+        }
+    }
+
+    /// Returns the quick ack value if this is a `QuickAck` result.
+    #[must_use]
+    pub const fn quick_ack_value(&self) -> Option<u32> {
+        match self {
+            Self::QuickAck(ack) => Some(*ack),
+            _ => None,
+        }
+    }
+}
+
+impl Default for ReadResult {
+    fn default() -> Self {
+        Self::Nop
+    }
+}
+
+/// Error type for transport read operations.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TransportReadError {
+    /// Message too small
+    MessageTooSmall {
+        /// Actual size
+        actual: usize,
+        /// Expected minimum size
+        expected: usize,
+    },
+
+    /// Auth key ID mismatch
+    AuthKeyIdMismatch {
+        /// Found auth key ID
+        found: u64,
+        /// Expected auth key ID
+        expected: u64,
+    },
+
+    /// Message key mismatch
+    MessageKeyMismatch,
+
+    /// Invalid message length
+    InvalidMessageLength {
+        /// Message data length
+        length: u32,
+        /// Reason
+        reason: String,
+    },
+
+    /// Invalid padding
+    InvalidPadding {
+        /// Padding size
+        pad_size: usize,
+    },
+
+    /// Decryption failed
+    DecryptionFailed,
+
+    /// Crypto error
+    CryptoError(String),
+}
+
+impl std::fmt::Display for TransportReadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::MessageTooSmall { actual, expected } => write!(
+                f,
+                "Message too small: got {} bytes, expected at least {} bytes",
+                actual, expected
+            ),
+            Self::AuthKeyIdMismatch { found, expected } => write!(
+                f,
+                "Auth key ID mismatch: found {:016x}, expected {:016x}",
+                found, expected
+            ),
+            Self::MessageKeyMismatch => write!(f, "Message key mismatch"),
+            Self::InvalidMessageLength { length, reason } => {
+                write!(f, "Invalid message length {}: {}", length, reason)
+            }
+            Self::InvalidPadding { pad_size } => {
+                write!(f, "Invalid padding size: {}", pad_size)
+            }
+            Self::DecryptionFailed => write!(f, "Decryption failed"),
+            Self::CryptoError(msg) => write!(f, "Crypto error: {}", msg),
+        }
+    }
+}
+
+impl std::error::Error for TransportReadError {}
+
+/// MTProto transport reading interface.
+pub trait TransportRead: Send + Sync {
+    /// Reads an MTProto packet from the given message.
+    ///
+    /// # Arguments
+    ///
+    /// * `message` - The raw message bytes from the socket
+    /// * `auth_key` - The authentication key for decryption
+    /// * `packet_info` - Output parameter for packet metadata
+    ///
+    /// # Returns
+    ///
+    /// A `ReadResult` indicating what was read
+    ///
+    /// # Errors
+    ///
+    /// Returns a `TransportReadError` if reading fails
+    fn read(
+        &self,
+        message: &[u8],
+        auth_key: Option<&[u8; 256]>,
+        packet_info: &mut PacketInfo,
+    ) -> Result<ReadResult, TransportReadError>;
+}
+
+/// Default MTProto transport reader implementation.
+#[derive(Debug, Default, Clone, Copy)]
+pub struct DefaultTransportReader;
+
+impl DefaultTransportReader {
+    /// Creates a new reader.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self
+    }
+
+    /// Checks if message is a quick ack or error.
+    fn check_special_messages(message: &[u8]) -> Option<ReadResult> {
+        if message.len() < 4 {
+            return None;
+        }
+
+        // Read the first 4 bytes as i32
+        let code = i32::from_le_bytes(message[0..4].try_into().ok()?);
+
+        if code == 0 {
+            return Some(ReadResult::nop());
+        }
+
+        if message.len() >= 8 && code == -1 {
+            let ack = u32::from_le_bytes(message[4..8].try_into().ok()?);
+            return Some(ReadResult::quick_ack(ack));
+        }
+
+        if code < 0 {
+            return Some(ReadResult::error(code));
+        }
+
+        None
+    }
+
+    /// Reads auth key ID from message.
+    fn read_auth_key_id(message: &[u8]) -> Result<u64, TransportReadError> {
+        if message.len() < 8 {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: 8,
+            });
+        }
+
+        Ok(u64::from_le_bytes(message[0..8].try_into().unwrap()))
+    }
+
+    /// Reads a no-crypto packet.
+    fn read_no_crypto(&self, message: &[u8]) -> Result<ReadResult, TransportReadError> {
+        if message.len() < NoCryptoHeader::SIZE {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: NoCryptoHeader::SIZE,
+            });
+        }
+
+        let header = NoCryptoHeader::read_from(message).ok_or_else(|| {
+            TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: NoCryptoHeader::SIZE,
+            }
+        })?;
+
+        if !header.is_no_crypto() {
+            return Err(TransportReadError::AuthKeyIdMismatch {
+                found: header.auth_key_id,
+                expected: 0,
+            });
+        }
+
+        let data = message[NoCryptoHeader::SIZE..].to_vec();
+        Ok(ReadResult::packet(data))
+    }
+
+    /// Reads an encrypted packet.
+    fn read_crypto(
+        &self,
+        message: &[u8],
+        auth_key: &[u8; 256],
+        packet_info: &mut PacketInfo,
+    ) -> Result<ReadResult, TransportReadError> {
+        if message.len() < CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE,
+            });
+        }
+
+        let header = CryptoHeader::read_from(message).ok_or_else(|| {
+            TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE,
+            }
+        })?;
+
+        // Check auth key ID
+        let auth_key_id = compute_auth_key_id(auth_key);
+        if header.auth_key_id != auth_key_id {
+            return Err(TransportReadError::AuthKeyIdMismatch {
+                found: header.auth_key_id,
+                expected: auth_key_id,
+            });
+        }
+
+        // Derive AES key and IV
+        let x = if packet_info.packet_type == PacketType::Common {
+            8 // Server to client
+        } else {
+            0 // Client to server or e2e
+        };
+
+        let KdfOutput { aes_key, aes_iv } = if packet_info.version == 2 {
+            kdf2(auth_key, &header.message_key, x)
+        } else {
+            kdf(auth_key, &header.message_key, x)
+        };
+
+        // Decrypt the message
+        let encrypted_start = CryptoHeader::encrypt_begin_offset();
+        let mut to_decrypt = message[encrypted_start..].to_vec();
+
+        // Align to block size
+        while to_decrypt.len() % 16 != 0 {
+            to_decrypt.push(0);
+        }
+
+        let mut iv = aes_iv;
+        aes_ige_decrypt(&aes_key, &mut iv, &mut to_decrypt)
+            .map_err(|e| TransportReadError::CryptoError(e.to_string()))?;
+
+        // Read the prefix
+        if to_decrypt.len() < CryptoPrefix::SIZE {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: CryptoPrefix::SIZE,
+            });
+        }
+
+        let prefix = CryptoPrefix::read_from(&to_decrypt).ok_or_else(|| {
+            TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: CryptoPrefix::SIZE,
+            }
+        })?;
+
+        // Validate message length
+        let total_size = CryptoPrefix::SIZE + prefix.message_data_length as usize;
+        if to_decrypt.len() < total_size {
+            return Err(TransportReadError::InvalidMessageLength {
+                length: prefix.message_data_length,
+                reason: format!("not enough data: {} < {}", to_decrypt.len(), total_size),
+            });
+        }
+
+        // Check padding
+        let pad_size = to_decrypt.len() - total_size;
+        if pad_size < 12 || pad_size > 1024 {
+            return Err(TransportReadError::InvalidPadding { pad_size });
+        }
+
+        // Update packet info
+        packet_info.salt = header.salt;
+        packet_info.session_id = header.session_id;
+        // packet_info.message_id would be set from prefix.msg_id
+        packet_info.seq_no = prefix.seq_no as i32;
+
+        // Extract data
+        let data = to_decrypt[CryptoPrefix::SIZE..total_size].to_vec();
+        Ok(ReadResult::packet(data))
+    }
+
+    /// Reads an end-to-end encrypted packet.
+    fn read_e2e_crypto(
+        &self,
+        message: &[u8],
+        auth_key: &[u8; 256],
+        packet_info: &mut PacketInfo,
+    ) -> Result<ReadResult, TransportReadError> {
+        if message.len() < EndToEndHeader::SIZE {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: EndToEndHeader::SIZE,
+            });
+        }
+
+        let header = EndToEndHeader::read_from(message).ok_or_else(|| {
+            TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: EndToEndHeader::SIZE,
+            }
+        })?;
+
+        // Similar to read_crypto but for e2e
+        let x = if packet_info.packet_type == PacketType::EndToEnd
+            && packet_info.is_creator
+            && packet_info.version != 1
+        {
+            8
+        } else {
+            0
+        };
+
+        // Derive keys and decrypt
+        let KdfOutput { aes_key, aes_iv } = if packet_info.version == 2 {
+            kdf2(auth_key, &header.message_key, x)
+        } else {
+            kdf(auth_key, &header.message_key, x)
+        };
+
+        let encrypted_start = EndToEndHeader::encrypt_begin_offset();
+        let mut to_decrypt = message[encrypted_start..].to_vec();
+
+        // Align to block size
+        while to_decrypt.len() % 16 != 0 {
+            to_decrypt.push(0);
+        }
+
+        let mut iv = aes_iv;
+        aes_ige_decrypt(&aes_key, &mut iv, &mut to_decrypt)
+            .map_err(|e| TransportReadError::CryptoError(e.to_string()))?;
+
+        // Read the prefix
+        if to_decrypt.len() < EndToEndPrefix::SIZE {
+            return Err(TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: EndToEndPrefix::SIZE,
+            });
+        }
+
+        let prefix = EndToEndPrefix::read_from(&to_decrypt).ok_or_else(|| {
+            TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: EndToEndPrefix::SIZE,
+            }
+        })?;
+
+        // Validate
+        let total_size = EndToEndPrefix::SIZE + prefix.message_data_length as usize;
+        if to_decrypt.len() < total_size {
+            return Err(TransportReadError::InvalidMessageLength {
+                length: prefix.message_data_length,
+                reason: format!("not enough data: {} < {}", to_decrypt.len(), total_size),
+            });
+        }
+
+        // Extract data
+        let data = to_decrypt[EndToEndPrefix::SIZE..total_size].to_vec();
+        Ok(ReadResult::packet(data))
+    }
+}
+
+impl TransportRead for DefaultTransportReader {
+    fn read(
+        &self,
+        message: &[u8],
+        auth_key: Option<&[u8; 256]>,
+        packet_info: &mut PacketInfo,
+    ) -> Result<ReadResult, TransportReadError> {
+        // Check for special messages (< 16 bytes)
+        if message.len() < 16 {
+            if let Some(result) = Self::check_special_messages(message) {
+                return Ok(result);
+            }
+
+            return Err(TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: 16,
+            });
+        }
+
+        // Read auth key ID to determine mode
+        let auth_key_id = Self::read_auth_key_id(message)?;
+
+        // Determine if using encryption
+        let no_crypto = auth_key_id == 0;
+
+        if packet_info.packet_type == PacketType::EndToEnd {
+            // End-to-end encryption
+            let key = auth_key.ok_or(TransportReadError::DecryptionFailed)?;
+            self.read_e2e_crypto(message, key, packet_info)
+        } else if no_crypto {
+            // No encryption
+            packet_info.no_crypto_flag = true;
+            self.read_no_crypto(message)
+        } else {
+            // Normal encryption
+            let key = auth_key.ok_or(TransportReadError::DecryptionFailed)?;
+            self.read_crypto(message, key, packet_info)
+        }
+    }
+}
+
+/// Computes auth key ID from auth key.
+///
+/// The auth key ID is the SHA1 hash of the auth key, lower 64 bits.
+#[must_use]
+pub fn compute_auth_key_id(auth_key: &[u8; 256]) -> u64 {
+    use crate::crypto::sha1;
+
+    let hash = sha1(auth_key);
+    // Take lower 64 bits of SHA1 hash
+    u64::from_le_bytes(hash[12..20].try_into().unwrap())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_read_result_nop() {
+        let result = ReadResult::nop();
+        assert!(result.is_nop());
+        assert!(!result.is_packet());
+        assert!(!result.is_error());
+        assert!(!result.is_quick_ack());
+    }
+
+    #[test]
+    fn test_read_result_packet() {
+        let data = vec![1, 2, 3, 4];
+        let result = ReadResult::packet(data.clone());
+        assert!(result.is_packet());
+        assert!(!result.is_nop());
+        assert_eq!(result.packet_data(), Some(&Bytes::from(data)));
+    }
+
+    #[test]
+    fn test_read_result_error() {
+        let result = ReadResult::error(-404);
+        assert!(result.is_error());
+        assert_eq!(result.error_code(), Some(-404));
+    }
+
+    #[test]
+    fn test_read_result_quick_ack() {
+        let result = ReadResult::quick_ack(12345);
+        assert!(result.is_quick_ack());
+        assert_eq!(result.quick_ack_value(), Some(12345));
+    }
+
+    #[test]
+    fn test_read_result_default() {
+        let result = ReadResult::default();
+        assert!(result.is_nop());
+    }
+
+    #[test]
+    fn test_transport_read_error_display() {
+        let err = TransportReadError::MessageTooSmall {
+            actual: 4,
+            expected: 16,
+        };
+        let s = format!("{err}");
+        assert!(s.contains("too small"));
+        assert!(s.contains("4"));
+        assert!(s.contains("16"));
+
+        let err = TransportReadError::AuthKeyIdMismatch {
+            found: 123,
+            expected: 456,
+        };
+        let s = format!("{err}");
+        assert!(s.contains("mismatch"));
+
+        let err = TransportReadError::InvalidPadding { pad_size: 5 };
+        let s = format!("{err}");
+        assert!(s.contains("padding"));
+    }
+
+    #[test]
+    fn test_compute_auth_key_id() {
+        let key = [42u8; 256];
+        let id1 = compute_auth_key_id(&key);
+        let id2 = compute_auth_key_id(&key);
+        assert_eq!(id1, id2);
+
+        let different_key = [43u8; 256];
+        let id3 = compute_auth_key_id(&different_key);
+        assert_ne!(id1, id3);
+    }
+
+    #[test]
+    fn test_check_special_messages_nop() {
+        let message = 0i32.to_le_bytes().to_vec();
+        let result = DefaultTransportReader::check_special_messages(&message);
+        assert_eq!(result, Some(ReadResult::nop()));
+    }
+
+    #[test]
+    fn test_check_special_messages_error() {
+        let mut message = (-100i32).to_le_bytes().to_vec();
+        message.extend_from_slice(&[0u8; 4]);
+        let result = DefaultTransportReader::check_special_messages(&message);
+        assert_eq!(result, Some(ReadResult::error(-100)));
+    }
+
+    #[test]
+    fn test_check_special_messages_quick_ack() {
+        let mut message = (-1i32).to_le_bytes().to_vec();
+        message.extend_from_slice(&12345u32.to_le_bytes());
+        let result = DefaultTransportReader::check_special_messages(&message);
+        assert_eq!(result, Some(ReadResult::quick_ack(12345)));
+    }
+
+    #[test]
+    fn test_check_special_messages_normal_packet() {
+        // Normal packet starts with positive 4 bytes
+        let message = 0x12345678u32.to_le_bytes().to_vec();
+        let result = DefaultTransportReader::check_special_messages(&message);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn test_read_auth_key_id() {
+        let key_id = 0x1234567890ABCDEFu64;
+        let mut message = key_id.to_le_bytes().to_vec();
+        message.extend_from_slice(&[0u8; 32]);
+
+        let result = DefaultTransportReader::read_auth_key_id(&message);
+        assert_eq!(result.unwrap(), key_id);
+    }
+
+    #[test]
+    fn test_read_auth_key_id_too_small() {
+        let message = [0u8; 4];
+        let result = DefaultTransportReader::read_auth_key_id(&message);
+        assert!(matches!(
+            result,
+            Err(TransportReadError::MessageTooSmall { .. })
+        ));
+    }
+
+    #[test]
+    fn test_read_no_crypto() {
+        let data = vec![1u8, 2, 3, 4, 5];
+        let mut message = NoCryptoHeader::new();
+        message.auth_key_id = 0;
+
+        let mut packet = vec![0u8; 8];
+        message.write_to(&mut packet);
+        packet.extend_from_slice(&data);
+
+        let reader = DefaultTransportReader::new();
+        let result = reader.read_no_crypto(&packet);
+
+        assert!(result.is_ok());
+        let read_result = result.unwrap();
+        assert!(read_result.is_packet());
+        assert_eq!(read_result.packet_data().unwrap().as_ref(), &data);
+    }
+
+    #[test]
+    fn test_read_no_crypto_wrong_key_id() {
+        let mut message = NoCryptoHeader::new();
+        message.auth_key_id = 123; // Not zero
+
+        let mut packet = vec![0u8; 8];
+        message.write_to(&mut packet);
+        packet.extend_from_slice(&[1u8; 8]);
+
+        let reader = DefaultTransportReader::new();
+        let result = reader.read_no_crypto(&packet);
+
+        assert!(matches!(
+            result,
+            Err(TransportReadError::AuthKeyIdMismatch { .. })
+        ));
+    }
+}
