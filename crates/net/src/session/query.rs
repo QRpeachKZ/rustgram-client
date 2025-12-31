@@ -278,7 +278,8 @@ impl QueryLifecycle {
         let count = to_remove.len();
 
         for query_id in &to_remove {
-            let entry = queries.get_mut(&query_id)
+            let entry = queries
+                .get_mut(&query_id)
                 .expect("Query should exist in queries map");
 
             // Check if we should retry

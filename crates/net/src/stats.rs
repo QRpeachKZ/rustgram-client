@@ -604,9 +604,10 @@ mod tests {
             500,
         ));
 
-        let common = manager.common_stats();
-        assert_eq!(common.rx, 1000);
-        assert_eq!(common.tx, 500);
+        // Photo goes to media_stats (Photo, Video, Voice, VideoNote are media)
+        let media = manager.media_stats();
+        assert_eq!(media.rx, 1000);
+        assert_eq!(media.tx, 500);
 
         let snapshot = manager.get_network_stats();
         assert_eq!(snapshot.len(), 1);

@@ -73,6 +73,11 @@ impl Default for ServicePacketHandler {
 impl PacketHandler for ServicePacketHandler {
     fn handle(&self, packet: &[u8], _packet_info: &PacketInfo) -> PacketHandlerResult {
         match ServicePacket::decode(packet) {
+            Ok(ServicePacket::Unknown(constructor)) => {
+                // Unknown service packet, pass to next handler
+                tracing::warn!("Unknown service packet constructor: 0x{:08x}", constructor);
+                PacketHandlerResult::Pass
+            }
             Ok(service_packet) => self.handle_service_packet(service_packet),
             Err(PacketDecodeError::UnknownConstructor(_)) => {
                 // Not a service packet, pass to next handler

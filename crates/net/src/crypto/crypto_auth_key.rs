@@ -410,11 +410,15 @@ impl AuthKeyHelper for DefaultAuthKeyHelper {
 /// # Examples
 ///
 /// ```
-/// use rustgram_net::crypto::compute_auth_key_id;
+/// use rustgram_net::crypto::{compute_auth_key_id, ComputeAuthKeyId};
 ///
 /// let key = [42u8; 256];
 /// let id = compute_auth_key_id(&key);
 /// assert_ne!(id, 0);
+///
+/// // Or use the trait method
+/// let id2 = key.compute_auth_key_id();
+/// assert_eq!(id, id2);
 /// ```
 #[must_use]
 pub fn compute_auth_key_id(key: &[u8; 256]) -> u64 {

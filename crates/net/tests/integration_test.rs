@@ -241,7 +241,7 @@ fn test_network_statistics() {
 fn test_net_stats_manager() {
     let mut manager = NetStatsManager::new();
 
-    // Add file stats
+    // Add file stats - Photo goes to media_stats
     manager.add_stats(&NetworkStatsEntry::file(
         FileType::Photo,
         NetType::WiFi,
@@ -249,9 +249,10 @@ fn test_net_stats_manager() {
         500,
     ));
 
-    let common = manager.common_stats();
-    assert_eq!(common.rx, 1000);
-    assert_eq!(common.tx, 500);
+    // Photo is a media file, so check media_stats
+    let media = manager.media_stats();
+    assert_eq!(media.rx, 1000);
+    assert_eq!(media.tx, 500);
 
     // Get snapshot
     let snapshot = manager.get_network_stats();

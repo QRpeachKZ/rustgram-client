@@ -28,8 +28,8 @@ mod kdf;
 
 pub use aes_ige::{aes_ige_decrypt, aes_ige_encrypt, AesIge, CryptoError};
 pub use crypto_auth_key::{
-    AuthKeyError, AuthKeyHelper, ComputeAuthKeyId, ComputeAuthKeyId as compute_auth_key_id,
-    CryptoAuthKey, DefaultAuthKeyHelper,
+    compute_auth_key_id, AuthKeyError, AuthKeyHelper, ComputeAuthKeyId, CryptoAuthKey,
+    CryptoAuthKeyHelper, DefaultAuthKeyHelper,
 };
 pub use hash::{sha1, sha256};
 pub use kdf::{kdf, kdf2, tmp_kdf, KdfOutput};
@@ -39,5 +39,7 @@ pub mod prelude {
     pub use super::{aes_ige_decrypt, aes_ige_encrypt, AesIge, CryptoError};
     pub use super::{kdf, kdf2, tmp_kdf, KdfOutput};
     pub use super::{sha1, sha256};
-    pub use super::{AuthKeyError, AuthKeyHelper, CryptoAuthKey, DefaultAuthKeyHelper};
+    pub use super::{
+        AuthKeyError, AuthKeyHelper, CryptoAuthKey, CryptoAuthKeyHelper, DefaultAuthKeyHelper,
+    };
 }

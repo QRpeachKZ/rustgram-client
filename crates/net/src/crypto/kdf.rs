@@ -75,16 +75,16 @@ impl KdfOutput {
 pub fn kdf(auth_key: &[u8], msg_key: &[u8; 16], x: usize) -> KdfOutput {
     assert_eq!(auth_key.len(), 256, "auth_key must be 256 bytes");
 
-    // Based on TDLib KDF::KDF (MTProto v1 with SHA1)
+    // Based on TDLib KDF::KDF (MTProto v1 with SHA256 - note: TDLib uses SHA256 for both)
     // sha256_a = SHA256 (msg_key + substr(auth_key, x, 36));
     let mut buf_a = [0u8; 16 + 36];
     buf_a[..16].copy_from_slice(msg_key);
     buf_a[16..].copy_from_slice(&auth_key[x..x + 36]);
     let sha256_a = sha256(&buf_a);
 
-    // sha256_b = SHA256 (substr(auth_key, 40+x, 36) + msg_key);
+    // sha256_b = SHA256 (substr(auth_key, x + 36, 36) + msg_key);
     let mut buf_b = [0u8; 36 + 16];
-    buf_b[..36].copy_from_slice(&auth_key[40 + x..40 + x + 36]);
+    buf_b[..36].copy_from_slice(&auth_key[x + 36..x + 36 + 36]);
     buf_b[36..].copy_from_slice(msg_key);
     let sha256_b = sha256(&buf_b);
 
@@ -147,9 +147,9 @@ pub fn kdf2(auth_key: &[u8], msg_key: &[u8; 16], x: usize) -> KdfOutput {
     buf_a[16..].copy_from_slice(&auth_key[x..x + 36]);
     let sha256_a = sha256(&buf_a);
 
-    // sha256_b = SHA256 (substr(auth_key, 40+x, 36) + msg_key);
+    // sha256_b = SHA256 (substr(auth_key, x + 36, 36) + msg_key);
     let mut buf_b = [0u8; 36 + 16];
-    buf_b[..36].copy_from_slice(&auth_key[40 + x..40 + x + 36]);
+    buf_b[..36].copy_from_slice(&auth_key[x + 36..x + 36 + 36]);
     buf_b[36..].copy_from_slice(msg_key);
     let sha256_b = sha256(&buf_b);
 
@@ -296,7 +296,11 @@ mod tests {
 
     #[test]
     fn test_kdf_different_x_different_output() {
-        let auth_key = [42u8; 256];
+        // Use different values in auth_key to ensure different outputs
+        let mut auth_key = [0u8; 256];
+        for (i, b) in auth_key.iter_mut().enumerate() {
+            *b = i as u8;
+        }
         let msg_key = [1u8; 16];
 
         let output0 = kdf(&auth_key, &msg_key, 0);
@@ -307,7 +311,11 @@ mod tests {
 
     #[test]
     fn test_kdf2_different_x_different_output() {
-        let auth_key = [42u8; 256];
+        // Use different values in auth_key to ensure different outputs
+        let mut auth_key = [0u8; 256];
+        for (i, b) in auth_key.iter_mut().enumerate() {
+            *b = i as u8;
+        }
         let msg_key = [1u8; 16];
 
         let output0 = kdf2(&auth_key, &msg_key, 0);

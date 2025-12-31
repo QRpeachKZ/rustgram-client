@@ -537,12 +537,15 @@ impl DcOptionsSet {
             match (stats_a, stats_b) {
                 (Some(a), Some(b)) => {
                     // Compare by success rate (higher is better), then by RTT (lower is better)
-                    let rate_cmp = b.success_rate().partial_cmp(&a.success_rate())
+                    let rate_cmp = b
+                        .success_rate()
+                        .partial_cmp(&a.success_rate())
                         .unwrap_or(std::cmp::Ordering::Equal);
                     if rate_cmp != std::cmp::Ordering::Equal {
                         rate_cmp
                     } else {
-                        a.avg_rtt.partial_cmp(&b.avg_rtt)
+                        a.avg_rtt
+                            .partial_cmp(&b.avg_rtt)
                             .unwrap_or(std::cmp::Ordering::Equal)
                     }
                 }

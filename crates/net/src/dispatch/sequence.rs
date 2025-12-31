@@ -292,15 +292,15 @@ mod tests {
         assert!(!config.drop_on_full);
     }
 
-    #[test]
-    fn test_sequence_dispatcher_new() {
+    #[tokio::test]
+    async fn test_sequence_dispatcher_new() {
         let dispatcher = SequenceDispatcher::new(SequenceConfig::default());
 
         assert_eq!(dispatcher.active_chain_count(), 0);
     }
 
-    #[test]
-    fn test_sequence_dispatcher_create_chain_id() {
+    #[tokio::test]
+    async fn test_sequence_dispatcher_create_chain_id() {
         let dispatcher = SequenceDispatcher::new(SequenceConfig::default());
 
         let id1 = dispatcher.create_chain_id();
@@ -310,8 +310,8 @@ mod tests {
         assert_eq!(id2, 2);
     }
 
-    #[test]
-    fn test_sequence_dispatcher_add_to_chain() {
+    #[tokio::test]
+    async fn test_sequence_dispatcher_add_to_chain() {
         let dispatcher = SequenceDispatcher::new(SequenceConfig::default());
 
         let query = create_test_query(1);
@@ -320,8 +320,8 @@ mod tests {
         assert_eq!(dispatcher.active_chain_count(), 1);
     }
 
-    #[test]
-    fn test_sequence_dispatcher_remove_chain() {
+    #[tokio::test]
+    async fn test_sequence_dispatcher_remove_chain() {
         let dispatcher = SequenceDispatcher::new(SequenceConfig::default());
 
         let query = create_test_query(1);
@@ -332,8 +332,8 @@ mod tests {
         assert_eq!(dispatcher.active_chain_count(), 0);
     }
 
-    #[test]
-    fn test_sequence_dispatcher_clear() {
+    #[tokio::test]
+    async fn test_sequence_dispatcher_clear() {
         let dispatcher = SequenceDispatcher::new(SequenceConfig::default());
 
         let query1 = create_test_query(1);

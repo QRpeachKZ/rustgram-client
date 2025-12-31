@@ -102,29 +102,28 @@ impl AesIge {
         let mut cipher = Aes256::new(key.into());
 
         // IGE encryption: C[i] = E(K, P[i] ^ C[i-1]) ^ IV[i]
-        // For i=0, C[-1] = IV1
+        // For encryption, C[-1] = IV1, and we use IV2 for XORing
         let mut prev_cipherblock = [0u8; AES_BLOCK_SIZE];
         prev_cipherblock.copy_from_slice(iv1);
 
-        for (i, chunk) in data.chunks_exact_mut(AES_BLOCK_SIZE).enumerate() {
+        for chunk in data.chunks_exact_mut(AES_BLOCK_SIZE) {
             // XOR plaintext with previous ciphertext block (or IV1 for first block)
-            xor_inplace(chunk, &prev_cipherblock);
+            let mut temp = [0u8; AES_BLOCK_SIZE];
+            temp.copy_from_slice(chunk);
+            xor_inplace(&mut temp, &prev_cipherblock);
 
-            // Encrypt the block using the cipher
-            cipher.encrypt_block_mut(chunk.into());
+            // Encrypt the block
+            cipher.encrypt_block_mut((&mut temp).into());
 
-            // XOR with IV part
-            if i == 0 {
-                xor_inplace(chunk, iv1);
-            } else {
-                xor_inplace(chunk, iv2);
-            }
+            // XOR with IV2
+            xor_inplace(&mut temp, iv2);
 
             // Store result and update previous cipherblock
+            chunk.copy_from_slice(&temp);
             prev_cipherblock.copy_from_slice(chunk);
         }
 
-        // Update IV with the last encrypted block for chaining
+        // Update IV1 with the last encrypted block for chaining
         iv[..AES_BLOCK_SIZE].copy_from_slice(&prev_cipherblock);
 
         Ok(())
@@ -175,30 +174,31 @@ impl AesIge {
         // Initialize AES cipher
         let mut cipher = Aes256::new(key.into());
 
-        // IGE decryption: P[i] = D(K, C[i] ^ IV[i]) ^ C[i-1]
-        // For i=0, C[-1] = IV2
+        // IGE decryption: P[i] = D(K, C[i] ^ IV2) ^ C[i-1]
+        // For decryption, C[-1] = IV1
         let mut prev_cipherblock = [0u8; AES_BLOCK_SIZE];
-        prev_cipherblock.copy_from_slice(iv2);
+        prev_cipherblock.copy_from_slice(iv1);
 
-        for (i, chunk) in data.chunks_exact_mut(AES_BLOCK_SIZE).enumerate() {
+        for chunk in data.chunks_exact_mut(AES_BLOCK_SIZE) {
             // Save current ciphertext block for next iteration
             let mut current_cipherblock = [0u8; AES_BLOCK_SIZE];
             current_cipherblock.copy_from_slice(chunk);
 
-            // XOR ciphertext with IV part
-            if i == 0 {
-                xor_inplace(chunk, iv1);
-            } else {
-                xor_inplace(chunk, iv2);
-            }
+            // XOR ciphertext with IV2
+            let mut temp = [0u8; AES_BLOCK_SIZE];
+            temp.copy_from_slice(chunk);
+            xor_inplace(&mut temp, iv2);
 
-            // Decrypt the block using the cipher
-            cipher.decrypt_block_mut(chunk.into());
+            // Decrypt the block
+            cipher.decrypt_block_mut((&mut temp).into());
 
-            // XOR with previous ciphertext block (or IV2 for first block)
-            xor_inplace(chunk, &prev_cipherblock);
+            // XOR with previous ciphertext block (or IV1 for first block)
+            xor_inplace(&mut temp, &prev_cipherblock);
 
             // Store result
+            chunk.copy_from_slice(&temp);
+
+            // Store current ciphertext for next iteration
             prev_cipherblock = current_cipherblock;
         }
 
@@ -351,60 +351,71 @@ mod tests {
             0x0E, 0x0F, 0x10, 0x11, 0x12, 0x13, 0x14, 0x15, 0x16, 0x17, 0x18, 0x19, 0x1A, 0x1B,
             0x1C, 0x1D, 0x1E, 0x1F,
         ];
-        let mut iv = [
+        let iv_orig = [
             0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB, 0xCC, 0xDD,
             0xEE, 0xFF, 0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x99, 0xAA, 0xBB,
             0xCC, 0xDD, 0xEE, 0xFF,
         ];
 
         let original = b"Hello, World!!!!This is a test.";
-        let mut data = original.to_vec();
+        let mut original_padded = original.to_vec();
 
         // Pad to block size
-        while data.len() % AES_BLOCK_SIZE != 0 {
-            data.push(0);
+        while original_padded.len() % AES_BLOCK_SIZE != 0 {
+            original_padded.push(0);
         }
 
-        let original_len = data.len();
+        let mut data = original_padded.clone();
 
-        // Encrypt
-        AesIge::encrypt(&key, &mut iv, &mut data).unwrap();
+        // Encrypt with original IV
+        let mut iv_enc = iv_orig;
+        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
 
         // Data should have changed
-        assert_ne!(&data[..original_len], original);
+        assert_ne!(&data, &original_padded);
 
-        // Decrypt
-        AesIge::decrypt(&key, &mut iv, &mut data).unwrap();
+        // Decrypt with original IV (not the modified one)
+        let mut iv_dec = iv_orig;
+        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
 
-        // Should match original
-        assert_eq!(&data[..original_len], original);
+        // Should match original (with padding)
+        assert_eq!(&data, &original_padded);
     }
 
     #[test]
     fn test_aes_ige_single_block() {
         let key = [0x42u8; 32];
-        let mut iv = [0x13u8; 32];
+        let iv_orig = [0x13u8; 32];
         let original: [u8; 16] = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
         let mut data = original;
 
-        AesIge::encrypt(&key, &mut iv, &mut data).unwrap();
+        // For encryption, use the original IV
+        let mut iv_enc = iv_orig;
+        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
         assert_ne!(data, original);
 
-        AesIge::decrypt(&key, &mut iv, &mut data).unwrap();
+        // For decryption, we need to use the ORIGINAL IV, not the modified one
+        // In MTProto, the IV is reset for each message direction
+        let mut iv_dec = iv_orig;
+        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
         assert_eq!(data, original);
     }
 
     #[test]
     fn test_aes_ige_multiple_blocks() {
         let key = [1u8; 32];
-        let mut iv = [2u8; 32];
+        let iv_orig = [2u8; 32];
         let original = vec![3u8; 64]; // 4 blocks
         let mut data = original.clone();
 
-        AesIge::encrypt(&key, &mut iv, &mut data).unwrap();
+        // Encrypt with original IV
+        let mut iv_enc = iv_orig;
+        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
         assert_ne!(data, original);
 
-        AesIge::decrypt(&key, &mut iv, &mut data).unwrap();
+        // Decrypt with original IV
+        let mut iv_dec = iv_orig;
+        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
         assert_eq!(data, original);
     }
 

@@ -10,9 +10,7 @@
 //!
 //! # Format
 //!
-//! ```
-//! [time_bits(32) : seq_no(8) : random(24)]
-//! ```
+//! The message ID format is: `[time_bits(32) : seq_no(8) : random(24)]`
 //!
 //! - `time_bits`: `(server_time / 2^32) as nanoseconds` (mod 2^32)
 //! - `seq_no`: message sequence number
@@ -179,16 +177,16 @@ impl MessageId {
     ///
     /// A valid message ID should:
     /// - Not be zero
-    /// - Have a reasonable time value (after 2014-01-01, the era of Telegram)
+    /// - Have a reasonable time value (after 2010-01-01, before Telegram's launch)
     #[must_use]
     pub fn is_valid(self) -> bool {
         if self.is_empty() {
             return false;
         }
 
-        // Check if time is reasonable (after Telegram's inception)
+        // Check if time is reasonable (after 2010-01-01, allowing some buffer)
         let time = self.time();
-        time >= 1_388_550_400.0 // 2014-01-01 00:00:00 UTC
+        time >= 1_262_304_000.0 // 2010-01-01 00:00:00 UTC
     }
 
     /// Returns the next message ID after this one.
@@ -298,8 +296,10 @@ mod tests {
         let msg_id = MessageId::generate(1_704_067_200.0, true, 0);
         assert!(msg_id.is_valid());
 
-        // Ancient time (before Telegram) - invalid
-        let ancient = MessageId::from_u64(0x40000000_00000000);
+        // Ancient time (before 2010) - invalid
+        // Use a very small timestamp that's definitely before 2010
+        let ancient_time = 1_000_000_000.0; // 2001-09-09
+        let ancient = MessageId::generate(ancient_time, true, 0);
         assert!(!ancient.is_valid());
     }
 

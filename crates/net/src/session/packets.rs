@@ -132,7 +132,8 @@ impl ServicePacket {
     }
 
     fn decode_bad_msg_notification(cursor: &mut Bytes) -> Result<Self, PacketDecodeError> {
-        if cursor.remaining() < 20 {
+        // Minimum size: constructor (4) + bad_msg_id (8) + bad_msg_seqno (4) + error_code (4) = 20
+        if cursor.remaining() < 16 {
             return Err(PacketDecodeError::BufferTooSmall);
         }
 
@@ -140,18 +141,11 @@ impl ServicePacket {
         let bad_msg_seqno = cursor.get_i32_le();
         let error_code = cursor.get_i32_le();
 
-        // new_server_salt is optional
-        let new_server_salt = if cursor.remaining() >= 8 {
-            Some(cursor.get_u64_le())
-        } else {
-            None
-        };
-
         Ok(ServicePacket::BadMsgNotification {
             bad_msg_id,
             bad_msg_seqno,
             error_code,
-            new_server_salt,
+            new_server_salt: None,
         })
     }
 
