@@ -212,7 +212,7 @@ impl FloodControl {
         }
     }
 
-    fn record_query(&self, query: &NetQuery) {
+    fn record_query(&self, _query: &NetQuery) {
         self.total_sent.fetch_add(1, Ordering::Relaxed);
     }
 

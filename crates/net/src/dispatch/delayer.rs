@@ -91,7 +91,7 @@ impl NetQueryDelayer {
     }
 
     /// Adds a query to be delayed.
-    pub fn add_query(&self, mut query: NetQuery) {
+    pub fn add_query(&self, query: NetQuery) {
         let entry = DelayEntry {
             query,
             retry_count: 0,
@@ -124,7 +124,7 @@ impl NetQueryDelayer {
             entry.query = query.clone();
 
             // Schedule retry
-            let query_id = query.id();
+            let _query_id = query.id();
             let delay = entry.current_delay;
             let sender = self.output_sender.clone();
 

@@ -136,7 +136,7 @@ impl HttpTransport {
         data: &[u8],
         auth_key: Option<&[u8; 256]>,
     ) -> Result<(), ConnectionError> {
-        let mut stream = self
+        let stream = self
             .stream
             .as_mut()
             .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;
@@ -194,7 +194,7 @@ impl HttpTransport {
         &mut self,
         auth_key: Option<&[u8; 256]>,
     ) -> Result<ReadResult, ConnectionError> {
-        let mut stream = self
+        let stream = self
             .stream
             .as_mut()
             .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;

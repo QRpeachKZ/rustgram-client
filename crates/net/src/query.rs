@@ -197,7 +197,7 @@ pub trait NetQueryCallback: Send + Sync {
     async fn on_result_resendable(
         &self,
         query: NetQuery,
-        promise: tokio::sync::oneshot::Sender<NetQuery>,
+        _promise: tokio::sync::oneshot::Sender<NetQuery>,
     ) {
         // Default implementation just calls on_result
         self.on_result(query).await;

@@ -88,7 +88,7 @@ impl HttpProxyTransport {
             .map_err(|e| ConnectionError::Proxy(e.to_string()))?;
 
         // Perform HTTP CONNECT handshake
-        let mut stream = self.http_connect_handshake(stream).await?;
+        let stream = self.http_connect_handshake(stream).await?;
 
         // Wrap in TcpTransport
         let mut tcp_transport = TcpTransport::new(self.target);

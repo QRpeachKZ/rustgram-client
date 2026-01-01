@@ -302,7 +302,7 @@ impl MtprotoProxyTransport {
         // Encrypt with MTProto proxy encryption
         let encrypted = self.encrypt_packet(Bytes::copy_from_slice(data))?;
 
-        let mut stream = self
+        let stream = self
             .stream
             .as_mut()
             .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;

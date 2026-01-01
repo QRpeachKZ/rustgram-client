@@ -494,7 +494,7 @@ impl DcOptionsSet {
 
     /// Adds DC options to the set.
     pub fn add_options(&mut self, options: DcOptions) {
-        let start_idx = self.options.len();
+        let _start_idx = self.options.len();
         for option in options.dc_options {
             if option.is_valid() {
                 self.options.add(option);
@@ -530,7 +530,7 @@ impl DcOptionsSet {
 
         // Sort by success rate and RTT
         let mut options: Vec<_> = options.into_iter().collect();
-        options.sort_by(|(idx_a, opt_a), (idx_b, opt_b)| {
+        options.sort_by(|(idx_a, _opt_a), (idx_b, _opt_b)| {
             let stats_a = self.stats.get(idx_a);
             let stats_b = self.stats.get(idx_b);
 

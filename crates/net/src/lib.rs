@@ -94,9 +94,9 @@ pub mod error {
 pub mod prelude {
     pub use super::auth::*;
     pub use super::connection::*;
-    pub use super::crypto::*;
+    pub use super::crypto::prelude::*;
     pub use super::dc::*;
-    pub use super::packet::*;
+    pub use super::packet::prelude::*;
     pub use super::proxy::*;
     pub use super::query::*;
     pub use super::stats::*;

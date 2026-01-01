@@ -309,7 +309,7 @@ impl SessionConnection {
     /// Starts the ping loop.
     async fn start_ping_loop(&self) {
         let ping_manager = self.ping_manager.clone();
-        let query_sender = self.query_sender.clone();
+        let _query_sender = self.query_sender.clone();
         let stop_flag = self.stop_flag.clone();
 
         tokio::spawn(async move {
