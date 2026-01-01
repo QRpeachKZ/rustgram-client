@@ -1,0 +1,35 @@
+[package]
+name = "rustgram-storage"
+version = "0.1.0"
+edition = "2021"
+authors = ["Rustgram Contributors"]
+license = "MIT"
+description = "Storage layer for Telegram MTProto client"
+repository = "https://github.com/rustgram/rustgram-client"
+
+[features]
+default = ["dialog"]
+dialog = []
+secure = ["dep:aes", "dep:cbc", "dep:pbkdf2", "dep:sha2", "dep:rand", "dep:getrandom"]
+full = ["dialog", "secure"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rusqlite = { version = "0.32", features = ["bundled"] }
+tokio = { version = "1.35", features = ["sync", "rt", "macros"] }
+thiserror = "1.0"
+tracing = "0.1"
+async-trait = "0.1"
+futures = "0.3"
+bytes = "1.5"
+
+# Optional dependencies for secure storage
+aes = { version = "0.8", optional = true }
+cbc = { version = "0.1", optional = true }
+pbkdf2 = { version = "0.12", optional = true }
+sha2 = { version = "0.10", optional = true }
+rand = { version = "0.8", optional = true }
+getrandom = { version = "0.2", optional = true }
+
+[dev-dependencies]
+tempfile = "3.8"
