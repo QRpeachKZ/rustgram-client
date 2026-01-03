@@ -28,17 +28,15 @@ pub fn encrypt_value(secret: &Secret, data: &[u8]) -> StorageResult<(Vec<u8>, Va
 
     // Generate random nonce
     let mut nonce = [0u8; NONCE_SIZE];
-    getrandom::getrandom(&mut nonce).map_err(|e| {
-        StorageError::CryptoError(format!("Failed to generate nonce: {}", e))
-    })?;
+    getrandom::getrandom(&mut nonce)
+        .map_err(|e| StorageError::CryptoError(format!("Failed to generate nonce: {}", e)))?;
 
     // Derive key from secret (simple version: use secret bytes directly as key)
     let key = secret.as_bytes();
 
     // Encrypt using AES-256-CBC
-    let mut encryptor = Aes256CbcEnc::new_from_slices(key, &nonce).map_err(|e| {
-        StorageError::CryptoError(format!("Failed to create encryptor: {}", e))
-    })?;
+    let mut encryptor = Aes256CbcEnc::new_from_slices(key, &nonce)
+        .map_err(|e| StorageError::CryptoError(format!("Failed to create encryptor: {}", e)))?;
 
     // Pad and encrypt data
     let mut encrypted_data = data.to_vec();
@@ -89,9 +87,8 @@ pub fn decrypt_value(
     let key = secret.as_bytes();
 
     // Decrypt using AES-256-CBC
-    let mut decryptor = Aes256CbcDec::new_from_slices(key, nonce).map_err(|e| {
-        StorageError::CryptoError(format!("Failed to create decryptor: {}", e))
-    })?;
+    let mut decryptor = Aes256CbcDec::new_from_slices(key, nonce)
+        .map_err(|e| StorageError::CryptoError(format!("Failed to create decryptor: {}", e)))?;
 
     let mut decrypted = ciphertext.to_vec();
 

@@ -77,7 +77,7 @@ impl MigrationManager {
     fn set_version(&self, conn: &mut rusqlite::Connection, version: i32) -> StorageResult<()> {
         conn.execute(
             "INSERT INTO schema_migrations (version, applied_at) VALUES (?1, ?2)",
-            &[&version as &dyn rusqlite::ToSql, &chrono_timestamp()],
+            [&version as &dyn rusqlite::ToSql, &chrono_timestamp()],
         )
         .map_err(|e| StorageError::MigrationError(e.to_string()))?;
 
@@ -111,7 +111,7 @@ fn chrono_timestamp() -> String {
     use std::time::{SystemTime, UNIX_EPOCH};
     let duration = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .expect("System time before UNIX epoch");
+        .unwrap_or_else(|_| std::time::Duration::from_secs(0));
     format!("{}", duration.as_secs())
 }
 
@@ -154,11 +154,8 @@ mod tests {
         }
 
         fn apply(&self, conn: &mut rusqlite::Connection) -> StorageResult<()> {
-            conn.execute(
-                "ALTER TABLE test_table ADD COLUMN extra TEXT",
-                [],
-            )
-            .map_err(|e| StorageError::MigrationError(e.to_string()))?;
+            conn.execute("ALTER TABLE test_table ADD COLUMN extra TEXT", [])
+                .map_err(|e| StorageError::MigrationError(e.to_string()))?;
 
             Ok(())
         }
@@ -179,13 +176,15 @@ mod tests {
         manager.run(&db).unwrap();
 
         // Verify table exists
-        let mut conn = db.connect().unwrap();
-        conn.query_row(
-            "SELECT 1 FROM test_table LIMIT 1",
-            [],
-            |_| Ok::<_, rusqlite::Error>(()),
-        )
-        .unwrap();
+        let conn = db.connect().unwrap();
+        let table_exists: i32 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='test_table'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(table_exists, 1);
 
         // Verify version is set
         let version: i32 = conn
@@ -214,13 +213,11 @@ mod tests {
         manager.run(&db).unwrap();
 
         // Verify migrations only ran once
-        let mut conn = db.connect().unwrap();
+        let conn = db.connect().unwrap();
         let count: i64 = conn
-            .query_row(
-                "SELECT COUNT(*) FROM schema_migrations",
-                [],
-                |row| row.get(0),
-            )
+            .query_row("SELECT COUNT(*) FROM schema_migrations", [], |row| {
+                row.get(0)
+            })
             .unwrap();
         assert_eq!(count, 2);
     }

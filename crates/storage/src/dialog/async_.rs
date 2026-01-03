@@ -27,11 +27,9 @@ impl DialogDbAsync {
         data: Bytes,
     ) -> StorageResult<()> {
         let mut db = DialogDbSync::new(self.db.clone());
-        tokio::task::spawn_blocking(move || {
-            db.add_dialog(dialog_id, folder_id, order, data)
-        })
-        .await
-        .map_err(|_| StorageError::TransactionError("Task join failed".to_string()))?
+        tokio::task::spawn_blocking(move || db.add_dialog(dialog_id, folder_id, order, data))
+            .await
+            .map_err(|_| StorageError::TransactionError("Task join failed".to_string()))?
     }
 
     /// Gets a dialog by its ID asynchronously.
@@ -51,11 +49,9 @@ impl DialogDbAsync {
         limit: i32,
     ) -> StorageResult<DialogsResult> {
         let mut db = DialogDbSync::new(self.db.clone());
-        tokio::task::spawn_blocking(move || {
-            db.get_dialogs(folder_id, order, dialog_id, limit)
-        })
-        .await
-        .map_err(|_| StorageError::TransactionError("Task join failed".to_string()))?
+        tokio::task::spawn_blocking(move || db.get_dialogs(folder_id, order, dialog_id, limit))
+            .await
+            .map_err(|_| StorageError::TransactionError("Task join failed".to_string()))?
     }
 
     /// Deletes a dialog asynchronously.
@@ -95,6 +91,8 @@ mod tests {
         }
         manager.run(&db).unwrap();
 
+        // Keep dir alive by intentionally leaking it
+        std::mem::forget(dir);
         db
     }
 
@@ -139,7 +137,7 @@ mod tests {
         }
 
         // Get first page
-        let dummy_id = DialogId::from_user(rustgram_types::UserId::new(0).unwrap());
+        let dummy_id = DialogId::from_user(rustgram_types::UserId::new(999999).unwrap());
         let result = async_db
             .get_dialogs(Some(0), 1000, dummy_id, 5)
             .await

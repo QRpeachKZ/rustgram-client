@@ -13,12 +13,12 @@ pub mod crypto;
 pub use types::{Secret, ValueHash};
 
 #[cfg(feature = "secure")]
-pub use crypto::{encrypt_value, decrypt_value};
+pub use crypto::{decrypt_value, encrypt_value};
 
 /// Re-exports for the secure storage feature.
 pub mod prelude {
     #[cfg(feature = "secure")]
-    pub use super::{Secret, ValueHash, encrypt_value, decrypt_value};
+    pub use super::{decrypt_value, encrypt_value, Secret, ValueHash};
 }
 
 #[cfg(test)]

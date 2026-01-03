@@ -1,12 +1,12 @@
 //! Dialog database module.
 
+pub mod async_;
 pub mod schema;
 pub mod sync;
-pub mod async_;
 
+pub use async_::DialogDbAsync;
 pub use schema::{get_dialog_migrations, DIALOG_DB_VERSION};
 pub use sync::{DialogDbSync, DialogsResult};
-pub use async_::DialogDbAsync;
 
 use crate::connection::DbConnection;
 use crate::error::StorageResult;
@@ -58,7 +58,7 @@ mod tests {
         dialog_db.init().unwrap();
 
         // Verify tables exist
-        let mut conn = dialog_db.db.connect().unwrap();
+        let conn = dialog_db.db.connect().unwrap();
         let count = conn
             .query_row(
                 "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='dialogs'",

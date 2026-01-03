@@ -36,8 +36,7 @@ impl DbConnection {
 
     /// Opens a new connection to the database.
     pub fn connect(&self) -> StorageResult<rusqlite::Connection> {
-        rusqlite::Connection::open(&*self.db_path)
-            .map_err(StorageError::from)
+        rusqlite::Connection::open(&*self.db_path).map_err(StorageError::from)
     }
 
     /// Returns the path to the database file.
@@ -86,16 +85,16 @@ impl<'a> Transaction<'a> {
 
     /// Returns a reference to the underlying transaction.
     pub fn tx(&self) -> StorageResult<&rusqlite::Transaction<'a>> {
-        self.tx
-            .as_ref()
-            .ok_or_else(|| StorageError::TransactionError("Transaction already consumed".to_string()))
+        self.tx.as_ref().ok_or_else(|| {
+            StorageError::TransactionError("Transaction already consumed".to_string())
+        })
     }
 
     /// Returns a mutable reference to the underlying transaction.
     pub fn tx_mut(&mut self) -> StorageResult<&mut rusqlite::Transaction<'a>> {
-        self.tx
-            .as_mut()
-            .ok_or_else(|| StorageError::TransactionError("Transaction already consumed".to_string()))
+        self.tx.as_mut().ok_or_else(|| {
+            StorageError::TransactionError("Transaction already consumed".to_string())
+        })
     }
 }
 
@@ -153,6 +152,7 @@ mod tests {
         {
             let mut tx = Transaction::new(&mut conn).unwrap();
             tx.tx_mut()
+                .unwrap()
                 .execute("INSERT INTO test (id, value) VALUES (1, 'test')", [])
                 .unwrap();
             tx.commit().unwrap();
@@ -180,6 +180,7 @@ mod tests {
         {
             let mut tx = Transaction::new(&mut conn).unwrap();
             tx.tx_mut()
+                .unwrap()
                 .execute("INSERT INTO test (id, value) VALUES (1, 'test')", [])
                 .unwrap();
             // Explicit rollback
@@ -187,11 +188,9 @@ mod tests {
         }
 
         // Verify data was not inserted
-        let result = conn.query_row(
-            "SELECT value FROM test WHERE id = 1",
-            [],
-            |_| Ok::<_, rusqlite::Error>("found"),
-        );
+        let result = conn.query_row("SELECT value FROM test WHERE id = 1", [], |_| {
+            Ok::<_, rusqlite::Error>("found")
+        });
         assert!(matches!(result, Err(rusqlite::Error::QueryReturnedNoRows)));
     }
 }

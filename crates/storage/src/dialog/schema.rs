@@ -109,14 +109,12 @@ impl Migration for DialogMigrationV4 {
                 [],
                 |row| row.get::<_, i32>(0),
             )
-            .unwrap_or(0) > 0;
+            .unwrap_or(0)
+            > 0;
 
         if !has_column {
-            conn.execute(
-                "ALTER TABLE dialogs ADD COLUMN folder_id INTEGER",
-                [],
-            )
-            .map_err(|e| crate::error::StorageError::MigrationError(e.to_string()))?;
+            conn.execute("ALTER TABLE dialogs ADD COLUMN folder_id INTEGER", [])
+                .map_err(|e| crate::error::StorageError::MigrationError(e.to_string()))?;
         }
 
         Ok(())
@@ -175,12 +173,14 @@ mod tests {
         DialogMigrationV1.apply(&mut conn).unwrap();
 
         // Verify table exists
-        conn.query_row(
-            "SELECT 1 FROM dialogs LIMIT 1",
-            [],
-            |_| Ok::<_, rusqlite::Error>(()),
-        )
-        .unwrap();
+        let table_exists: i32 = conn
+            .query_row(
+                "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name='dialogs'",
+                [],
+                |row| row.get(0),
+            )
+            .unwrap();
+        assert_eq!(table_exists, 1);
     }
 
     #[test]

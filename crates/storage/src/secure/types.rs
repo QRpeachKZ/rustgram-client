@@ -1,7 +1,7 @@
 //! Secure storage types.
 
-use bytes::Bytes;
 use crate::error::{StorageError, StorageResult};
+use bytes::Bytes;
 
 /// A 32-byte secret key for encryption.
 ///

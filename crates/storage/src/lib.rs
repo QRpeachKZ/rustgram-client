@@ -20,8 +20,8 @@
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::expect_used)]
 
-pub mod error;
 pub mod connection;
+pub mod error;
 pub mod migrations;
 
 #[cfg(feature = "dialog")]
@@ -31,15 +31,15 @@ pub mod dialog;
 pub mod secure;
 
 // Re-export commonly used types
-pub use error::{StorageError, StorageResult};
 pub use connection::{DbConnection, Transaction};
+pub use error::{StorageError, StorageResult};
 pub use migrations::{Migration, MigrationManager};
 
 #[cfg(feature = "dialog")]
 pub use dialog::{DialogDb, DialogDbAsync, DialogDbSync};
 
 #[cfg(feature = "secure")]
-pub use secure::{Secret, ValueHash, encrypt_value, decrypt_value};
+pub use secure::{decrypt_value, encrypt_value, Secret, ValueHash};
 
 /// Version information for the crate.
 pub const VERSION: &str = env!("CARGO_PKG_VERSION");

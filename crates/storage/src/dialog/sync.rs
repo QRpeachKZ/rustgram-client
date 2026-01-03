@@ -44,7 +44,12 @@ impl DialogDbSync {
         conn.execute(
             "INSERT OR REPLACE INTO dialogs (dialog_id, dialog_order, data, folder_id)
              VALUES (?1, ?2, ?3, ?4)",
-            &[&encoded_id as &dyn rusqlite::ToSql, &order as &dyn rusqlite::ToSql, &data.as_ref() as &dyn rusqlite::ToSql, &folder_id as &dyn rusqlite::ToSql],
+            [
+                &encoded_id as &dyn rusqlite::ToSql,
+                &order as &dyn rusqlite::ToSql,
+                &data.as_ref() as &dyn rusqlite::ToSql,
+                &folder_id as &dyn rusqlite::ToSql,
+            ],
         )
         .map_err(|e| StorageError::QueryError(e.to_string()))?;
 
@@ -58,7 +63,7 @@ impl DialogDbSync {
 
         conn.query_row(
             "SELECT data FROM dialogs WHERE dialog_id = ?1",
-            &[&encoded_id],
+            [&encoded_id],
             |row| {
                 let data: Vec<u8> = row.get(0)?;
                 Ok(Bytes::from(data))
@@ -78,7 +83,7 @@ impl DialogDbSync {
         &mut self,
         folder_id: Option<i32>,
         order: i64,
-        _dialog_id: DialogId,  // TODO: use for pagination
+        _dialog_id: DialogId, // TODO: use for pagination
         limit: i32,
     ) -> StorageResult<DialogsResult> {
         let conn = self.db.connect()?;
@@ -90,7 +95,11 @@ impl DialogDbSync {
                  ORDER BY dialog_order DESC, dialog_id DESC
                  LIMIT ?3"
                     .to_string(),
-                vec![Box::new(fid) as Box<dyn rusqlite::ToSql>, Box::new(order), Box::new(limit)],
+                vec![
+                    Box::new(fid) as Box<dyn rusqlite::ToSql>,
+                    Box::new(order),
+                    Box::new(limit),
+                ],
             )
         } else {
             (
@@ -146,11 +155,8 @@ impl DialogDbSync {
         let conn = self.db.connect()?;
         let encoded_id = dialog_id.to_encoded();
 
-        conn.execute(
-            "DELETE FROM dialogs WHERE dialog_id = ?1",
-            &[&encoded_id],
-        )
-        .map_err(|e| StorageError::QueryError(e.to_string()))?;
+        conn.execute("DELETE FROM dialogs WHERE dialog_id = ?1", [&encoded_id])
+            .map_err(|e| StorageError::QueryError(e.to_string()))?;
 
         Ok(())
     }
@@ -173,7 +179,7 @@ impl DialogDbSync {
 
         let params_refs: Vec<&dyn rusqlite::ToSql> = params.iter().map(|p| p.as_ref()).collect();
 
-        conn.query_row(&sql, &params_refs[..], |row| row.get(0))
+        conn.query_row(sql, &params_refs[..], |row| row.get(0))
             .map_err(|e| StorageError::QueryError(e.to_string()))
     }
 
@@ -203,6 +209,8 @@ mod tests {
         }
         manager.run(&db).unwrap();
 
+        // Keep dir alive by intentionally leaking it
+        std::mem::forget(dir);
         db
     }
 
@@ -259,10 +267,8 @@ mod tests {
         }
 
         // Get first page (using a dummy DialogId for ordering)
-        let dummy_id = DialogId::from_user(rustgram_types::UserId::new(0).unwrap());
-        let result = dialog_db
-            .get_dialogs(Some(0), 1000, dummy_id, 5)
-            .unwrap();
+        let dummy_id = DialogId::from_user(rustgram_types::UserId::new(999999).unwrap());
+        let result = dialog_db.get_dialogs(Some(0), 1000, dummy_id, 5).unwrap();
         assert_eq!(result.dialogs.len(), 5);
     }
 
@@ -334,7 +340,10 @@ mod tests {
                 .unwrap()
                 .execute(
                     "INSERT INTO test (id, value) VALUES (?1, ?2)",
-                    &[&1i64 as &dyn rusqlite::ToSql, &"test" as &dyn rusqlite::ToSql],
+                    &[
+                        &1i64 as &dyn rusqlite::ToSql,
+                        &"test" as &dyn rusqlite::ToSql,
+                    ],
                 )
                 .unwrap();
 
