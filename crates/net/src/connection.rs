@@ -309,11 +309,7 @@ impl ConnectionCreator {
         .map_err(|_| ConnectionError::Timeout(Duration::from_secs(10)))?
         .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
-        let mode = if option.is_obfuscated_tcp_only() {
-            ConnectionMode::Tcp
-        } else {
-            ConnectionMode::Tcp
-        };
+        let mode = ConnectionMode::Tcp;
 
         let mut raw_conn = RawConnection::new(option.dc_id, mode, is_media);
         raw_conn.socket = Some(conn);

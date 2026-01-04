@@ -6,6 +6,7 @@
 
 use bytes::Bytes;
 use rustgram_net::prelude::*;
+use std::str::FromStr;
 
 #[test]
 fn test_dc_id_operations() {
@@ -319,8 +320,8 @@ fn test_net_type_operations() {
     assert!(NetType::MobileRoaming.is_roaming());
     assert!(!NetType::Mobile.is_roaming());
 
-    assert_eq!(NetType::from_str("wifi"), Some(NetType::WiFi));
-    assert_eq!(NetType::from_str("invalid"), None);
+    assert_eq!(NetType::from_str("wifi"), Ok(NetType::WiFi));
+    assert!(NetType::from_str("invalid").is_err());
 }
 
 #[test]

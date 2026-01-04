@@ -298,9 +298,7 @@ impl SessionMultiProxy {
 
         // Initialize sessions based on count
         for i in 0..config.session_count {
-            let session_type = if config.is_cdn {
-                SessionType::Download
-            } else if config.is_media {
+            let session_type = if config.is_cdn || config.is_media {
                 SessionType::Download
             } else {
                 SessionType::Main
@@ -532,9 +530,7 @@ impl SessionMultiProxy {
 
         // Create new sessions
         for i in 0..config.session_count {
-            let session_type = if config.is_cdn {
-                SessionType::Download
-            } else if config.is_media {
+            let session_type = if config.is_cdn || config.is_media {
                 SessionType::Download
             } else {
                 SessionType::Main

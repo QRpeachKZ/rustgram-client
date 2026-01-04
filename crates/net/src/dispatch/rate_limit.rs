@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 use parking_lot::Mutex;
 
 use crate::dc::DcId;
-use crate::query::{NetQuery, NetQueryType};
+use crate::query::NetQuery;
 
 /// Flood control configuration.
 #[derive(Debug, Clone, Copy)]
@@ -258,7 +258,7 @@ impl Default for FloodControl {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::query::{AuthFlag, GzipFlag};
+    use crate::query::{AuthFlag, GzipFlag, NetQueryType};
     use bytes::Bytes;
 
     fn create_test_query(dc_id: DcId) -> NetQuery {

@@ -7,7 +7,7 @@
 //! This module implements TDLib's DC identification and options system.
 
 use std::fmt;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 
 use serde::{Deserialize, Serialize};
 
@@ -580,6 +580,7 @@ impl DcOptionsSet {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv4Addr;
 
     #[test]
     fn test_dc_id_creation() {

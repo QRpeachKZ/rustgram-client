@@ -13,8 +13,15 @@ use std::sync::Arc;
 use parking_lot::Mutex;
 use tokio::sync::{mpsc, oneshot};
 
-use crate::dc::DcId;
 use crate::query::{NetQuery, NetQueryId};
+
+/// Type alias for worker sender to reduce type complexity.
+type WorkerSender =
+    mpsc::UnboundedSender<(u64, NetQuery, oneshot::Sender<Result<Vec<u8>, String>>)>;
+
+/// Type alias for worker receiver to reduce type complexity.
+type WorkerReceiver =
+    mpsc::UnboundedReceiver<(u64, NetQuery, oneshot::Sender<Result<Vec<u8>, String>>)>;
 
 /// Sequence configuration.
 #[derive(Debug, Clone, Copy)]
@@ -91,7 +98,7 @@ pub struct SequenceDispatcher {
     next_chain_id: AtomicU64,
 
     /// Worker sender
-    worker_sender: mpsc::UnboundedSender<(u64, NetQuery, oneshot::Sender<Result<Vec<u8>, String>>)>,
+    worker_sender: WorkerSender,
 }
 
 impl SequenceDispatcher {
@@ -215,14 +222,7 @@ impl SequenceDispatcher {
     }
 
     /// Starts the worker task.
-    fn start_worker(
-        &self,
-        mut receiver: mpsc::UnboundedReceiver<(
-            u64,
-            NetQuery,
-            oneshot::Sender<Result<Vec<u8>, String>>,
-        )>,
-    ) {
+    fn start_worker(&self, mut receiver: WorkerReceiver) {
         tokio::spawn(async move {
             while let Some((_chain_id, _query, response_sender)) = receiver.recv().await {
                 // In a real implementation, this would send the query
@@ -267,6 +267,7 @@ impl Default for SequenceDispatcher {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::dc::DcId;
     use crate::query::{AuthFlag, GzipFlag, NetQueryType};
     use bytes::Bytes;
 

@@ -229,7 +229,6 @@ impl Default for PacketHandlerChain {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::packet::PacketType;
 
     #[test]
     fn test_packet_handler_result_variants() {

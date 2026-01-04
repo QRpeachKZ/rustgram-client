@@ -6,7 +6,7 @@
 //!
 //! This module implements HTTP CONNECT proxy support for Telegram MTProto.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::SocketAddr;
 use std::time::Duration;
 
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
@@ -312,6 +312,7 @@ mod base64 {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::{IpAddr, Ipv4Addr};
 
     #[test]
     fn test_http_proxy_transport_new() {

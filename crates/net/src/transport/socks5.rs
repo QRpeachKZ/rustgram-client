@@ -6,7 +6,7 @@
 //!
 //! This module implements SOCKS5 proxy support for Telegram MTProto.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -492,6 +492,7 @@ impl Socks5TransportFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv4Addr;
 
     #[test]
     fn test_socks5_auth_method_try_from() {

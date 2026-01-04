@@ -8,6 +8,7 @@
 //! `td/telegram/net/NetType.h` and `td/telegram/net/NetStatsManager.h`.
 
 use serde::{Deserialize, Serialize};
+use std::str::FromStr;
 
 /// Network type.
 ///
@@ -60,17 +61,20 @@ impl NetType {
             Self::Unknown => "unknown",
         }
     }
+}
 
-    /// Creates NetType from string.
-    pub fn from_str(s: &str) -> Option<Self> {
+impl FromStr for NetType {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "other" => Some(Self::Other),
-            "wifi" => Some(Self::WiFi),
-            "mobile" => Some(Self::Mobile),
-            "mobile_roaming" => Some(Self::MobileRoaming),
-            "none" => Some(Self::None),
-            "unknown" => Some(Self::Unknown),
-            _ => None,
+            "other" => Ok(Self::Other),
+            "wifi" => Ok(Self::WiFi),
+            "mobile" => Ok(Self::Mobile),
+            "mobile_roaming" => Ok(Self::MobileRoaming),
+            "none" => Ok(Self::None),
+            "unknown" => Ok(Self::Unknown),
+            _ => Err(format!("Unknown NetType: {}", s)),
         }
     }
 }
@@ -525,9 +529,9 @@ mod tests {
 
     #[test]
     fn test_net_type_from_str() {
-        assert_eq!(NetType::from_str("wifi"), Some(NetType::WiFi));
-        assert_eq!(NetType::from_str("mobile"), Some(NetType::Mobile));
-        assert_eq!(NetType::from_str("invalid"), None);
+        assert_eq!(NetType::from_str("wifi"), Ok(NetType::WiFi));
+        assert_eq!(NetType::from_str("mobile"), Ok(NetType::Mobile));
+        assert!(NetType::from_str("invalid").is_err());
     }
 
     #[test]

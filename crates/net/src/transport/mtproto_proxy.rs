@@ -6,7 +6,7 @@
 //!
 //! This module implements MTProto proxy (MTPROTO) support for Telegram MTProto.
 
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::net::{IpAddr, SocketAddr};
 use std::time::Duration;
 
 use bytes::{BufMut, Bytes, BytesMut};
@@ -253,7 +253,7 @@ impl MtprotoProxyTransport {
         let mut aes_iv = [0u8; 32];
 
         aes_key.copy_from_slice(&hash[..32]);
-        aes_iv.copy_from_slice(&hash[16..48]);
+        aes_iv.copy_from_slice(&hash[16..32]);
 
         // Encrypt using AES-IGE
         let mut encrypted = data.to_vec();
@@ -285,7 +285,7 @@ impl MtprotoProxyTransport {
         let mut aes_iv = [0u8; 32];
 
         aes_key.copy_from_slice(&hash[..32]);
-        aes_iv.copy_from_slice(&hash[16..48]);
+        aes_iv.copy_from_slice(&hash[16..32]);
 
         aes_ige_decrypt(&aes_key, &mut aes_iv, data)
             .map_err(|e| ConnectionError::Ssl(e.to_string()))?;
@@ -399,6 +399,7 @@ impl MtprotoProxyTransportFactory {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::net::Ipv4Addr;
 
     #[test]
     fn test_mtproto_proxy_transport_new() {

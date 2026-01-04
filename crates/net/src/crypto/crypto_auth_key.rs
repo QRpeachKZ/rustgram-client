@@ -359,7 +359,9 @@ pub trait CryptoAuthKeyHelper: Send + Sync {
 
 /// Type alias for compatibility.
 pub trait AuthKeyHelper: Send + Sync {
+    /// Generates a new random crypto auth key.
     fn generate() -> CryptoAuthKey;
+    /// Validates a crypto auth key, returning an error if the key is invalid.
     fn validate(key: &CryptoAuthKey) -> Result<(), CryptoAuthKeyError>;
 }
 
@@ -432,6 +434,9 @@ pub fn compute_auth_key_id(key: &[u8; 256]) -> u64 {
 
 /// Trait for computing auth key ID.
 pub trait ComputeAuthKeyId {
+    /// Computes the auth key ID from this key.
+    ///
+    /// The ID is the lower 64 bits of SHA1 hash of the key.
     fn compute_auth_key_id(&self) -> u64;
 }
 
