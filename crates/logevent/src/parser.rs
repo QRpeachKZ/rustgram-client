@@ -27,6 +27,12 @@ pub trait TlParser: Sized {
     /// Fetches a 64-bit unsigned integer
     fn fetch_u64(&mut self) -> Result<u64>;
 
+    /// Fetches a 64-bit floating point value
+    fn fetch_f64(&mut self) -> Result<f64> {
+        let bits = self.fetch_u64()?;
+        Ok(f64::from_bits(bits))
+    }
+
     /// Fetches a boolean value (stored as i32 in TL)
     fn fetch_bool(&mut self) -> Result<bool> {
         let value = self.fetch_i32()?;
@@ -233,8 +239,8 @@ mod tests {
     fn test_parser_bool() {
         let data = [0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00];
         let mut parser = LogEventParser::new(&data);
-        assert_eq!(parser.fetch_bool().unwrap(), true);
-        assert_eq!(parser.fetch_bool().unwrap(), false);
+        assert!(parser.fetch_bool().unwrap());
+        assert!(!parser.fetch_bool().unwrap());
     }
 
     #[test]
@@ -252,7 +258,7 @@ mod tests {
     fn test_parser_bytes_empty() {
         let data = [0x00, 0x00, 0x00, 0x00];
         let mut parser = LogEventParser::new(&data);
-        assert_eq!(parser.fetch_bytes().unwrap(), Vec::<u8>::new());
+        assert!(parser.fetch_bytes().unwrap().is_empty());
         parser.fetch_end().unwrap();
     }
 
@@ -263,7 +269,7 @@ mod tests {
             0x01, 0x02, 0x03, // data
         ];
         let mut parser = LogEventParser::new(&data);
-        assert_eq!(parser.fetch_slice().unwrap(), &[0x01, 0x02, 0x03]);
+        assert_eq!(parser.fetch_slice().unwrap(), &[0x01, 0x02, 0x03][..]);
         parser.fetch_end().unwrap();
     }
 
@@ -281,7 +287,7 @@ mod tests {
     fn test_parser_not_consumed() {
         let data = [0x00, 0x00, 0x00, 0x01, 0x00];
         let mut parser = LogEventParser::new(&data);
-        parser.fetch_i32().unwrap();
+        parser.fetch_i32().expect("Failed to fetch i32");
         assert!(matches!(
             parser.fetch_end(),
             Err(LogEventError::ParseError(_))
@@ -293,9 +299,9 @@ mod tests {
         let data = [0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02];
         let mut parser = LogEventParser::new(&data);
         assert_eq!(parser.position(), 0);
-        parser.fetch_i32().unwrap();
+        parser.fetch_i32().expect("Failed to fetch i32");
         assert_eq!(parser.position(), 4);
-        parser.fetch_i32().unwrap();
+        parser.fetch_i32().expect("Failed to fetch i32");
         assert_eq!(parser.position(), 8);
     }
 
@@ -304,7 +310,7 @@ mod tests {
         let data = [0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02];
         let mut parser = LogEventParser::new(&data);
         assert_eq!(parser.remaining(), 8);
-        parser.fetch_i32().unwrap();
+        parser.fetch_i32().expect("Failed to fetch i32");
         assert_eq!(parser.remaining(), 4);
     }
 }

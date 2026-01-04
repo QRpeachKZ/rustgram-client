@@ -46,6 +46,10 @@ All 60+ handler types from TDLib are supported:
 - `CloseSecretChat`: Secret chat closure
 - `CreateSecretChat`: Secret chat creation
 
+### Time Helpers
+- `store_time`: Store timestamps with server time (TDLib-compatible)
+- `parse_time`: Parse timestamps with server time adjustment
+
 ## Usage Example
 
 ```rust
@@ -68,13 +72,14 @@ let parsed = CreateSecretChat::parse(&mut parser)?;
 
 ## Status
 
-- [x] Core types implemented
-- [x] TL parser/storer implemented
-- [x] Flag handling implemented
-- [x] Secret chat events implemented
-- [x] Unit tests written
-- [x] Integration tests written
+- [x] Core types implemented (100%)
+- [x] TL parser/storer implemented (100%)
+- [x] Flag handling implemented (100%)
+- [x] Secret chat events implemented (80% - secret_api types pending)
+- [x] Time helpers implemented (100%)
+- [x] Unit tests written (130+ tests)
 - [ ] Binlog integration (TODO - depends on binlog module)
+- [ ] Secret API types (TODO - separate module)
 
 ## Dependencies
 

@@ -370,7 +370,7 @@ mod tests {
 
         for ht in types {
             let value = ht as u32;
-            let parsed = HandlerType::from_u32(value).unwrap();
+            let parsed = HandlerType::from_u32(value).expect("Failed to parse HandlerType");
             assert_eq!(ht, parsed);
         }
     }

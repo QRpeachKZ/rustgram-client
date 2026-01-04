@@ -6,6 +6,7 @@
 #![warn(clippy::all)]
 #![deny(clippy::unwrap_used, clippy::expect_used)]
 #![allow(clippy::module_name_repetitions)]
+#![cfg_attr(test, allow(clippy::unwrap_used, clippy::expect_used))]
 
 //! # LogEvent Module
 //!
@@ -46,6 +47,11 @@
 //!
 //! assert_eq!(event.log_event_id(), 0);
 //! ```
+//!
+//! ## Time Helpers
+//!
+//! The module provides [`store_time`] and [`parse_time`] functions for
+//! timestamp serialization, compatible with TDLib's LogEventHelper.
 
 mod error;
 mod flags;
@@ -57,7 +63,7 @@ mod types;
 
 pub use error::{LogEventError, Result};
 pub use flags::{FlagsParser, FlagsStorer};
-pub use helper::{add_log_event, delete_log_event};
+pub use helper::{add_log_event, delete_log_event, parse_time, store_time};
 pub use parser::{LogEventParser, TlParser};
 pub use secret::{
     CloseSecretChat, CreateSecretChat, EncryptedInputFile, EncryptedInputFileType,

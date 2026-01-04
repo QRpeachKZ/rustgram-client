@@ -4,6 +4,8 @@
 
 //! Integration tests for core types
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use rustgram_logevent::{HandlerType, LogEventIdWithGeneration, LogEventIdWithGenerationExt};
 
 #[test]
@@ -82,7 +84,7 @@ fn test_handler_type_all_values() {
     ];
 
     for (value, expected) in test_cases {
-        let parsed = HandlerType::from_u32(value).unwrap();
+        let parsed = HandlerType::from_u32(value).expect("Failed to parse HandlerType");
         assert_eq!(parsed, expected, "Mismatch for value 0x{:x}", value);
         assert_eq!(parsed as u32, value);
     }
@@ -159,10 +161,8 @@ fn test_handler_type_roundtrip_all() {
 
     for ht in types {
         let value = ht as u32;
-        let parsed = HandlerType::from_u32(value).expect(&format!(
-            "Failed to parse HandlerType 0x{:x} ({})",
-            value, ht
-        ));
+        let parsed = HandlerType::from_u32(value)
+            .unwrap_or_else(|_| panic!("Failed to parse HandlerType 0x{:x} ({})", value, ht));
         assert_eq!(ht, parsed, "Roundtrip failed for {}", ht);
     }
 }

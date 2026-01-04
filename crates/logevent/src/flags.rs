@@ -179,10 +179,10 @@ mod tests {
         let flags = 0b0101u32;
         let mut parser = FlagsParser::new(flags);
 
-        assert_eq!(parser.parse_flag(), true);
-        assert_eq!(parser.parse_flag(), false);
-        assert_eq!(parser.parse_flag(), true);
-        assert_eq!(parser.parse_flag(), false);
+        assert!(parser.parse_flag());
+        assert!(!parser.parse_flag());
+        assert!(parser.parse_flag());
+        assert!(!parser.parse_flag());
         parser.finish().unwrap();
     }
 
@@ -241,10 +241,10 @@ mod tests {
         let flags = 0b1010u32;
         let mut parser = FlagsParser::new(flags);
 
-        assert_eq!(parser.peek_flag(), false);
-        assert_eq!(parser.peek_flag(), false); // peek doesn't advance
-        assert_eq!(parser.parse_flag(), false);
-        assert_eq!(parser.peek_flag(), true);
+        assert!(!parser.peek_flag());
+        assert!(!parser.peek_flag()); // peek doesn't advance
+        assert!(!parser.parse_flag());
+        assert!(parser.peek_flag());
     }
 
     #[test]

@@ -26,6 +26,11 @@ pub trait TlStorer {
     /// Stores a 64-bit unsigned integer
     fn store_u64(&mut self, value: u64);
 
+    /// Stores a 64-bit floating point value
+    fn store_f64(&mut self, value: f64) {
+        self.store_u64(value.to_bits());
+    }
+
     /// Stores a boolean value (stored as i32 in TL)
     fn store_bool(&mut self, value: bool) {
         self.store_i32(value as i32);

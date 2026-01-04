@@ -770,19 +770,19 @@ mod tests {
     #[test]
     fn test_event_type_from_i32() {
         assert_eq!(
-            SecretChatEventType::from_i32(1).unwrap(),
+            SecretChatEventType::from_i32(1).expect("Invalid event type 1"),
             SecretChatEventType::InboundSecretMessage
         );
         assert_eq!(
-            SecretChatEventType::from_i32(2).unwrap(),
+            SecretChatEventType::from_i32(2).expect("Invalid event type 2"),
             SecretChatEventType::OutboundSecretMessage
         );
         assert_eq!(
-            SecretChatEventType::from_i32(3).unwrap(),
+            SecretChatEventType::from_i32(3).expect("Invalid event type 3"),
             SecretChatEventType::CloseSecretChat
         );
         assert_eq!(
-            SecretChatEventType::from_i32(4).unwrap(),
+            SecretChatEventType::from_i32(4).expect("Invalid event type 4"),
             SecretChatEventType::CreateSecretChat
         );
     }

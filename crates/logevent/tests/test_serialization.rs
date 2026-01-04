@@ -4,6 +4,8 @@
 
 //! Integration tests for TL serialization
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use rustgram_logevent::{
     FlagsParser, FlagsStorer, LogEventParser, LogEventStorerVec, TlParser, TlStorer,
 };
@@ -52,11 +54,11 @@ fn test_flags_parser_peek() {
     let flags = 0b1010u32;
     let mut parser = FlagsParser::new(flags);
 
-    assert_eq!(parser.peek_flag(), false);
-    assert_eq!(parser.peek_flag(), false); // peek doesn't advance
+    assert!(!parser.peek_flag());
+    assert!(!parser.peek_flag()); // peek doesn't advance
 
     parser.parse_flag();
-    assert_eq!(parser.peek_flag(), true);
+    assert!(parser.peek_flag());
 }
 
 #[test]
@@ -118,9 +120,9 @@ fn test_tl_parser_bool() {
         0x00, 0x00, 0x00, 0x01, // true
     ];
     let mut parser = LogEventParser::new(&data);
-    assert_eq!(parser.fetch_bool().unwrap(), true);
-    assert_eq!(parser.fetch_bool().unwrap(), false);
-    assert_eq!(parser.fetch_bool().unwrap(), true);
+    assert!(parser.fetch_bool().unwrap());
+    assert!(!parser.fetch_bool().unwrap());
+    assert!(parser.fetch_bool().unwrap());
     parser.fetch_end().unwrap();
 }
 
@@ -279,7 +281,7 @@ fn test_tl_roundtrip_mixed() {
     let mut parser = LogEventParser::new(&data);
     assert_eq!(parser.fetch_i32().unwrap(), 42);
     assert_eq!(parser.fetch_i64().unwrap(), 0x123456789ABCDEF0);
-    assert_eq!(parser.fetch_bool().unwrap(), true);
+    assert!(parser.fetch_bool().unwrap());
     assert_eq!(parser.fetch_bytes().unwrap(), vec![1, 2, 3, 4, 5]);
     assert_eq!(parser.fetch_u32().unwrap(), 0xDEADBEEF);
     parser.fetch_end().unwrap();
