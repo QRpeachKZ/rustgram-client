@@ -1,0 +1,38 @@
+[package]
+name = "rustgram-venue"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Geographic locations and venue objects for Telegram MTProto client"
+
+[dependencies]
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# UTF-8 validation
+simdutf8 = "0.1"
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+# Property-based testing (optional, dev-only)
+proptest = { version = "1.4", optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+proptest = ["dep:proptest"]
+
+[lints]
+rust = { unexpected_cfgs = "allow" }
+clippy = { all = "deny", unwrap_used = "deny", expect_used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true
