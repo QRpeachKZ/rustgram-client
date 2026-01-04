@@ -149,17 +149,14 @@ impl DcAuthInfo {
 ///
 /// RAII guard that unregisters the key when dropped.
 pub struct RegisteredAuthKey {
-    watchdog: Arc<TempAuthKeyWatchdog>,
+    inner: Arc<TempAuthKeyWatchdogInner>,
     auth_key_id: i64,
 }
 
 impl RegisteredAuthKey {
     /// Creates a new registered auth key.
-    fn new(watchdog: Arc<TempAuthKeyWatchdog>, auth_key_id: i64) -> Self {
-        Self {
-            watchdog,
-            auth_key_id,
-        }
+    fn new(inner: Arc<TempAuthKeyWatchdogInner>, auth_key_id: i64) -> Self {
+        Self { inner, auth_key_id }
     }
 
     /// Returns the auth key ID.
@@ -170,18 +167,13 @@ impl RegisteredAuthKey {
 
 impl Drop for RegisteredAuthKey {
     fn drop(&mut self) {
-        self.watchdog.unregister_auth_key_id(self.auth_key_id);
+        self.inner.unregister_auth_key_id(self.auth_key_id);
     }
 }
 
-/// Temporary auth key watchdog.
-///
-/// Based on TDLib's TempAuthKeyWatchdog from `td/telegram/net/TempAuthKeyWatchdog.h`.
-///
-/// Manages temporary auth keys and sends `auth.dropTempAuthKeys` requests
-/// to clean up unused keys on the server.
+/// Inner state of TempAuthKeyWatchdog (shared via Arc).
 #[derive(Debug, Default)]
-pub struct TempAuthKeyWatchdog {
+struct TempAuthKeyWatchdogInner {
     /// Maps auth key IDs to reference counts
     id_counts: Mutex<HashMap<i64, u32>>,
 
@@ -192,24 +184,7 @@ pub struct TempAuthKeyWatchdog {
     run_sync: Mutex<bool>,
 }
 
-impl TempAuthKeyWatchdog {
-    /// Creates a new watchdog.
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    /// Registers an auth key ID.
-    ///
-    /// Returns a guard that will automatically unregister when dropped.
-    pub fn register_auth_key_id(&self, id: i64) -> RegisteredAuthKey {
-        let mut counts = self.id_counts.lock();
-        *counts.entry(id).or_insert(0) += 1;
-
-        *self.need_sync.lock() = true;
-
-        RegisteredAuthKey::new(Arc::new(self.clone()), id)
-    }
-
+impl TempAuthKeyWatchdogInner {
     /// Unregisters an auth key ID (internal use).
     fn unregister_auth_key_id(&self, id: i64) {
         let mut counts = self.id_counts.lock();
@@ -249,16 +224,61 @@ impl TempAuthKeyWatchdog {
     }
 }
 
-impl Clone for TempAuthKeyWatchdog {
-    fn clone(&self) -> Self {
-        // Note: This creates a shallow clone that shares the same underlying data
-        // In a real implementation, you'd want to use Arc<Mutex<...>> internally
-        // For now, we'll create a new instance with shared Arc
+/// Temporary auth key watchdog.
+///
+/// Based on TDLib's TempAuthKeyWatchdog from `td/telegram/net/TempAuthKeyWatchdog.h`.
+///
+/// Manages temporary auth keys and sends `auth.dropTempAuthKeys` requests
+/// to clean up unused keys on the server.
+#[derive(Debug, Clone)]
+pub struct TempAuthKeyWatchdog {
+    inner: Arc<TempAuthKeyWatchdogInner>,
+}
+
+impl Default for TempAuthKeyWatchdog {
+    fn default() -> Self {
         Self {
-            id_counts: Mutex::new(self.id_counts.lock().clone()),
-            need_sync: Mutex::new(*self.need_sync.lock()),
-            run_sync: Mutex::new(*self.run_sync.lock()),
+            inner: Arc::new(TempAuthKeyWatchdogInner::default()),
         }
+    }
+}
+
+impl TempAuthKeyWatchdog {
+    /// Creates a new watchdog.
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    /// Registers an auth key ID.
+    ///
+    /// Returns a guard that will automatically unregister when dropped.
+    pub fn register_auth_key_id(&self, id: i64) -> RegisteredAuthKey {
+        let mut counts = self.inner.id_counts.lock();
+        *counts.entry(id).or_insert(0) += 1;
+
+        *self.inner.need_sync.lock() = true;
+
+        RegisteredAuthKey::new(Arc::clone(&self.inner), id)
+    }
+
+    /// Returns the list of active auth key IDs.
+    pub fn active_key_ids(&self) -> Vec<i64> {
+        self.inner.active_key_ids()
+    }
+
+    /// Returns `true` if a sync is needed.
+    pub fn needs_sync(&self) -> bool {
+        self.inner.needs_sync()
+    }
+
+    /// Marks that sync has been performed.
+    pub fn mark_synced(&self) {
+        self.inner.mark_synced();
+    }
+
+    /// Returns the number of active keys.
+    pub fn active_count(&self) -> usize {
+        self.inner.active_count()
     }
 }
 

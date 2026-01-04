@@ -24,6 +24,11 @@ target
 # Only ignore local overrides
 .claude/settings.local.json
 .claude/plugins/
+.claude
+.agent-state
+tools/*
+!README.md
+*.md
 
 # Build artifacts
 *.log
