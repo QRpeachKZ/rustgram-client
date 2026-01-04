@@ -94,7 +94,12 @@ impl Default for MtprotoHeaderOptions {
 
 impl MtprotoHeaderOptions {
     /// Creates new options.
-    pub fn new(api_id: i32, device_model: String, system_version: String, app_version: String) -> Self {
+    pub fn new(
+        api_id: i32,
+        device_model: String,
+        system_version: String,
+        app_version: String,
+    ) -> Self {
         Self {
             api_id,
             device_model,
@@ -367,7 +372,10 @@ impl MtprotoHeader {
     /// This is the core function that creates the protocol header.
     /// In a real implementation, this would create a binary TL-encoded structure.
     /// For now, we create a JSON-like string representation.
-    fn gen_header(options: &MtprotoHeaderOptions, is_anonymous: bool) -> Result<String, MtprotoHeaderError> {
+    fn gen_header(
+        options: &MtprotoHeaderOptions,
+        is_anonymous: bool,
+    ) -> Result<String, MtprotoHeaderError> {
         // Validate options
         options.validate()?;
 
@@ -505,7 +513,6 @@ pub enum Platform {
     IOS = 4,
 }
 
-
 impl Platform {
     /// Returns the platform name as a string.
     pub fn as_str(&self) -> &'static str {
@@ -534,7 +541,10 @@ pub struct MtprotoHeaderFactory;
 
 impl MtprotoHeaderFactory {
     /// Creates a header for desktop applications.
-    pub fn create_desktop(api_id: i32, app_version: String) -> Result<MtprotoHeader, MtprotoHeaderError> {
+    pub fn create_desktop(
+        api_id: i32,
+        app_version: String,
+    ) -> Result<MtprotoHeader, MtprotoHeaderError> {
         MtprotoHeader::for_platform(api_id, Platform::Linux, app_version)
     }
 
@@ -586,7 +596,8 @@ mod tests {
 
     #[test]
     fn test_options_new() {
-        let options = MtprotoHeaderOptions::new(12345, "iPhone".into(), "iOS 17".into(), "10.0".into());
+        let options =
+            MtprotoHeaderOptions::new(12345, "iPhone".into(), "iOS 17".into(), "10.0".into());
 
         assert_eq!(options.api_id, 12345);
         assert_eq!(options.device_model, "iPhone");
@@ -711,9 +722,12 @@ mod tests {
     #[test]
     fn test_factory() {
         let desktop = MtprotoHeaderFactory::create_desktop(12345, "1.0".into()).unwrap();
-        assert!(desktop.get_default_header().contains("system_version=Linux"));
+        assert!(desktop
+            .get_default_header()
+            .contains("system_version=Linux"));
 
-        let mobile = MtprotoHeaderFactory::create_mobile(12345, Platform::IOS, "10.0".into()).unwrap();
+        let mobile =
+            MtprotoHeaderFactory::create_mobile(12345, Platform::IOS, "10.0".into()).unwrap();
         assert!(mobile.get_default_header().contains("device_model=iPhone"));
 
         let result = MtprotoHeaderFactory::create_mobile(12345, Platform::Windows, "1.0".into());

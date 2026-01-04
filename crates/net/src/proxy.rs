@@ -9,8 +9,7 @@ use std::fmt;
 use thiserror::Error;
 
 /// Proxy type.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum ProxyType {
     /// No proxy
     #[default]
@@ -24,7 +23,6 @@ pub enum ProxyType {
     /// HTTP caching proxy
     HttpCaching = 4,
 }
-
 
 impl fmt::Display for ProxyType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

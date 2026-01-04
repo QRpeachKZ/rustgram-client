@@ -1012,6 +1012,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-connectionstate"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "rustgram-logevent"
 version = "0.1.0"
 dependencies = [

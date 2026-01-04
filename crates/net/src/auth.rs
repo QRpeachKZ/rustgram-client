@@ -17,8 +17,7 @@ use crate::dc::{DcError, DcId};
 /// Authentication key state.
 ///
 /// Based on TDLib's AuthKeyState from `td/telegram/net/AuthKeyState.h`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum AuthKeyState {
     /// No auth key
     #[default]
@@ -30,7 +29,6 @@ pub enum AuthKeyState {
     /// Auth key is ready
     Ready,
 }
-
 
 /// Authentication key.
 ///

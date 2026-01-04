@@ -23,7 +23,6 @@ pub enum PacketType {
     EndToEnd = 1,
 }
 
-
 /// MTProto packet metadata.
 ///
 /// Contains all the metadata fields needed for MTProto packet processing,

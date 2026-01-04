@@ -568,10 +568,7 @@ impl DcOptionsSet {
 
     /// Records a connection failure.
     pub fn record_failure(&mut self, option_idx: usize) {
-        self.stats
-            .entry(option_idx)
-            .or_default()
-            .record_failure();
+        self.stats.entry(option_idx).or_default().record_failure();
     }
 
     /// Returns statistics for an option.

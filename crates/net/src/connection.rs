@@ -17,8 +17,7 @@ use crate::query::NetQuery;
 use crate::stats::NetType;
 
 /// Connection mode.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ConnectionMode {
     /// TCP mode
     #[default]
@@ -27,10 +26,8 @@ pub enum ConnectionMode {
     Http,
 }
 
-
 /// Connection state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub enum ConnectionState {
     /// Connection is empty/not initialized
     #[default]
@@ -42,7 +39,6 @@ pub enum ConnectionState {
     /// Connection is closed
     Closed,
 }
-
 
 /// Connection error.
 #[derive(Debug, Error, Clone, Serialize, Deserialize)]

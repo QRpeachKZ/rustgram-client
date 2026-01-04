@@ -136,11 +136,7 @@ impl EnhancedDispatcher {
         if current_count >= self.config.max_in_flight {
             // Add to pending
             drop(in_flight);
-            self.pending
-                .lock()
-                .entry(dc_raw)
-                .or_default()
-                .push(query);
+            self.pending.lock().entry(dc_raw).or_default().push(query);
             return Ok(());
         }
 

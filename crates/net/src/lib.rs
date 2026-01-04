@@ -88,17 +88,28 @@ pub use dispatch::{FloodControl, FloodControlConfig, FloodControlResult};
 pub use dispatch::{SequenceConfig, SequenceDispatcher};
 
 // Re-export RSA key types
-pub use rsa_key_shared::{PublicRsaKeyInterface, PublicRsaKeySharedCdn, PublicRsaKeySharedMain, RsaKey, RsaKeyError, RsaKeyManager, RsaKeyListener, PublicRsaKeyWatchdog};
+pub use rsa_key_shared::{
+    PublicRsaKeyInterface, PublicRsaKeySharedCdn, PublicRsaKeySharedMain, PublicRsaKeyWatchdog,
+    RsaKey, RsaKeyError, RsaKeyListener, RsaKeyManager,
+};
 
 // Re-export DC auth types
-pub use dc_auth::{DcAuthError, DcAuthInfo, DcAuthManager, DcAuthKeyStorage, DcState, RegisteredAuthKey, StoredAuthKey, TempAuthKeyWatchdog};
+pub use dc_auth::{
+    DcAuthError, DcAuthInfo, DcAuthKeyStorage, DcAuthManager, DcState, RegisteredAuthKey,
+    StoredAuthKey, TempAuthKeyWatchdog,
+};
 
 // Re-export session multiproxy types
-pub use session_multi_proxy::{SessionMultiProxy, SessionMultiProxyConfig, SessionMultiProxyFactory, SessionInfo, SessionProxyError, SessionStats, SessionType};
-pub use session_multi_proxy::{SessionProxy as SessionProxyTrait};
+pub use session_multi_proxy::SessionProxy as SessionProxyTrait;
+pub use session_multi_proxy::{
+    SessionInfo, SessionMultiProxy, SessionMultiProxyConfig, SessionMultiProxyFactory,
+    SessionProxyError, SessionStats, SessionType,
+};
 
 // Re-export MTProto header types
-pub use mtproto_header::{MtprotoHeader, MtprotoHeaderError, MtprotoHeaderFactory, MtprotoHeaderOptions, Platform};
+pub use mtproto_header::{
+    MtprotoHeader, MtprotoHeaderError, MtprotoHeaderFactory, MtprotoHeaderOptions, Platform,
+};
 
 /// Network module error types
 pub mod error {

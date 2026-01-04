@@ -222,9 +222,7 @@ impl FloodControl {
 
         if self.config.per_dc_limits {
             let mut dc_stats = self.dc_stats.lock();
-            let stats = dc_stats
-                .entry(dc_id.get_raw_id())
-                .or_default();
+            let stats = dc_stats.entry(dc_id.get_raw_id()).or_default();
 
             // Throttle this DC
             stats.queries_in_window = self.config.max_queries_per_second;

@@ -38,7 +38,6 @@ pub enum NetQueryState {
     Error = 3,
 }
 
-
 /// Query type.
 ///
 /// Based on TDLib's NetQuery::Type from `td/telegram/net/NetQuery.h`.
@@ -57,7 +56,6 @@ pub enum NetQueryType {
     DownloadSmall = 3,
 }
 
-
 /// Authentication flag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
@@ -70,7 +68,6 @@ pub enum AuthFlag {
     On = 1,
 }
 
-
 /// Gzip compression flag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
@@ -82,7 +79,6 @@ pub enum GzipFlag {
     /// Use gzip compression
     On = 1,
 }
-
 
 /// Query error codes.
 ///

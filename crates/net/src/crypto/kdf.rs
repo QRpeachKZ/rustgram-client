@@ -15,15 +15,13 @@ use crate::crypto::{sha1, sha256};
 ///
 /// MTProto 2.0 derives 256-bit AES keys and 256-bit IVs from
 /// the auth key (2048 bits) and message key (128 bits).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub struct KdfOutput {
     /// Derived AES-256 key (32 bytes).
     pub aes_key: [u8; 32],
     /// Derived AES-256 IV (32 bytes).
     pub aes_iv: [u8; 32],
 }
-
 
 impl KdfOutput {
     /// Creates a new `KdfOutput` from the derived key and IV.

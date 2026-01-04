@@ -66,7 +66,6 @@ pub enum SessionType {
     DownloadSmall = 3,
 }
 
-
 /// Information about a single session.
 pub struct SessionInfo {
     /// Session proxy (abstract - in real impl, would be a SessionProxy actor)
@@ -386,7 +385,9 @@ impl SessionMultiProxy {
                     .enumerate()
                     .min_by_key(|(_, s)| s.get_query_count())
                     .map(|(i, _)| i as u32)
-                    .ok_or_else(|| SessionProxyError::DispatchFailed("No sessions available".into()))?;
+                    .ok_or_else(|| {
+                        SessionProxyError::DispatchFailed("No sessions available".into())
+                    })?;
 
                 Ok(session_id)
             }
@@ -396,8 +397,9 @@ impl SessionMultiProxy {
                     .iter()
                     .position(|s| s.is_idle())
                     .or_else(|| sessions.first().map(|_| 0))
-                    .ok_or_else(|| SessionProxyError::DispatchFailed("No sessions available".into()))?
-                    as u32;
+                    .ok_or_else(|| {
+                        SessionProxyError::DispatchFailed("No sessions available".into())
+                    })? as u32;
 
                 Ok(session_id)
             }
@@ -851,12 +853,9 @@ mod tests {
         let result = SessionMultiProxy::new(dc_id, config, auth_data.clone());
         assert!(result.is_err());
 
-        let proxy = SessionMultiProxy::new(
-            dc_id,
-            SessionMultiProxyConfig::new(1, false),
-            auth_data,
-        )
-        .unwrap();
+        let proxy =
+            SessionMultiProxy::new(dc_id, SessionMultiProxyConfig::new(1, false), auth_data)
+                .unwrap();
 
         let result = proxy.update_session_count(0);
         assert!(result.is_err());
@@ -871,11 +870,13 @@ mod tests {
         assert!(main.is_main());
         assert!(main.use_pfs());
 
-        let download = SessionMultiProxyFactory::create_download(dc_id, Arc::clone(&auth_data)).unwrap();
+        let download =
+            SessionMultiProxyFactory::create_download(dc_id, Arc::clone(&auth_data)).unwrap();
         assert!(!download.is_main());
         assert_eq!(download.session_count(), 4);
 
-        let upload = SessionMultiProxyFactory::create_upload(dc_id, Arc::clone(&auth_data)).unwrap();
+        let upload =
+            SessionMultiProxyFactory::create_upload(dc_id, Arc::clone(&auth_data)).unwrap();
         assert!(!upload.is_main());
         assert_eq!(upload.session_count(), 2);
 

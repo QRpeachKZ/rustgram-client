@@ -103,7 +103,6 @@ pub enum TransportMode {
     Full = 3,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

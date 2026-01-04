@@ -70,9 +70,7 @@ impl RsaKey {
         let hash = sha256(pem.as_bytes());
 
         // Take first 8 bytes and convert to i64 (little-endian)
-        let bytes: [u8; 8] = hash[0..8]
-            .try_into()
-            .unwrap_or([0u8; 8]);
+        let bytes: [u8; 8] = hash[0..8].try_into().unwrap_or([0u8; 8]);
 
         i64::from_le_bytes(bytes)
     }
@@ -236,9 +234,7 @@ impl PublicRsaKeySharedCdn {
     /// Gets an RSA key without locking (internal use).
     fn get_rsa_key_unsafe(&self, fingerprint: i64) -> Option<RsaKey> {
         let keys = self.keys.read();
-        keys.iter()
-            .find(|k| k.fingerprint == fingerprint)
-            .cloned()
+        keys.iter().find(|k| k.fingerprint == fingerprint).cloned()
     }
 }
 
@@ -362,11 +358,7 @@ impl RsaKeyManager {
     }
 
     /// Gets an RSA key for a DC (main or CDN).
-    pub fn get_rsa_key(
-        &self,
-        dc_id: DcId,
-        fingerprints: &[i64],
-    ) -> Result<RsaKey, RsaKeyError> {
+    pub fn get_rsa_key(&self, dc_id: DcId, fingerprints: &[i64]) -> Result<RsaKey, RsaKeyError> {
         if dc_id.is_internal() {
             // Use main keys
             self.main_keys.get_rsa_key(fingerprints)

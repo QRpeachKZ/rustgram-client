@@ -12,8 +12,7 @@ use serde::{Deserialize, Serialize};
 /// Network type.
 ///
 /// Based on TDLib's NetType from `td/telegram/net/NetType.h`.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum NetType {
     /// Other network type
     #[default]
@@ -37,7 +36,6 @@ pub enum NetType {
     /// Unknown network type
     Unknown = 6,
 }
-
 
 impl NetType {
     /// Returns `true` if this is a mobile network type.
@@ -80,8 +78,7 @@ impl NetType {
 /// File type for statistics.
 ///
 /// Corresponds to TDLib's FileType enum.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub enum FileType {
     /// Unknown file type
     #[default]
@@ -126,7 +123,6 @@ pub enum FileType {
     /// Secure decrypted file
     SecureDecrypted = 21,
 }
-
 
 impl FileType {
     /// Returns the unique name for this file type.
@@ -255,8 +251,7 @@ impl NetworkStatsEntry {
 /// Network statistics collection.
 ///
 /// Based on TDLib's NetworkStats from `td/telegram/net/NetStatsManager.h`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Default)]
 pub struct NetworkStats {
     /// Unix timestamp when stats collection started
     pub since: i32,
@@ -264,7 +259,6 @@ pub struct NetworkStats {
     /// Statistics entries
     pub entries: Vec<NetworkStatsEntry>,
 }
-
 
 impl NetworkStats {
     /// Creates new network statistics.

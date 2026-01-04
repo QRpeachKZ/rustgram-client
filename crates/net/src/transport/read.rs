@@ -17,8 +17,7 @@ use crate::transport::header::{
 /// Result of reading from the transport.
 ///
 /// Represents the different possible outcomes when reading MTProto packets.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
 pub enum ReadResult {
     /// No operation - no packet available
     #[default]
@@ -116,7 +115,6 @@ impl ReadResult {
         }
     }
 }
-
 
 /// Error type for transport read operations.
 #[derive(Debug, Clone, PartialEq, Eq)]

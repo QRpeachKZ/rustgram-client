@@ -88,7 +88,6 @@ pub enum DcState {
     Ok = 4,
 }
 
-
 /// Information about a DC's authentication state.
 #[derive(Debug, Clone)]
 pub struct DcAuthInfo {
@@ -352,9 +351,7 @@ impl DcAuthManager {
     /// Returns all DC IDs.
     pub fn all_dc_ids(&self) -> Vec<DcId> {
         let dcs = self.dcs.lock();
-        dcs.keys()
-            .map(|&id| DcId::internal(id))
-            .collect()
+        dcs.keys().map(|&id| DcId::internal(id)).collect()
     }
 
     /// Returns the temporary auth key watchdog.
@@ -391,7 +388,11 @@ impl DcAuthManager {
     }
 
     /// Updates auth key state for a DC.
-    pub fn update_auth_key_state(&self, dc_id: DcId, state: AuthKeyState) -> Result<(), DcAuthError> {
+    pub fn update_auth_key_state(
+        &self,
+        dc_id: DcId,
+        state: AuthKeyState,
+    ) -> Result<(), DcAuthError> {
         let mut dcs = self.dcs.lock();
 
         if let Some(info) = dcs.get_mut(&dc_id.get_raw_id()) {
@@ -417,7 +418,12 @@ impl DcAuthManager {
     }
 
     /// Sets export data for a DC.
-    pub fn set_export_data(&self, dc_id: DcId, export_id: i64, data: Vec<u8>) -> Result<(), DcAuthError> {
+    pub fn set_export_data(
+        &self,
+        dc_id: DcId,
+        export_id: i64,
+        data: Vec<u8>,
+    ) -> Result<(), DcAuthError> {
         let mut dcs = self.dcs.lock();
 
         if let Some(info) = dcs.get_mut(&dc_id.get_raw_id()) {
@@ -751,9 +757,7 @@ mod tests {
         manager.add_dc(dc1, auth_data1).unwrap();
 
         let data = vec![1, 2, 3, 4];
-        manager
-            .set_export_data(dc1, 12345, data.clone())
-            .unwrap();
+        manager.set_export_data(dc1, 12345, data.clone()).unwrap();
 
         let info = manager.get_dc(dc1).unwrap();
         assert_eq!(info.export_id, 12345);
@@ -783,7 +787,10 @@ mod tests {
     fn test_dc_auth_manager_invalid_dc() {
         let manager = DcAuthManager::new(DcId::internal(2));
 
-        let result = manager.add_dc(DcId::invalid(), Arc::new(AuthDataShared::new(DcId::internal(1))));
+        let result = manager.add_dc(
+            DcId::invalid(),
+            Arc::new(AuthDataShared::new(DcId::internal(1))),
+        );
         assert!(result.is_err());
 
         let result = manager.get_dc(DcId::internal(99));

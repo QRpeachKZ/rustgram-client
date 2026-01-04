@@ -19,8 +19,7 @@ pub use ping::{PingConfig, PingManager};
 pub use query::{QueryLifecycle, QueryState};
 
 /// Session state.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[derive(Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum SessionState {
     /// Session is not initialized
     #[default]
@@ -34,7 +33,6 @@ pub enum SessionState {
     /// Session is closed
     Closed,
 }
-
 
 /// Session statistics.
 #[derive(Debug, Clone, Default)]

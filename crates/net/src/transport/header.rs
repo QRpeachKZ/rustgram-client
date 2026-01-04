@@ -40,7 +40,6 @@ pub struct CryptoHeader {
     pub session_id: u64,
 }
 
-
 impl CryptoHeader {
     /// Size of the encrypted header portion (salt + session_id).
     pub const ENCRYPTED_HEADER_SIZE: usize = 16;
@@ -148,7 +147,6 @@ pub struct CryptoPrefix {
     pub message_data_length: u32,
 }
 
-
 impl CryptoPrefix {
     /// Size of the prefix in bytes.
     pub const SIZE: usize = 16;
@@ -238,7 +236,6 @@ pub struct EndToEndHeader {
     pub message_key: [u8; 16],
 }
 
-
 impl EndToEndHeader {
     /// Size of the encrypted header portion (none for e2e).
     pub const ENCRYPTED_HEADER_SIZE: usize = 0;
@@ -326,7 +323,6 @@ pub struct EndToEndPrefix {
     pub message_data_length: u32,
 }
 
-
 impl EndToEndPrefix {
     /// Size of the prefix in bytes.
     pub const SIZE: usize = 4;
@@ -402,7 +398,6 @@ pub struct NoCryptoHeader {
     /// Authentication key ID (always 0)
     pub auth_key_id: u64,
 }
-
 
 impl NoCryptoHeader {
     /// Size of the header in bytes.
