@@ -86,7 +86,7 @@
 //!
 //! ### Venue Validation
 //!
-//! Venue string fields are validated using [`validate_and_create`]:
+//! Venue string fields are validated using [`Venue::validate_and_create`]:
 //! - UTF-8 encoding is verified
 //! - Control characters are removed/replaced
 //! - Strings are trimmed
