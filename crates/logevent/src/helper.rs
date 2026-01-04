@@ -129,7 +129,7 @@ pub fn store_time<S: TlStorer>(time_at: f64, storer: &mut S, server_time: f64) {
 ///
 /// # Errors
 ///
-/// Returns [`LogEventError::UnexpectedEndOfInput`] if there's not enough data.
+/// Returns an error if there's not enough data to parse the timestamp.
 ///
 /// # Example
 ///
