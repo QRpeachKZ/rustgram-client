@@ -241,7 +241,7 @@ mod tests {
     fn test_kdf_invalid_auth_key_length() {
         let auth_key = [0u8; 128]; // Wrong length
         let msg_key = [0u8; 16];
-        kdf(&auth_key, &msg_key, 0);
+        let _ = kdf(&auth_key, &msg_key, 0);
     }
 
     #[test]
@@ -249,7 +249,7 @@ mod tests {
     fn test_kdf2_invalid_auth_key_length() {
         let auth_key = [0u8; 128]; // Wrong length
         let msg_key = [0u8; 16];
-        kdf2(&auth_key, &msg_key, 0);
+        let _ = kdf2(&auth_key, &msg_key, 0);
     }
 
     #[test]

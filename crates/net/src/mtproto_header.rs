@@ -614,7 +614,7 @@ mod tests {
         assert!(result.is_err());
 
         options.api_id = 12345;
-        options.validate().unwrap();
+        assert!(options.validate().is_ok());
 
         // Empty device model
         options.device_model = "".to_string();
@@ -622,7 +622,7 @@ mod tests {
         assert!(result.is_err());
 
         options.device_model = "Test".to_string();
-        options.validate().unwrap();
+        assert!(options.validate().is_ok());
     }
 
     #[test]
@@ -641,7 +641,10 @@ mod tests {
             proxy_type: None,
         };
 
-        let header = MtprotoHeader::new(options).unwrap();
+        let header = match MtprotoHeader::new(options) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
 
         let default = header.get_default_header();
         let anonymous = header.get_anonymous_header();
@@ -653,7 +656,10 @@ mod tests {
 
     #[test]
     fn test_header_with_defaults() {
-        let header = MtprotoHeader::with_defaults(12345).unwrap();
+        let header = match MtprotoHeader::with_defaults(12345) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
 
         let default = header.get_default_header();
         assert!(default.contains("api_id=12345"));
@@ -662,34 +668,52 @@ mod tests {
 
     #[test]
     fn test_header_setters() {
-        let header = MtprotoHeader::with_defaults(12345).unwrap();
+        let header = match MtprotoHeader::with_defaults(12345) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
 
         // Test set_parameters
-        let changed = header.set_parameters("test_params".into()).unwrap();
+        let changed = match header.set_parameters("test_params".into()) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok changed"),
+        };
         assert!(changed);
 
         let default = header.get_default_header();
         assert!(default.contains("params=test_params"));
 
-        let changed = header.set_parameters("test_params".into()).unwrap();
+        let changed = match header.set_parameters("test_params".into()) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok changed"),
+        };
         assert!(!changed);
 
         // Test set_is_emulator
-        let changed = header.set_is_emulator(true).unwrap();
+        let changed = match header.set_is_emulator(true) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok changed"),
+        };
         assert!(changed);
 
         let default = header.get_default_header();
         assert!(default.contains("emulator=true"));
 
         // Test set_language_code
-        let changed = header.set_language_code("ru".into()).unwrap();
+        let changed = match header.set_language_code("ru".into()) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok changed"),
+        };
         assert!(changed);
 
         let default = header.get_default_header();
         assert!(default.contains("lang=ru"));
 
         // Test set_tz_offset
-        let changed = header.set_tz_offset(10800).unwrap();
+        let changed = match header.set_tz_offset(10800) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok changed"),
+        };
         assert!(changed);
 
         let default = header.get_default_header();
@@ -698,7 +722,10 @@ mod tests {
 
     #[test]
     fn test_header_for_platform() {
-        let header = MtprotoHeader::for_platform(12345, Platform::Windows, "2.0".into()).unwrap();
+        let header = match MtprotoHeader::for_platform(12345, Platform::Windows, "2.0".into()) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
 
         let default = header.get_default_header();
         assert!(default.contains("device_model=PC"));
@@ -721,19 +748,28 @@ mod tests {
 
     #[test]
     fn test_factory() {
-        let desktop = MtprotoHeaderFactory::create_desktop(12345, "1.0".into()).unwrap();
+        let desktop = match MtprotoHeaderFactory::create_desktop(12345, "1.0".into()) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok desktop"),
+        };
         assert!(desktop
             .get_default_header()
             .contains("system_version=Linux"));
 
-        let mobile =
-            MtprotoHeaderFactory::create_mobile(12345, Platform::IOS, "10.0".into()).unwrap();
+        let mobile = match MtprotoHeaderFactory::create_mobile(12345, Platform::IOS, "10.0".into())
+        {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok mobile"),
+        };
         assert!(mobile.get_default_header().contains("device_model=iPhone"));
 
         let result = MtprotoHeaderFactory::create_mobile(12345, Platform::Windows, "1.0".into());
         assert!(result.is_err());
 
-        let test = MtprotoHeaderFactory::create_test().unwrap();
+        let test = match MtprotoHeaderFactory::create_test() {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok test"),
+        };
         assert!(test.get_default_header().contains("api_id=1"));
     }
 
@@ -748,13 +784,19 @@ mod tests {
             ..Default::default()
         };
 
-        let header = MtprotoHeader::new(options).unwrap();
+        let header = match MtprotoHeader::new(options) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
         assert_eq!(header.get_system_language_code(), "ru");
     }
 
     #[test]
     fn test_header_proxy() {
-        let header = MtprotoHeader::with_defaults(12345).unwrap();
+        let header = match MtprotoHeader::with_defaults(12345) {
+            Ok(h) => h,
+            Err(_) => panic!("Expected Ok header"),
+        };
 
         header.set_proxy("socks5".into());
 

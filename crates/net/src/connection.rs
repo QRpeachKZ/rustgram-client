@@ -603,6 +603,8 @@ mod tests {
         proxy.set_main_session(main);
 
         assert!(proxy.main_session().is_some());
-        assert!(proxy.main_session().unwrap().is_main());
+        if let Some(session) = proxy.main_session() {
+            assert!(session.is_main());
+        }
     }
 }

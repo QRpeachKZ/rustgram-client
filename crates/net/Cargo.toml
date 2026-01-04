@@ -35,6 +35,10 @@ proptest = { workspace = true }
 criterion = { workspace = true }
 tokio-test = "0.4"
 
+[features]
+default = []
+proptest = []
+
 [[bench]]
 name = "query_benchmark"
 harness = false

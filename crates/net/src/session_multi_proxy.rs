@@ -746,7 +746,10 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(2, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         assert_eq!(proxy.dc_id(), dc_id);
         assert_eq!(proxy.session_count(), 2);
@@ -760,7 +763,10 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(1, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         let query = create_test_query(NetQueryType::Common);
         assert!(proxy.send(query).is_ok());
@@ -776,7 +782,10 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(3, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         let query1 = create_test_query(NetQueryType::Upload);
         let query2 = create_test_query(NetQueryType::Upload);
@@ -795,12 +804,15 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(1, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         assert_eq!(proxy.session_count(), 1);
         assert_eq!(proxy.generation(), 0);
 
-        proxy.update_session_count(4).unwrap();
+        assert!(proxy.update_session_count(4).is_ok());
 
         assert_eq!(proxy.session_count(), 4);
         assert_eq!(proxy.generation(), 1);
@@ -812,7 +824,10 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(1, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         proxy.update_main_flag(true);
         assert!(proxy.is_main());
@@ -831,11 +846,14 @@ mod tests {
         let key = crate::auth::AuthKey::new(123, vec![1, 2, 3, 4]);
         auth_data.set_auth_key(key);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data.clone()).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data.clone()) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         assert_eq!(auth_data.auth_key_state(), crate::auth::AuthKeyState::Ready);
 
-        proxy.destroy_auth_key().unwrap();
+        assert!(proxy.destroy_auth_key().is_ok());
 
         assert_eq!(auth_data.auth_key_state(), crate::auth::AuthKeyState::Empty);
     }
@@ -849,9 +867,14 @@ mod tests {
         let result = SessionMultiProxy::new(dc_id, config, auth_data.clone());
         assert!(result.is_err());
 
-        let proxy =
-            SessionMultiProxy::new(dc_id, SessionMultiProxyConfig::new(1, false), auth_data)
-                .unwrap();
+        let proxy = match SessionMultiProxy::new(
+            dc_id,
+            SessionMultiProxyConfig::new(1, false),
+            auth_data,
+        ) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         let result = proxy.update_session_count(0);
         assert!(result.is_err());
@@ -862,21 +885,32 @@ mod tests {
         let dc_id = DcId::internal(2);
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
 
-        let main = SessionMultiProxyFactory::create_main(dc_id, Arc::clone(&auth_data)).unwrap();
+        let main = match SessionMultiProxyFactory::create_main(dc_id, Arc::clone(&auth_data)) {
+            Ok(m) => m,
+            Err(_) => panic!("Expected Ok main"),
+        };
         assert!(main.is_main());
         assert!(main.use_pfs());
 
         let download =
-            SessionMultiProxyFactory::create_download(dc_id, Arc::clone(&auth_data)).unwrap();
+            match SessionMultiProxyFactory::create_download(dc_id, Arc::clone(&auth_data)) {
+                Ok(d) => d,
+                Err(_) => panic!("Expected Ok download"),
+            };
         assert!(!download.is_main());
         assert_eq!(download.session_count(), 4);
 
-        let upload =
-            SessionMultiProxyFactory::create_upload(dc_id, Arc::clone(&auth_data)).unwrap();
+        let upload = match SessionMultiProxyFactory::create_upload(dc_id, Arc::clone(&auth_data)) {
+            Ok(u) => u,
+            Err(_) => panic!("Expected Ok upload"),
+        };
         assert!(!upload.is_main());
         assert_eq!(upload.session_count(), 2);
 
-        let cdn = SessionMultiProxyFactory::create_cdn(dc_id, auth_data).unwrap();
+        let cdn = match SessionMultiProxyFactory::create_cdn(dc_id, auth_data) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok cdn"),
+        };
         assert!(cdn.is_cdn());
     }
 
@@ -886,10 +920,13 @@ mod tests {
         let auth_data = Arc::new(AuthDataShared::new(dc_id));
         let config = SessionMultiProxyConfig::new(1, false);
 
-        let proxy = SessionMultiProxy::new(dc_id, config, auth_data).unwrap();
+        let proxy = match SessionMultiProxy::new(dc_id, config, auth_data) {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok proxy"),
+        };
 
         let query = create_test_query(NetQueryType::Common);
-        proxy.send(query).unwrap();
+        assert!(proxy.send(query).is_ok());
 
         let stats = proxy.get_stats();
         assert_eq!(stats[0].query_count, 1);

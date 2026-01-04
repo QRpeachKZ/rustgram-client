@@ -653,7 +653,10 @@ mod tests {
         let result = writer.write_no_crypto(&data, &packet_info);
 
         assert!(result.is_ok());
-        let packet = result.unwrap();
+        let packet = match result {
+            Ok(p) => p,
+            Err(_) => panic!("Expected Ok packet"),
+        };
         assert!(packet.len() > data.len());
         assert_eq!(&packet[8..], &data[..]);
     }

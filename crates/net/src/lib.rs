@@ -30,9 +30,12 @@ pub mod dc;
 pub mod dc_auth;
 pub mod dispatch;
 pub mod mtproto_header;
+pub mod net_actor;
 pub mod packet;
 pub mod proxy;
 pub mod query;
+pub mod query_creator;
+pub mod query_verifier;
 pub mod rsa_key_shared;
 pub mod session;
 pub mod session_multi_proxy;
@@ -111,6 +114,17 @@ pub use mtproto_header::{
     MtprotoHeader, MtprotoHeaderError, MtprotoHeaderFactory, MtprotoHeaderOptions, Platform,
 };
 
+// Re-export query creator types
+pub use query_creator::{NetQueryCreator, NetQueryStats};
+
+// Re-export query verifier types
+pub use query_verifier::{
+    NetQueryVerifier, VerificationError, VerificationQuery, VerificationResult, VerificationType,
+};
+
+// Re-export net actor types
+pub use net_actor::{ActorError, ActorQueryCallback, ActorResult, NetActor, TestActor};
+
 /// Network module error types
 pub mod error {
     pub use super::connection::ConnectionError;
@@ -118,7 +132,10 @@ pub mod error {
     pub use super::dc::DcError;
     pub use super::dc_auth::DcAuthError;
     pub use super::mtproto_header::MtprotoHeaderError;
+    pub use super::net_actor::ActorError;
     pub use super::proxy::ProxyError;
+    pub use super::query_creator::NetQueryStats;
+    pub use super::query_verifier::VerificationError;
     pub use super::rsa_key_shared::RsaKeyError;
     pub use super::session_multi_proxy::SessionProxyError;
 }

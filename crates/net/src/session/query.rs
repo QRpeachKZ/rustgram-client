@@ -278,28 +278,26 @@ impl QueryLifecycle {
         let count = to_remove.len();
 
         for query_id in &to_remove {
-            let entry = queries
-                .get_mut(query_id)
-                .expect("Query should exist in queries map");
+            if let Some(entry) = queries.get_mut(query_id) {
+                // Check if we should retry
+                if entry.retry_count + 1 < entry.max_retries {
+                    entry.retry_count += 1;
+                    entry.state = QueryState::Pending;
+                    entry.message_id = None;
+                    self.statistics.lock().retried_queries += 1;
+                    self.statistics.lock().timed_out_queries += 1;
+                } else {
+                    // Mark as failed
+                    entry.state = QueryState::Failed;
 
-            // Check if we should retry
-            if entry.retry_count + 1 < entry.max_retries {
-                entry.retry_count += 1;
-                entry.state = QueryState::Pending;
-                entry.message_id = None;
-                self.statistics.lock().retried_queries += 1;
-                self.statistics.lock().timed_out_queries += 1;
-            } else {
-                // Mark as failed
-                entry.state = QueryState::Failed;
+                    if let Some(sender) = entry.response_sender.take() {
+                        let _ = sender.send(Err("Query timeout".to_string()));
+                    }
 
-                if let Some(sender) = entry.response_sender.take() {
-                    let _ = sender.send(Err("Query timeout".to_string()));
+                    if let Some(msg_id) = entry.message_id {
+                        self.by_message_id.lock().remove(&msg_id);
+                    }
                 }
-
-                self.by_message_id
-                    .lock()
-                    .remove(&entry.message_id.unwrap_or(0));
             }
         }
 
@@ -378,7 +376,7 @@ mod tests {
         let (query_id, _receiver) = lifecycle.create_query(Duration::from_secs(10), 3);
 
         let message_id = 12345;
-        lifecycle.mark_sent(query_id, message_id).unwrap();
+        assert!(lifecycle.mark_sent(query_id, message_id).is_ok());
 
         assert_eq!(lifecycle.get_state(query_id), Some(QueryState::InFlight));
         assert_eq!(lifecycle.find_by_message_id(message_id), Some(query_id));
@@ -389,16 +387,18 @@ mod tests {
         let lifecycle = QueryLifecycle::new();
 
         let (query_id, mut receiver) = lifecycle.create_query(Duration::from_secs(10), 3);
-        lifecycle.mark_sent(query_id, 12345).unwrap();
+        assert!(lifecycle.mark_sent(query_id, 12345).is_ok());
 
         let response = Bytes::from_static(b"test response");
-        lifecycle.mark_completed(12345, response.clone()).unwrap();
+        assert!(lifecycle.mark_completed(12345, response.clone()).is_ok());
 
         assert_eq!(lifecycle.active_count(), 0);
 
         // Check we received the response
-        let result = receiver.try_recv().unwrap().unwrap();
-        assert_eq!(result, response);
+        match receiver.try_recv() {
+            Ok(Ok(result)) => assert_eq!(result, response),
+            _ => panic!("Expected Ok response"),
+        }
 
         let stats = lifecycle.statistics();
         assert_eq!(stats.successful_queries, 1);
@@ -409,37 +409,33 @@ mod tests {
         let lifecycle = QueryLifecycle::new();
 
         let (query_id, mut receiver) = lifecycle.create_query(Duration::from_secs(10), 3); // Allow 2 retries (max 3 failures)
-        lifecycle.mark_sent(query_id, 12345).unwrap();
+        assert!(lifecycle.mark_sent(query_id, 12345).is_ok());
 
         // First failure - should retry (retry_count becomes 1, 1+1 < 3 = true)
-        lifecycle
-            .mark_failed(query_id, "Error".to_string())
-            .unwrap();
+        assert!(lifecycle.mark_failed(query_id, "Error".to_string()).is_ok());
 
         // Should be in Pending state, not removed
         assert_eq!(lifecycle.get_state(query_id), Some(QueryState::Pending));
         assert_eq!(lifecycle.active_count(), 1);
 
         // Second failure - should retry again (retry_count becomes 2, 2+1 < 3 = true)
-        lifecycle
-            .mark_failed(query_id, "Error".to_string())
-            .unwrap();
+        assert!(lifecycle.mark_failed(query_id, "Error".to_string()).is_ok());
 
         // Should still be in Pending state
         assert_eq!(lifecycle.get_state(query_id), Some(QueryState::Pending));
         assert_eq!(lifecycle.active_count(), 1);
 
         // Third failure - should not retry (retry_count becomes 3, 3+1 < 3 = false)
-        lifecycle
-            .mark_failed(query_id, "Error".to_string())
-            .unwrap();
+        assert!(lifecycle.mark_failed(query_id, "Error".to_string()).is_ok());
 
         // Should be removed now since we've exceeded the retry limit
         assert_eq!(lifecycle.get_state(query_id), None);
         assert_eq!(lifecycle.active_count(), 0);
 
-        let result = receiver.try_recv().unwrap();
-        assert!(result.is_err());
+        match receiver.try_recv() {
+            Ok(result) => assert!(result.is_err()),
+            Err(_) => panic!("Expected response"),
+        }
     }
 
     #[test]
@@ -448,12 +444,14 @@ mod tests {
 
         let (query_id, mut receiver) = lifecycle.create_query(Duration::from_secs(10), 3);
 
-        lifecycle.mark_canceled(query_id).unwrap();
+        assert!(lifecycle.mark_canceled(query_id).is_ok());
 
         assert_eq!(lifecycle.active_count(), 0);
 
-        let result = receiver.try_recv().unwrap();
-        assert!(result.is_err());
+        match receiver.try_recv() {
+            Ok(result) => assert!(result.is_err()),
+            Err(_) => panic!("Expected response"),
+        }
     }
 
     #[test]
@@ -464,8 +462,8 @@ mod tests {
         assert_eq!(stats.total_queries, 0);
 
         let (query_id, _receiver) = lifecycle.create_query(Duration::from_secs(10), 3);
-        lifecycle.mark_sent(query_id, 12345).unwrap();
-        lifecycle.mark_completed(12345, Bytes::new()).unwrap();
+        assert!(lifecycle.mark_sent(query_id, 12345).is_ok());
+        assert!(lifecycle.mark_completed(12345, Bytes::new()).is_ok());
 
         let stats = lifecycle.statistics();
         assert_eq!(stats.total_queries, 1);
@@ -477,7 +475,7 @@ mod tests {
         let lifecycle = QueryLifecycle::new();
 
         let (query_id, _receiver) = lifecycle.create_query(Duration::from_secs(10), 3);
-        lifecycle.mark_sent(query_id, 12345).unwrap();
+        assert!(lifecycle.mark_sent(query_id, 12345).is_ok());
 
         assert_eq!(lifecycle.active_count(), 1);
 

@@ -319,7 +319,10 @@ mod tests {
         let proxy = Proxy::http_tcp("127.0.0.1".into(), 8080, None, None);
         let target = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443);
 
-        let transport = HttpProxyTransport::new(proxy, target).unwrap();
+        let transport = match HttpProxyTransport::new(proxy, target) {
+            Ok(t) => t,
+            Err(_) => panic!("Expected Ok transport"),
+        };
 
         assert_eq!(transport.target(), target);
         assert!(!transport.is_connected());

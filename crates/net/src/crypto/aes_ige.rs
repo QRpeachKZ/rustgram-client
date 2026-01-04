@@ -369,14 +369,14 @@ mod tests {
 
         // Encrypt with original IV
         let mut iv_enc = iv_orig;
-        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
+        assert!(AesIge::encrypt(&key, &mut iv_enc, &mut data).is_ok());
 
         // Data should have changed
         assert_ne!(&data, &original_padded);
 
         // Decrypt with original IV (not the modified one)
         let mut iv_dec = iv_orig;
-        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
+        assert!(AesIge::decrypt(&key, &mut iv_dec, &mut data).is_ok());
 
         // Should match original (with padding)
         assert_eq!(&data, &original_padded);
@@ -391,13 +391,13 @@ mod tests {
 
         // For encryption, use the original IV
         let mut iv_enc = iv_orig;
-        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
+        assert!(AesIge::encrypt(&key, &mut iv_enc, &mut data).is_ok());
         assert_ne!(data, original);
 
         // For decryption, we need to use the ORIGINAL IV, not the modified one
         // In MTProto, the IV is reset for each message direction
         let mut iv_dec = iv_orig;
-        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
+        assert!(AesIge::decrypt(&key, &mut iv_dec, &mut data).is_ok());
         assert_eq!(data, original);
     }
 
@@ -410,12 +410,12 @@ mod tests {
 
         // Encrypt with original IV
         let mut iv_enc = iv_orig;
-        AesIge::encrypt(&key, &mut iv_enc, &mut data).unwrap();
+        assert!(AesIge::encrypt(&key, &mut iv_enc, &mut data).is_ok());
         assert_ne!(data, original);
 
         // Decrypt with original IV
         let mut iv_dec = iv_orig;
-        AesIge::decrypt(&key, &mut iv_dec, &mut data).unwrap();
+        assert!(AesIge::decrypt(&key, &mut iv_dec, &mut data).is_ok());
         assert_eq!(data, original);
     }
 
@@ -428,8 +428,8 @@ mod tests {
         let mut data1 = vec![1u8; 32];
         let mut data2 = vec![2u8; 32];
 
-        AesIge::encrypt(&key, &mut iv1, &mut data1).unwrap();
-        AesIge::encrypt(&key, &mut iv2, &mut data2).unwrap();
+        assert!(AesIge::encrypt(&key, &mut iv1, &mut data1).is_ok());
+        assert!(AesIge::encrypt(&key, &mut iv2, &mut data2).is_ok());
 
         assert_ne!(data1, data2);
     }
@@ -461,7 +461,7 @@ mod tests {
             fn prop_aes_ige_roundtrip(
                 key in prop::array::uniform32(0u8..),
                 iv in prop::array::uniform32(0u8..),
-                data in prop::collection::vec(0u8..256, 16)
+                data in prop::collection::vec(0u8..=255, 16)
             ) {
                 // Only test multiples of block size
                 if data.len() % 16 == 0 && !data.is_empty() {
@@ -470,8 +470,8 @@ mod tests {
                     let mut encrypted = data.clone();
                     let mut decrypted = data.clone();
 
-                    AesIge::encrypt(&key, &mut iv_enc, &mut encrypted).unwrap();
-                    AesIge::decrypt(&key, &mut iv_dec, &mut decrypted).unwrap();
+                    prop_assert!(AesIge::encrypt(&key, &mut iv_enc, &mut encrypted).is_ok());
+                    prop_assert!(AesIge::decrypt(&key, &mut iv_dec, &mut decrypted).is_ok());
 
                     prop_assert_eq!(&data[..], &encrypted[..]);
                     prop_assert_eq!(&data[..], &decrypted[..]);
@@ -487,7 +487,7 @@ mod tests {
                 let mut data = vec![42u8; 32];
 
                 let before = data.clone();
-                AesIge::encrypt(&key, &mut iv, &mut data).unwrap();
+                prop_assert!(AesIge::encrypt(&key, &mut iv, &mut data).is_ok());
 
                 // With random key/IV, data should almost certainly change
                 // (except for the 1/2^256 chance of no change)

@@ -316,8 +316,10 @@ mod tests {
         data.extend_from_slice(&PONG_CONSTRUCTOR.to_le_bytes());
         data.extend_from_slice(&ping_id.to_le_bytes());
 
-        let packet = ServicePacket::decode(&data).unwrap();
-        assert!(matches!(packet, ServicePacket::Pong(id) if id == ping_id));
+        match ServicePacket::decode(&data) {
+            Ok(packet) => assert!(matches!(packet, ServicePacket::Pong(id) if id == ping_id)),
+            Err(_) => panic!("Expected Ok packet"),
+        }
     }
 
     #[test]
@@ -331,16 +333,22 @@ mod tests {
             data.extend_from_slice(&(*msg_id).to_le_bytes());
         }
 
-        let packet = ServicePacket::decode(&data).unwrap();
-        assert!(matches!(packet, ServicePacket::Ack { msg_ids: ids } if ids == msg_ids));
+        match ServicePacket::decode(&data) {
+            Ok(packet) => {
+                assert!(matches!(packet, ServicePacket::Ack { msg_ids: ids } if ids == msg_ids))
+            }
+            Err(_) => panic!("Expected Ok packet"),
+        }
     }
 
     #[test]
     fn test_decode_unknown() {
         let data = vec![0xFF, 0xFF, 0xFF, 0xFF]; // Unknown constructor
 
-        let packet = ServicePacket::decode(&data).unwrap();
-        assert!(matches!(packet, ServicePacket::Unknown(0xFFFFFFFF)));
+        match ServicePacket::decode(&data) {
+            Ok(packet) => assert!(matches!(packet, ServicePacket::Unknown(0xFFFFFFFF))),
+            Err(_) => panic!("Expected Ok packet"),
+        }
     }
 
     #[test]
@@ -359,20 +367,21 @@ mod tests {
         data.extend_from_slice(&1i32.to_le_bytes()); // bad_msg_seqno
         data.extend_from_slice(&2i32.to_le_bytes()); // error_code
 
-        let packet = ServicePacket::decode(&data).unwrap();
-
-        match packet {
-            ServicePacket::BadMsgNotification {
-                bad_msg_id,
-                bad_msg_seqno,
-                error_code,
-                ..
-            } => {
-                assert_eq!(bad_msg_id, 0x123456789ABCDEF0);
-                assert_eq!(bad_msg_seqno, 1);
-                assert_eq!(error_code, 2);
-            }
-            _ => panic!("Unexpected packet type"),
+        match ServicePacket::decode(&data) {
+            Ok(packet) => match packet {
+                ServicePacket::BadMsgNotification {
+                    bad_msg_id,
+                    bad_msg_seqno,
+                    error_code,
+                    ..
+                } => {
+                    assert_eq!(bad_msg_id, 0x123456789ABCDEF0);
+                    assert_eq!(bad_msg_seqno, 1);
+                    assert_eq!(error_code, 2);
+                }
+                _ => panic!("Unexpected packet type"),
+            },
+            Err(_) => panic!("Expected Ok packet"),
         }
     }
 
@@ -384,19 +393,20 @@ mod tests {
         data.extend_from_slice(&2u64.to_le_bytes()); // server_salt
         data.extend_from_slice(&3u64.to_le_bytes()); // session_id
 
-        let packet = ServicePacket::decode(&data).unwrap();
-
-        match packet {
-            ServicePacket::NewSessionCreated {
-                first_msg_id,
-                server_salt,
-                session_id,
-            } => {
-                assert_eq!(first_msg_id, 1);
-                assert_eq!(server_salt, 2);
-                assert_eq!(session_id, 3);
-            }
-            _ => panic!("Unexpected packet type"),
+        match ServicePacket::decode(&data) {
+            Ok(packet) => match packet {
+                ServicePacket::NewSessionCreated {
+                    first_msg_id,
+                    server_salt,
+                    session_id,
+                } => {
+                    assert_eq!(first_msg_id, 1);
+                    assert_eq!(server_salt, 2);
+                    assert_eq!(session_id, 3);
+                }
+                _ => panic!("Unexpected packet type"),
+            },
+            Err(_) => panic!("Expected Ok packet"),
         }
     }
 
@@ -413,15 +423,16 @@ mod tests {
         data.extend_from_slice(&(inner_msg.len() as u32).to_le_bytes()); // bytes
         data.extend_from_slice(&inner_msg);
 
-        let packet = ServicePacket::decode(&data).unwrap();
-
-        match packet {
-            ServicePacket::MessageContainer { messages } => {
-                assert_eq!(messages.len(), 1);
-                assert_eq!(messages[0].msg_id, 1);
-                assert_eq!(messages[0].seqno, 1);
-            }
-            _ => panic!("Unexpected packet type"),
+        match ServicePacket::decode(&data) {
+            Ok(packet) => match packet {
+                ServicePacket::MessageContainer { messages } => {
+                    assert_eq!(messages.len(), 1);
+                    assert_eq!(messages[0].msg_id, 1);
+                    assert_eq!(messages[0].seqno, 1);
+                }
+                _ => panic!("Unexpected packet type"),
+            },
+            Err(_) => panic!("Expected Ok packet"),
         }
     }
 }

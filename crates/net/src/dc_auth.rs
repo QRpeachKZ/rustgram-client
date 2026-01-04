@@ -716,9 +716,12 @@ mod tests {
         let dc1 = DcId::internal(1);
         let auth_data1 = Arc::new(AuthDataShared::new(dc1));
 
-        manager.add_dc(dc1, auth_data1).unwrap();
+        assert!(manager.add_dc(dc1, auth_data1).is_ok());
 
-        let info = manager.get_dc(dc1).unwrap();
+        let info = match manager.get_dc(dc1) {
+            Ok(i) => i,
+            Err(_) => panic!("Expected Ok info"),
+        };
         assert_eq!(info.dc_id, dc1);
 
         let dc2 = DcId::internal(2);
@@ -735,14 +738,17 @@ mod tests {
         let dc1 = DcId::internal(1);
         let auth_data1 = Arc::new(AuthDataShared::new(dc1));
 
-        manager.add_dc(dc1, auth_data1).unwrap();
+        assert!(manager.add_dc(dc1, auth_data1).is_ok());
 
-        manager
+        assert!(manager
             .update_auth_key_state(dc1, AuthKeyState::Ready)
-            .unwrap();
-        manager.update_dc_state(dc1, DcState::Ok).unwrap();
+            .is_ok());
+        assert!(manager.update_dc_state(dc1, DcState::Ok).is_ok());
 
-        let info = manager.get_dc(dc1).unwrap();
+        let info = match manager.get_dc(dc1) {
+            Ok(i) => i,
+            Err(_) => panic!("Expected Ok info"),
+        };
         assert_eq!(info.auth_key_state, AuthKeyState::Ready);
         assert_eq!(info.state, DcState::Ok);
     }
@@ -754,12 +760,15 @@ mod tests {
         let dc1 = DcId::internal(1);
         let auth_data1 = Arc::new(AuthDataShared::new(dc1));
 
-        manager.add_dc(dc1, auth_data1).unwrap();
+        assert!(manager.add_dc(dc1, auth_data1).is_ok());
 
         let data = vec![1, 2, 3, 4];
-        manager.set_export_data(dc1, 12345, data.clone()).unwrap();
+        assert!(manager.set_export_data(dc1, 12345, data.clone()).is_ok());
 
-        let info = manager.get_dc(dc1).unwrap();
+        let info = match manager.get_dc(dc1) {
+            Ok(i) => i,
+            Err(_) => panic!("Expected Ok info"),
+        };
         assert_eq!(info.export_id, 12345);
         assert_eq!(info.export_bytes, Some(data));
         assert_eq!(info.state, DcState::Import);
@@ -772,7 +781,7 @@ mod tests {
         assert!(!manager.is_destroying());
         assert!(!manager.need_destroy_auth_key());
 
-        manager.destroy_auth_keys().unwrap();
+        assert!(manager.destroy_auth_keys().is_ok());
 
         assert!(manager.is_destroying());
         assert!(manager.need_destroy_auth_key());
@@ -806,15 +815,18 @@ mod tests {
 
         assert!(!storage.has_key(dc1));
 
-        storage.store_key(dc1, &key).unwrap();
+        assert!(storage.store_key(dc1, &key).is_ok());
         assert!(storage.has_key(dc1));
         assert_eq!(storage.len(), 1);
 
-        let loaded = storage.load_key(dc1).unwrap();
+        let loaded = match storage.load_key(dc1) {
+            Ok(k) => k,
+            Err(_) => panic!("Expected Ok key"),
+        };
         assert_eq!(loaded.id, 123);
         assert_eq!(loaded.key, vec![1, 2, 3, 4]);
 
-        storage.remove_key(dc1).unwrap();
+        assert!(storage.remove_key(dc1).is_ok());
         assert!(!storage.has_key(dc1));
         assert_eq!(storage.len(), 0);
     }
@@ -827,9 +839,12 @@ mod tests {
         let expires = Instant::now() + std::time::Duration::from_secs(3600);
         let key = AuthKey::temporary(123, vec![1, 2, 3, 4], expires);
 
-        storage.store_key(dc1, &key).unwrap();
+        assert!(storage.store_key(dc1, &key).is_ok());
 
-        let loaded = storage.load_key(dc1).unwrap();
+        let loaded = match storage.load_key(dc1) {
+            Ok(k) => k,
+            Err(_) => panic!("Expected Ok key"),
+        };
         assert!(loaded.is_temporary());
         assert!(loaded.expires_at.is_some());
     }

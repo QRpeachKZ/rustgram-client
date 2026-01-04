@@ -231,8 +231,10 @@ mod tests {
         assert_eq!(delayer.delayed_count(), 1);
 
         // Query should be sent immediately
-        let received = receiver.try_recv().unwrap();
-        assert_eq!(received.id(), query.id());
+        match receiver.try_recv() {
+            Ok(received) => assert_eq!(received.id(), query.id()),
+            Err(_) => panic!("Expected Ok query"),
+        }
     }
 
     #[test]
@@ -253,7 +255,9 @@ mod tests {
 
         let removed = delayer.remove_query(query.id());
         assert!(removed.is_some());
-        assert_eq!(removed.unwrap().id(), query.id());
+        if let Some(rem) = removed {
+            assert_eq!(rem.id(), query.id());
+        }
         assert_eq!(delayer.delayed_count(), 0);
     }
 

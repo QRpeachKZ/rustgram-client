@@ -191,26 +191,26 @@ mod tests {
 
         proptest! {
             #[test]
-            fn prop_sha1_length(data in prop::collection::vec(0u8..256, 0..1000)) {
+            fn prop_sha1_length(data in prop::collection::vec(0u8..=255, 0..1000)) {
                 let hash = sha1(&data);
                 prop_assert_eq!(hash.len(), 20);
             }
 
             #[test]
-            fn prop_sha256_length(data in prop::collection::vec(0u8..256, 0..1000)) {
+            fn prop_sha256_length(data in prop::collection::vec(0u8..=255, 0..1000)) {
                 let hash = sha256(&data);
                 prop_assert_eq!(hash.len(), 32);
             }
 
             #[test]
-            fn prop_sha1_deterministic(data in prop::collection::vec(0u8..256, 0..100)) {
+            fn prop_sha1_deterministic(data in prop::collection::vec(0u8..=255, 0..100)) {
                 let hash1 = sha1(&data);
                 let hash2 = sha1(&data);
                 prop_assert_eq!(hash1, hash2);
             }
 
             #[test]
-            fn prop_sha256_deterministic(data in prop::collection::vec(0u8..256, 0..100)) {
+            fn prop_sha256_deterministic(data in prop::collection::vec(0u8..=255, 0..100)) {
                 let hash1 = sha256(&data);
                 let hash2 = sha256(&data);
                 prop_assert_eq!(hash1, hash2);

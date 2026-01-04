@@ -496,35 +496,35 @@ mod tests {
 
     #[test]
     fn test_socks5_auth_method_try_from() {
-        assert_eq!(
-            Socks5AuthMethod::try_from(0x00).unwrap(),
-            Socks5AuthMethod::None
-        );
-        assert_eq!(
-            Socks5AuthMethod::try_from(0x02).unwrap(),
-            Socks5AuthMethod::UserPass
-        );
-        assert_eq!(
-            Socks5AuthMethod::try_from(0xFF).unwrap(),
-            Socks5AuthMethod::NoAcceptable
-        );
+        match Socks5AuthMethod::try_from(0x00) {
+            Ok(m) => assert_eq!(m, Socks5AuthMethod::None),
+            Err(_) => panic!("Expected Ok method"),
+        }
+        match Socks5AuthMethod::try_from(0x02) {
+            Ok(m) => assert_eq!(m, Socks5AuthMethod::UserPass),
+            Err(_) => panic!("Expected Ok method"),
+        }
+        match Socks5AuthMethod::try_from(0xFF) {
+            Ok(m) => assert_eq!(m, Socks5AuthMethod::NoAcceptable),
+            Err(_) => panic!("Expected Ok method"),
+        }
         assert!(Socks5AuthMethod::try_from(0x99).is_err());
     }
 
     #[test]
     fn test_socks5_addr_type_try_from() {
-        assert_eq!(
-            Socks5AddrType::try_from(0x01).unwrap(),
-            Socks5AddrType::Ipv4
-        );
-        assert_eq!(
-            Socks5AddrType::try_from(0x03).unwrap(),
-            Socks5AddrType::Domain
-        );
-        assert_eq!(
-            Socks5AddrType::try_from(0x04).unwrap(),
-            Socks5AddrType::Ipv6
-        );
+        match Socks5AddrType::try_from(0x01) {
+            Ok(t) => assert_eq!(t, Socks5AddrType::Ipv4),
+            Err(_) => panic!("Expected Ok type"),
+        }
+        match Socks5AddrType::try_from(0x03) {
+            Ok(t) => assert_eq!(t, Socks5AddrType::Domain),
+            Err(_) => panic!("Expected Ok type"),
+        }
+        match Socks5AddrType::try_from(0x04) {
+            Ok(t) => assert_eq!(t, Socks5AddrType::Ipv6),
+            Err(_) => panic!("Expected Ok type"),
+        }
         assert!(Socks5AddrType::try_from(0x99).is_err());
     }
 
@@ -544,7 +544,10 @@ mod tests {
         let proxy = Proxy::socks5("127.0.0.1".into(), 1080, None, None);
         let target = SocketAddr::new(IpAddr::V4(Ipv4Addr::new(1, 1, 1, 1)), 443);
 
-        let transport = Socks5Transport::new(proxy, target).unwrap();
+        let transport = match Socks5Transport::new(proxy, target) {
+            Ok(t) => t,
+            Err(_) => panic!("Expected Ok transport"),
+        };
 
         assert_eq!(transport.target(), target);
         assert!(!transport.is_connected());

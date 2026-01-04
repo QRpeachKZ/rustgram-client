@@ -471,12 +471,16 @@ mod tests {
         main.add_key(key2.clone());
 
         // Should find existing key
-        let found = main.get_rsa_key(&[111]).unwrap();
-        assert_eq!(found.fingerprint, 111);
+        match main.get_rsa_key(&[111]) {
+            Ok(found) => assert_eq!(found.fingerprint, 111),
+            Err(_) => panic!("Expected Ok key"),
+        }
 
         // Should find first matching
-        let found = main.get_rsa_key(&[999, 222]).unwrap();
-        assert_eq!(found.fingerprint, 222);
+        match main.get_rsa_key(&[999, 222]) {
+            Ok(found) => assert_eq!(found.fingerprint, 222),
+            Err(_) => panic!("Expected Ok key"),
+        }
 
         // Should fail if none match
         let result = main.get_rsa_key(&[999]);
@@ -491,7 +495,10 @@ mod tests {
     #[test]
     fn test_cdn_shared_keys() {
         let dc_id = DcId::external(2);
-        let cdn = PublicRsaKeySharedCdn::new(dc_id).unwrap();
+        let cdn = match PublicRsaKeySharedCdn::new(dc_id) {
+            Ok(c) => c,
+            Err(_) => panic!("Expected Ok cdn"),
+        };
 
         assert_eq!(cdn.dc_id(), dc_id);
         assert!(!cdn.has_keys());
@@ -501,8 +508,10 @@ mod tests {
 
         assert!(cdn.has_keys());
 
-        let found = cdn.get_rsa_key(&[333]).unwrap();
-        assert_eq!(found.fingerprint, 333);
+        match cdn.get_rsa_key(&[333]) {
+            Ok(found) => assert_eq!(found.fingerprint, 333),
+            Err(_) => panic!("Expected Ok key"),
+        }
 
         // Test listener
         let listener = TestListener::new();
@@ -556,17 +565,21 @@ mod tests {
         manager.add_main_key(main_key.clone());
 
         // Get main key
-        let found = manager.get_rsa_key(DcId::internal(1), &[100]).unwrap();
-        assert_eq!(found.fingerprint, 100);
+        match manager.get_rsa_key(DcId::internal(1), &[100]) {
+            Ok(found) => assert_eq!(found.fingerprint, 100),
+            Err(_) => panic!("Expected Ok key"),
+        }
 
         // Add CDN key
         let dc_cdn = DcId::external(3);
         let cdn_key = RsaKey::new("cdn.pem".to_string(), 200, 2048);
-        manager.add_cdn_key(dc_cdn, cdn_key).unwrap();
+        assert!(manager.add_cdn_key(dc_cdn, cdn_key).is_ok());
 
         // Get CDN key
-        let found = manager.get_rsa_key(dc_cdn, &[200]).unwrap();
-        assert_eq!(found.fingerprint, 200);
+        match manager.get_rsa_key(dc_cdn, &[200]) {
+            Ok(found) => assert_eq!(found.fingerprint, 200),
+            Err(_) => panic!("Expected Ok key"),
+        }
 
         // Verify watchdog was updated
         assert!(manager.watchdog().has_key_for_dc(dc_cdn));

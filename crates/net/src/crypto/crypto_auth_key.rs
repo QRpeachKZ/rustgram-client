@@ -472,7 +472,10 @@ mod tests {
     #[test]
     fn test_crypto_auth_key_from_slice() {
         let key_bytes = vec![42u8; 256];
-        let key = CryptoAuthKey::from_slice(&key_bytes).unwrap();
+        let key = match CryptoAuthKey::from_slice(&key_bytes) {
+            Ok(k) => k,
+            Err(_) => panic!("Expected Ok key"),
+        };
         assert!(!key.is_empty());
 
         // Wrong size

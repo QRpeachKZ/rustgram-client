@@ -401,7 +401,10 @@ mod tests {
 
     #[test]
     fn test_factory_create() {
-        let auth_data = AuthDataSharedFactory::create(DcId::internal(2)).unwrap();
+        let auth_data = match AuthDataSharedFactory::create(DcId::internal(2)) {
+            Ok(data) => data,
+            Err(_) => panic!("Expected Ok auth_data"),
+        };
         assert_eq!(auth_data.dc_id(), DcId::internal(2));
 
         let result = AuthDataSharedFactory::create(DcId::invalid());

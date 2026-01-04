@@ -640,7 +640,10 @@ mod tests {
         message.extend_from_slice(&[0u8; 32]);
 
         let result = DefaultTransportReader::read_auth_key_id(&message);
-        assert_eq!(result.unwrap(), key_id);
+        match result {
+            Ok(k) => assert_eq!(k, key_id),
+            Err(_) => panic!("Expected Ok key_id"),
+        }
     }
 
     #[test]
@@ -667,9 +670,15 @@ mod tests {
         let result = reader.read_no_crypto(&packet);
 
         assert!(result.is_ok());
-        let read_result = result.unwrap();
+        let read_result = match result {
+            Ok(r) => r,
+            Err(_) => panic!("Expected Ok result"),
+        };
         assert!(read_result.is_packet());
-        assert_eq!(read_result.packet_data().unwrap().as_ref(), &data);
+        match read_result.packet_data() {
+            Some(d) => assert_eq!(d.as_ref(), &data),
+            None => panic!("Expected Some packet_data"),
+        }
     }
 
     #[test]

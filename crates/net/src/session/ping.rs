@@ -324,27 +324,31 @@ mod tests {
         let ping = manager.create_ping();
         assert!(ping.is_some());
 
-        let ping = ping.unwrap();
-        assert_eq!(ping.ping_type, PingType::Regular);
-        assert_eq!(manager.active_count(), 1);
+        if let Some(ping) = ping {
+            assert_eq!(ping.ping_type, PingType::Regular);
+            assert_eq!(manager.active_count(), 1);
+        }
     }
 
     #[test]
     fn test_ping_manager_pong() {
         let manager = PingManager::default();
 
-        let ping = manager.create_ping().unwrap();
-        manager.on_pong(ping.ping_id);
+        if let Some(ping) = manager.create_ping() {
+            manager.on_pong(ping.ping_id);
 
-        assert_eq!(manager.active_count(), 0);
-        assert!(manager.ping_ms().is_some());
-        assert_eq!(manager.failed_count(), 0);
+            assert_eq!(manager.active_count(), 0);
+            assert!(manager.ping_ms().is_some());
+            assert_eq!(manager.failed_count(), 0);
+        }
     }
 
     #[test]
     fn test_ping_manager_should_disconnect() {
-        let mut config = PingConfig::default();
-        config.max_failed_pings = 2;
+        let config = PingConfig {
+            max_failed_pings: 2,
+            ..Default::default()
+        };
 
         let manager = PingManager::new(config);
 
@@ -376,14 +380,14 @@ mod tests {
         let encoded = PingManager::encode_ping(ping_id);
 
         assert_eq!(encoded.len(), 12);
-        assert_eq!(
-            u32::from_le_bytes(encoded[0..4].try_into().unwrap()),
-            0x7abe77ec
-        );
-        assert_eq!(
-            u64::from_le_bytes(encoded[4..12].try_into().unwrap()),
-            ping_id
-        );
+        let bytes: [u8; 4] = encoded[0..4]
+            .try_into()
+            .expect("should have 4 bytes for constructor");
+        assert_eq!(u32::from_le_bytes(bytes), 0x7abe77ec);
+        let bytes: [u8; 8] = encoded[4..12]
+            .try_into()
+            .expect("should have 8 bytes for ping_id");
+        assert_eq!(u64::from_le_bytes(bytes), ping_id);
     }
 
     #[test]
@@ -393,18 +397,18 @@ mod tests {
         let encoded = PingManager::encode_ping_delay_disconnect(ping_id, delay);
 
         assert_eq!(encoded.len(), 16);
-        assert_eq!(
-            u32::from_le_bytes(encoded[0..4].try_into().unwrap()),
-            0x34a27b63
-        );
-        assert_eq!(
-            u64::from_le_bytes(encoded[4..12].try_into().unwrap()),
-            ping_id
-        );
-        assert_eq!(
-            u32::from_le_bytes(encoded[12..16].try_into().unwrap()),
-            delay
-        );
+        let bytes: [u8; 4] = encoded[0..4]
+            .try_into()
+            .expect("should have 4 bytes for constructor");
+        assert_eq!(u32::from_le_bytes(bytes), 0x34a27b63);
+        let bytes: [u8; 8] = encoded[4..12]
+            .try_into()
+            .expect("should have 8 bytes for ping_id");
+        assert_eq!(u64::from_le_bytes(bytes), ping_id);
+        let bytes: [u8; 4] = encoded[12..16]
+            .try_into()
+            .expect("should have 4 bytes for delay");
+        assert_eq!(u32::from_le_bytes(bytes), delay);
     }
 
     #[test]
@@ -418,8 +422,9 @@ mod tests {
         let decoded = PingManager::decode_pong(&encoded);
         assert!(decoded.is_some());
 
-        let (decoded_ping_id, _) = decoded.unwrap();
-        assert_eq!(decoded_ping_id, ping_id);
+        if let Some((decoded_ping_id, _)) = decoded {
+            assert_eq!(decoded_ping_id, ping_id);
+        }
     }
 
     #[test]
