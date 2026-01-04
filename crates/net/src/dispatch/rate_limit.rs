@@ -224,7 +224,7 @@ impl FloodControl {
             let mut dc_stats = self.dc_stats.lock();
             let stats = dc_stats
                 .entry(dc_id.get_raw_id())
-                .or_insert_with(DcFloodStats::default);
+                .or_default();
 
             // Throttle this DC
             stats.queries_in_window = self.config.max_queries_per_second;

@@ -18,8 +18,10 @@ use crate::transport::header::{
 ///
 /// Represents the different possible outcomes when reading MTProto packets.
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Default)]
 pub enum ReadResult {
     /// No operation - no packet available
+    #[default]
     Nop,
 
     /// A complete packet was received
@@ -115,11 +117,6 @@ impl ReadResult {
     }
 }
 
-impl Default for ReadResult {
-    fn default() -> Self {
-        Self::Nop
-    }
-}
 
 /// Error type for transport read operations.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -262,7 +259,11 @@ impl DefaultTransportReader {
             });
         }
 
-        Ok(u64::from_le_bytes(message[0..8].try_into().unwrap()))
+        Ok(u64::from_le_bytes(
+            message[0..8]
+                .try_into()
+                .expect("slice has verified length of 8"),
+        ))
     }
 
     /// Reads a no-crypto packet.
@@ -274,7 +275,7 @@ impl DefaultTransportReader {
             });
         }
 
-        let header = NoCryptoHeader::read_from(message).ok_or_else(|| {
+        let header = NoCryptoHeader::read_from(message).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: message.len(),
                 expected: NoCryptoHeader::SIZE,
@@ -306,7 +307,7 @@ impl DefaultTransportReader {
             });
         }
 
-        let header = CryptoHeader::read_from(message).ok_or_else(|| {
+        let header = CryptoHeader::read_from(message).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: message.len(),
                 expected: CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE,
@@ -356,7 +357,7 @@ impl DefaultTransportReader {
             });
         }
 
-        let prefix = CryptoPrefix::read_from(&to_decrypt).ok_or_else(|| {
+        let prefix = CryptoPrefix::read_from(&to_decrypt).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: to_decrypt.len(),
                 expected: CryptoPrefix::SIZE,
@@ -374,7 +375,7 @@ impl DefaultTransportReader {
 
         // Check padding
         let pad_size = to_decrypt.len() - total_size;
-        if pad_size < 12 || pad_size > 1024 {
+        if !(12..=1024).contains(&pad_size) {
             return Err(TransportReadError::InvalidPadding { pad_size });
         }
 
@@ -403,7 +404,7 @@ impl DefaultTransportReader {
             });
         }
 
-        let header = EndToEndHeader::read_from(message).ok_or_else(|| {
+        let header = EndToEndHeader::read_from(message).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: message.len(),
                 expected: EndToEndHeader::SIZE,
@@ -447,7 +448,7 @@ impl DefaultTransportReader {
             });
         }
 
-        let prefix = EndToEndPrefix::read_from(&to_decrypt).ok_or_else(|| {
+        let prefix = EndToEndPrefix::read_from(&to_decrypt).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: to_decrypt.len(),
                 expected: EndToEndPrefix::SIZE,
@@ -519,7 +520,11 @@ pub fn compute_auth_key_id(auth_key: &[u8; 256]) -> u64 {
 
     let hash = sha1(auth_key);
     // Take lower 64 bits of SHA1 hash
-    u64::from_le_bytes(hash[12..20].try_into().unwrap())
+    u64::from_le_bytes(
+        hash[12..20]
+            .try_into()
+            .expect("SHA1 hash is always 20 bytes"),
+    )
 }
 
 #[cfg(test)]

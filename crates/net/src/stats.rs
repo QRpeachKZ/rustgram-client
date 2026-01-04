@@ -13,8 +13,10 @@ use serde::{Deserialize, Serialize};
 ///
 /// Based on TDLib's NetType from `td/telegram/net/NetType.h`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum NetType {
     /// Other network type
+    #[default]
     Other = 0,
 
     /// WiFi network
@@ -36,11 +38,6 @@ pub enum NetType {
     Unknown = 6,
 }
 
-impl Default for NetType {
-    fn default() -> Self {
-        Self::Other
-    }
-}
 
 impl NetType {
     /// Returns `true` if this is a mobile network type.
@@ -84,8 +81,10 @@ impl NetType {
 ///
 /// Corresponds to TDLib's FileType enum.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum FileType {
     /// Unknown file type
+    #[default]
     None = -1,
 
     /// Photo
@@ -128,11 +127,6 @@ pub enum FileType {
     SecureDecrypted = 21,
 }
 
-impl Default for FileType {
-    fn default() -> Self {
-        Self::None
-    }
-}
 
 impl FileType {
     /// Returns the unique name for this file type.
@@ -262,6 +256,7 @@ impl NetworkStatsEntry {
 ///
 /// Based on TDLib's NetworkStats from `td/telegram/net/NetStatsManager.h`.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct NetworkStats {
     /// Unix timestamp when stats collection started
     pub since: i32,
@@ -270,14 +265,6 @@ pub struct NetworkStats {
     pub entries: Vec<NetworkStatsEntry>,
 }
 
-impl Default for NetworkStats {
-    fn default() -> Self {
-        Self {
-            since: 0,
-            entries: Vec::new(),
-        }
-    }
-}
 
 impl NetworkStats {
     /// Creates new network statistics.
@@ -314,7 +301,9 @@ impl NetworkStats {
         // Create new entry
         self.entries
             .push(NetworkStatsEntry::new(file_type, net_type));
-        self.entries.last_mut().unwrap()
+        self.entries
+            .last_mut()
+            .expect("entry was just pushed, so it exists")
     }
 
     /// Adds bytes to an entry.

@@ -87,11 +87,13 @@ impl Transport {
 /// Defines how packets are encoded and decoded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum TransportMode {
     /// No encryption (used during initial handshake)
     NoCrypto = 0,
 
     /// Abridged mode: 1-byte length prefix for packets < 127 bytes
+    #[default]
     Abridged = 1,
 
     /// Intermediate mode: 4-byte length prefix
@@ -101,11 +103,6 @@ pub enum TransportMode {
     Full = 3,
 }
 
-impl Default for TransportMode {
-    fn default() -> Self {
-        Self::Abridged
-    }
-}
 
 #[cfg(test)]
 mod tests {

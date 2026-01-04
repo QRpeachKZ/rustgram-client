@@ -139,7 +139,7 @@ impl EnhancedDispatcher {
             self.pending
                 .lock()
                 .entry(dc_raw)
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push(query);
             return Ok(());
         }

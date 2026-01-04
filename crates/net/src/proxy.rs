@@ -10,8 +10,10 @@ use thiserror::Error;
 
 /// Proxy type.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ProxyType {
     /// No proxy
+    #[default]
     None = 0,
     /// SOCKS5 proxy
     Socks5 = 1,
@@ -23,11 +25,6 @@ pub enum ProxyType {
     HttpCaching = 4,
 }
 
-impl Default for ProxyType {
-    fn default() -> Self {
-        Self::None
-    }
-}
 
 impl fmt::Display for ProxyType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

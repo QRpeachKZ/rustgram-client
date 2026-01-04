@@ -8,6 +8,7 @@
 //! `td/telegram/net/AuthDataShared.h`.
 
 use parking_lot::Mutex;
+use std::fmt;
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -17,8 +18,10 @@ use crate::dc::{DcError, DcId};
 ///
 /// Based on TDLib's AuthKeyState from `td/telegram/net/AuthKeyState.h`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum AuthKeyState {
     /// No auth key
+    #[default]
     Empty,
 
     /// Loading auth key
@@ -28,11 +31,6 @@ pub enum AuthKeyState {
     Ready,
 }
 
-impl Default for AuthKeyState {
-    fn default() -> Self {
-        Self::Empty
-    }
-}
 
 /// Authentication key.
 ///
@@ -155,6 +153,18 @@ pub struct AuthDataShared {
 
     /// Listeners
     listeners: Arc<Mutex<Vec<Box<dyn AuthKeyListener>>>>,
+}
+
+impl fmt::Debug for AuthDataShared {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("AuthDataShared")
+            .field("dc_id", &self.dc_id)
+            .field("auth_key_state", &self.auth_key_state.lock())
+            .field("has_auth_key", &self.auth_key.lock().is_some())
+            .field("salt_count", &self.future_salts.lock().len())
+            .field("listener_count", &self.listeners.lock().len())
+            .finish()
+    }
 }
 
 impl AuthDataShared {

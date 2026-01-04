@@ -18,23 +18,22 @@ use crate::stats::NetType;
 
 /// Connection mode.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ConnectionMode {
     /// TCP mode
+    #[default]
     Tcp,
     /// HTTP mode
     Http,
 }
 
-impl Default for ConnectionMode {
-    fn default() -> Self {
-        Self::Tcp
-    }
-}
 
 /// Connection state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub enum ConnectionState {
     /// Connection is empty/not initialized
+    #[default]
     Empty,
     /// Currently connecting
     Connecting,
@@ -44,11 +43,6 @@ pub enum ConnectionState {
     Closed,
 }
 
-impl Default for ConnectionState {
-    fn default() -> Self {
-        Self::Empty
-    }
-}
 
 /// Connection error.
 #[derive(Debug, Error, Clone, Serialize, Deserialize)]
@@ -285,11 +279,13 @@ impl ConnectionCreator {
         }
 
         // Find best DC option
-        let dc_options = self.dc_options.lock();
-        let option = dc_options
-            .find_best_option(dc_id, allow_media_only)
-            .ok_or_else(|| ConnectionError::NoDcOptions(dc_id))?;
-        drop(dc_options);
+        let option = {
+            let dc_options = self.dc_options.lock();
+            dc_options
+                .find_best_option(dc_id, allow_media_only)
+                .ok_or(ConnectionError::NoDcOptions(dc_id))?
+                .clone()
+        };
 
         // Create connection
         self.create_connection(option, is_media).await

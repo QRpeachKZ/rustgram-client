@@ -130,8 +130,8 @@ impl SequenceDispatcher {
         if let Some(chain) = chains.get(&chain_id) {
             let mut chain_guard = chain.lock();
 
-            if chain_guard.pending.len() >= self.config.max_queue_size {
-                if self.config.drop_on_full {
+            if chain_guard.pending.len() >= self.config.max_queue_size
+                && self.config.drop_on_full {
                     // Drop oldest query
                     if let Some(dropped) = chain_guard.pending.pop_front() {
                         let _ = dropped
@@ -139,7 +139,6 @@ impl SequenceDispatcher {
                             .send(Err("Queue full, query dropped".to_string()));
                     }
                 }
-            }
 
             chain_guard.pending.push_back(queued);
 

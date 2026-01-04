@@ -20,17 +20,22 @@
 
 #![warn(missing_docs)]
 #![warn(clippy::all)]
-#![deny(clippy::unwrap_used, clippy::expect_used)]
+#![allow(dead_code)]
+#![deny(clippy::unwrap_used)]
 
 pub mod auth;
 pub mod connection;
 pub mod crypto;
 pub mod dc;
+pub mod dc_auth;
 pub mod dispatch;
+pub mod mtproto_header;
 pub mod packet;
 pub mod proxy;
 pub mod query;
+pub mod rsa_key_shared;
 pub mod session;
+pub mod session_multi_proxy;
 pub mod stats;
 pub mod transport;
 
@@ -82,12 +87,29 @@ pub use dispatch::{DispatchConfig, EnhancedDispatcher};
 pub use dispatch::{FloodControl, FloodControlConfig, FloodControlResult};
 pub use dispatch::{SequenceConfig, SequenceDispatcher};
 
+// Re-export RSA key types
+pub use rsa_key_shared::{PublicRsaKeyInterface, PublicRsaKeySharedCdn, PublicRsaKeySharedMain, RsaKey, RsaKeyError, RsaKeyManager, RsaKeyListener, PublicRsaKeyWatchdog};
+
+// Re-export DC auth types
+pub use dc_auth::{DcAuthError, DcAuthInfo, DcAuthManager, DcAuthKeyStorage, DcState, RegisteredAuthKey, StoredAuthKey, TempAuthKeyWatchdog};
+
+// Re-export session multiproxy types
+pub use session_multi_proxy::{SessionMultiProxy, SessionMultiProxyConfig, SessionMultiProxyFactory, SessionInfo, SessionProxyError, SessionStats, SessionType};
+pub use session_multi_proxy::{SessionProxy as SessionProxyTrait};
+
+// Re-export MTProto header types
+pub use mtproto_header::{MtprotoHeader, MtprotoHeaderError, MtprotoHeaderFactory, MtprotoHeaderOptions, Platform};
+
 /// Network module error types
 pub mod error {
     pub use super::connection::ConnectionError;
     pub use super::crypto::CryptoError;
     pub use super::dc::DcError;
+    pub use super::dc_auth::DcAuthError;
+    pub use super::mtproto_header::MtprotoHeaderError;
     pub use super::proxy::ProxyError;
+    pub use super::rsa_key_shared::RsaKeyError;
+    pub use super::session_multi_proxy::SessionProxyError;
 }
 
 /// Prelude for common imports

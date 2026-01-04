@@ -25,8 +25,10 @@ pub type NetQueryId = u64;
 /// Based on TDLib's NetQuery::State from `td/telegram/net/NetQuery.h`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum NetQueryState {
     /// Empty/uninitialized query
+    #[default]
     Empty = 0,
     /// Query is being sent
     Query = 1,
@@ -36,19 +38,16 @@ pub enum NetQueryState {
     Error = 3,
 }
 
-impl Default for NetQueryState {
-    fn default() -> Self {
-        Self::Empty
-    }
-}
 
 /// Query type.
 ///
 /// Based on TDLib's NetQuery::Type from `td/telegram/net/NetQuery.h`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum NetQueryType {
     /// Regular query
+    #[default]
     Common = 0,
     /// File upload query
     Upload = 1,
@@ -58,43 +57,32 @@ pub enum NetQueryType {
     DownloadSmall = 3,
 }
 
-impl Default for NetQueryType {
-    fn default() -> Self {
-        Self::Common
-    }
-}
 
 /// Authentication flag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum AuthFlag {
     /// No authentication required
+    #[default]
     Off = 0,
     /// Authentication required
     On = 1,
 }
 
-impl Default for AuthFlag {
-    fn default() -> Self {
-        Self::Off
-    }
-}
 
 /// Gzip compression flag.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum GzipFlag {
     /// No compression
+    #[default]
     Off = 0,
     /// Use gzip compression
     On = 1,
 }
 
-impl Default for GzipFlag {
-    fn default() -> Self {
-        Self::Off
-    }
-}
 
 /// Query error codes.
 ///
@@ -135,7 +123,12 @@ impl QueryErrorCode {
 pub enum QueryError {
     /// Query error with code and message
     #[error("Query error {code}: {message}")]
-    WithMessage { code: i32, message: String },
+    WithMessage {
+        /// Error code
+        code: i32,
+        /// Error message
+        message: String,
+    },
 
     /// Special query error codes
     #[error("{0:?}")]

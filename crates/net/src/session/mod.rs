@@ -20,8 +20,10 @@ pub use query::{QueryLifecycle, QueryState};
 
 /// Session state.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Default)]
 pub enum SessionState {
     /// Session is not initialized
+    #[default]
     Empty,
     /// Session is connecting
     Connecting,
@@ -33,11 +35,6 @@ pub enum SessionState {
     Closed,
 }
 
-impl Default for SessionState {
-    fn default() -> Self {
-        Self::Empty
-    }
-}
 
 /// Session statistics.
 #[derive(Debug, Clone, Default)]

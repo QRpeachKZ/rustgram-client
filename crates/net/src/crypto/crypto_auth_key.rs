@@ -242,7 +242,12 @@ impl CryptoAuthKey {
     #[must_use]
     fn compute_id(key: &[u8; 256]) -> u64 {
         let hash = sha1(key);
-        u64::from_le_bytes(hash[12..20].try_into().unwrap())
+        // SHA1 hash is always 20 bytes, so [12..20] slice is always 8 bytes
+        u64::from_le_bytes(
+            hash[12..20]
+                .try_into()
+                .expect("SHA1 hash is always 20 bytes"),
+        )
     }
 
     /// Sets the PFS flag.

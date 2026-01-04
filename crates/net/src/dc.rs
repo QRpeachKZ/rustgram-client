@@ -562,7 +562,7 @@ impl DcOptionsSet {
     pub fn record_success(&mut self, option_idx: usize, rtt: f64) {
         self.stats
             .entry(option_idx)
-            .or_insert_with(DcOptionStats::default)
+            .or_default()
             .record_success(rtt);
     }
 
@@ -570,7 +570,7 @@ impl DcOptionsSet {
     pub fn record_failure(&mut self, option_idx: usize) {
         self.stats
             .entry(option_idx)
-            .or_insert_with(DcOptionStats::default)
+            .or_default()
             .record_failure();
     }
 

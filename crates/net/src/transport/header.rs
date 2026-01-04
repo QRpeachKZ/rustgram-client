@@ -25,6 +25,7 @@ use std::fmt;
 /// - TDLib: `td/mtproto/Transport.cpp` - `CryptoHeader`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
+#[derive(Default)]
 pub struct CryptoHeader {
     /// Authentication key ID
     pub auth_key_id: u64,
@@ -39,16 +40,6 @@ pub struct CryptoHeader {
     pub session_id: u64,
 }
 
-impl Default for CryptoHeader {
-    fn default() -> Self {
-        Self {
-            auth_key_id: 0,
-            message_key: [0u8; 16],
-            salt: 0,
-            session_id: 0,
-        }
-    }
-}
 
 impl CryptoHeader {
     /// Size of the encrypted header portion (salt + session_id).
@@ -145,6 +136,7 @@ impl CryptoHeader {
 /// - TDLib: `td/mtproto/Transport.cpp` - `CryptoPrefix`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
+#[derive(Default)]
 pub struct CryptoPrefix {
     /// Message ID
     pub msg_id: u64,
@@ -156,15 +148,6 @@ pub struct CryptoPrefix {
     pub message_data_length: u32,
 }
 
-impl Default for CryptoPrefix {
-    fn default() -> Self {
-        Self {
-            msg_id: 0,
-            seq_no: 0,
-            message_data_length: 0,
-        }
-    }
-}
 
 impl CryptoPrefix {
     /// Size of the prefix in bytes.
@@ -246,6 +229,7 @@ impl CryptoPrefix {
 /// - TDLib: `td/mtproto/Transport.cpp` - `EndToEndHeader`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
+#[derive(Default)]
 pub struct EndToEndHeader {
     /// Authentication key ID
     pub auth_key_id: u64,
@@ -254,14 +238,6 @@ pub struct EndToEndHeader {
     pub message_key: [u8; 16],
 }
 
-impl Default for EndToEndHeader {
-    fn default() -> Self {
-        Self {
-            auth_key_id: 0,
-            message_key: [0u8; 16],
-        }
-    }
-}
 
 impl EndToEndHeader {
     /// Size of the encrypted header portion (none for e2e).
@@ -344,18 +320,12 @@ impl EndToEndHeader {
 /// - TDLib: `td/mtproto/Transport.cpp` - `EndToEndPrefix`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
+#[derive(Default)]
 pub struct EndToEndPrefix {
     /// Message data length
     pub message_data_length: u32,
 }
 
-impl Default for EndToEndPrefix {
-    fn default() -> Self {
-        Self {
-            message_data_length: 0,
-        }
-    }
-}
 
 impl EndToEndPrefix {
     /// Size of the prefix in bytes.
@@ -427,16 +397,12 @@ impl EndToEndPrefix {
 /// - TDLib: `td/mtproto/Transport.cpp` - `NoCryptoHeader`
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(C)]
+#[derive(Default)]
 pub struct NoCryptoHeader {
     /// Authentication key ID (always 0)
     pub auth_key_id: u64,
 }
 
-impl Default for NoCryptoHeader {
-    fn default() -> Self {
-        Self { auth_key_id: 0 }
-    }
-}
 
 impl NoCryptoHeader {
     /// Size of the header in bytes.

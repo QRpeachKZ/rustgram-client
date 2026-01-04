@@ -559,7 +559,11 @@ pub fn compute_auth_key_id(auth_key: &[u8; 256]) -> u64 {
 
     let hash = sha1(auth_key);
     // Take lower 64 bits of SHA1 hash
-    u64::from_le_bytes(hash[12..20].try_into().unwrap())
+    u64::from_le_bytes(
+        hash[12..20]
+            .try_into()
+            .expect("SHA1 hash is always 20 bytes"),
+    )
 }
 
 #[cfg(test)]

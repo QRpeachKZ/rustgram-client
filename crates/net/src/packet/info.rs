@@ -14,18 +14,15 @@ use crate::packet::MessageId;
 /// end-to-end encrypted packets.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(u8)]
+#[derive(Default)]
 pub enum PacketType {
     /// Common packet (encrypted with server auth key).
+    #[default]
     Common = 0,
     /// End-to-end encrypted packet.
     EndToEnd = 1,
 }
 
-impl Default for PacketType {
-    fn default() -> Self {
-        Self::Common
-    }
-}
 
 /// MTProto packet metadata.
 ///

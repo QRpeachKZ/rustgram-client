@@ -294,8 +294,11 @@ impl TransportWriteClone for Arc<dyn TransportWrite> {
 
 /// Read half of TCP transport.
 pub struct TcpReadHalf {
+    /// Transport reader
     pub reader: Arc<dyn TransportRead>,
+    /// TCP stream read half
     pub stream: ReadHalf<TcpStream>,
+    /// Remote address
     pub addr: SocketAddr,
 }
 
@@ -351,9 +354,13 @@ impl TcpReadHalf {
 
 /// Write half of TCP transport.
 pub struct TcpWriteHalf {
+    /// Transport writer
     pub writer: Arc<dyn TransportWrite>,
+    /// TCP stream write half
     pub stream: WriteHalf<TcpStream>,
+    /// Remote address
     pub addr: SocketAddr,
+    /// Write options
     pub write_options: WriteOptions,
 }
 

@@ -15,41 +15,64 @@ use bytes::{Buf, Bytes};
 pub enum ServicePacket {
     /// Require reconnection
     BadMsgNotification {
+        /// ID of the bad message
         bad_msg_id: u64,
+        /// Sequence number of the bad message
         bad_msg_seqno: i32,
+        /// Error code
         error_code: i32,
+        /// New server salt (if provided)
         new_server_salt: Option<u64>,
     },
 
     /// Bad server salt
     BadServerSalt {
+        /// ID of the message with bad salt
         bad_msg_id: u64,
+        /// Sequence number of the message
         bad_msg_seqno: i32,
+        /// Error code
         error_code: i32,
+        /// New server salt
         new_server_salt: u64,
     },
 
     /// Message acknowledgment
-    Ack { msg_ids: Vec<u64> },
+    Ack {
+        /// Message IDs being acknowledged
+        msg_ids: Vec<u64>,
+    },
 
     /// Received messages, we should ack them
-    MsgsAck { msg_ids: Vec<u64> },
+    MsgsAck {
+        /// Message IDs being acknowledged
+        msg_ids: Vec<u64>,
+    },
 
     /// Request for resending messages
-    MsgResendReq { msg_ids: Vec<u64> },
+    MsgResendReq {
+        /// Message IDs to resend
+        msg_ids: Vec<u64>,
+    },
 
     /// Ping response
     Pong(u64),
 
     /// New session created
     NewSessionCreated {
+        /// First message ID
         first_msg_id: u64,
+        /// Server salt
         server_salt: u64,
+        /// Session ID
         session_id: u64,
     },
 
     /// Container with messages
-    MessageContainer { messages: Vec<ContainerMessage> },
+    MessageContainer {
+        /// Messages in the container
+        messages: Vec<ContainerMessage>,
+    },
 
     /// Unknown packet
     Unknown(u32),
