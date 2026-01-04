@@ -45,6 +45,7 @@ hex = "0.4"
 # Testing
 proptest = "1.4"
 criterion = "0.5"
+rstest = "0.23"
 
 [profile.dev]
 opt-level = 0
