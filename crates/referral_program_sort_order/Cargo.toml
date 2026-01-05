@@ -1,0 +1,23 @@
+[package]
+name = "rustgram-referral-program-sort-order"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Referral program sort order types for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "referral", "sort-order"]
+categories = ["data-structures"]
+
+[features]
+default = ["std"]
+std = []
+serde = ["dep:serde"]
+
+[dependencies]
+serde = { version = "1.0", optional = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1.0"
+bincode = "1.3"
