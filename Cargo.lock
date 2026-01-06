@@ -1168,6 +1168,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-passkey"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "rustgram-people-nearby"
 version = "0.1.0"
 dependencies = [
@@ -1176,6 +1186,15 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-referral-program-sort-order"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]

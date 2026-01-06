@@ -30,7 +30,7 @@
 //!     .with_id("credential-id-123".to_string())
 //!     .with_name("My YubiKey 5".to_string())
 //!     .with_added_date(1704067200) // 2024-01-01
-//!     .with_last_usage_date(1704153600) // 2024-01-02
+//!     .with_last_usage_date(Some(1704153600)) // 2024-01-02
 //!     .with_software_emoji_id(Some(CustomEmojiId::new(54321)))
 //!     .build()
 //!     .unwrap();

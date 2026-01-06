@@ -130,9 +130,32 @@ Typical dependency order (low to high complexity):
 10. **calls** - Voice/video calls
 11. **ui** - UI integration
 
+## Module Tracking
+
+**📊 Implementation Status:** `.claude/workspace/modules_tracker.md`
+
+This tracker maintains:
+- ✅ Implemented modules (11 completed)
+- ❌ Queue of ~189 remaining modules, ordered by complexity
+- 🔄 In-progress assignments
+- LOC counts, test coverage, and dependencies
+
+**Quick stats:**
+- Total TDLib LOC: ~150,000+
+- Implemented: ~12,410 LOC (8.3%)
+- Total tests: 775
+- Average: 70 tests per module
+
+**Usage:**
+1. Check tracker for next module to implement
+2. Update status when starting/finishing
+3. Mark completed modules after commit
+
 ## Implemented Modules
 
-### config (v0.1.0)
+See `.claude/workspace/modules_tracker.md` for complete list.
+
+### config (v0.1.0) ✅
 Configuration management for Telegram MTProto client.
 
 **Components:**
@@ -145,6 +168,21 @@ Configuration management for Telegram MTProto client.
 **Testing:** 48 unit tests + 5 doctests
 
 **Documentation:** `config-module.md`
+
+### Other Completed Modules 🟢
+- **net** (338 tests) - Network layer, MTProto, transports
+- **auth** (41 tests) - Authentication flow
+- **storage** (24 tests) - Local data persistence
+- **logevent** (65 tests) - Event logging for binlog
+- **venue** (48 tests) - Location and venue objects
+- **birthdate** (33 tests) - Birthdate types
+- **boost** (30 tests) - Boost management
+- **connectionstate** (36 tests) - Connection state types
+- **theme** (11 tests) - Theme manager and settings
+- **types** (46 tests) - Base type definitions
+
+**Main rule:** 
+- 1 session – 300 summary LOC
 
 ## Example Workflow
 
