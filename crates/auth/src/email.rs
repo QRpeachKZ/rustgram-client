@@ -6,94 +6,103 @@
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
-/// Email verification code info
+/// Sent email code
 ///
 /// Information about a sent email verification code.
 /// Based on TDLib's `SentEmailCode` type.
+///
+/// # Example
+///
+/// ```no_run
+/// use rustgram_auth::SentEmailCode;
+///
+/// let code = SentEmailCode::new("e***@example.com".to_string(), 6);
+/// assert_eq!(code.email_pattern(), "e***@example.com");
+/// assert_eq!(code.code_length(), 6);
+/// ```
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EmailCodeInfo {
+pub struct SentEmailCode {
     /// Email address pattern (e.g., "e***@example.com")
     pub email_pattern: String,
 
     /// Length of the verification code
-    pub code_length: u32,
-
-    /// When the code was sent
-    pub sent_at: i64,
-
-    /// Expiration time of the code
-    pub expires_at: i64,
-
-    /// Reset available period (seconds until reset can be requested again)
-    pub reset_available_period: i32,
-
-    /// Reset pending date
-    pub reset_pending_date: i32,
+    pub code_length: i32,
 }
 
-impl EmailCodeInfo {
-    /// Create a new email code info
-    pub fn new(
-        email_pattern: String,
-        code_length: u32,
-        expires_in_seconds: i64,
-        reset_available_period: i32,
-    ) -> Self {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
+impl SentEmailCode {
+    /// Create a new sent email code
+    ///
+    /// # Validation
+    ///
+    /// If `code_length` is negative or >= 100, it will be set to 0.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_auth::SentEmailCode;
+    ///
+    /// let code = SentEmailCode::new("e***@example.com".to_string(), 6);
+    /// assert_eq!(code.email_pattern(), "e***@example.com");
+    /// assert_eq!(code.code_length(), 6);
+    /// ```
+    pub fn new(email_pattern: String, code_length: i32) -> Self {
+        // Validate code_length: 0 <= length < 100
+        let code_length = if !(0..100).contains(&code_length) {
+            0
+        } else {
+            code_length
+        };
 
         Self {
             email_pattern,
             code_length,
-            sent_at: now,
-            expires_at: now + expires_in_seconds,
-            reset_available_period,
-            reset_pending_date: -1,
         }
     }
 
-    /// Check if the code has expired
-    pub fn is_expired(&self) -> bool {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
-
-        now > self.expires_at
-    }
-
-    /// Get remaining time until expiration (seconds)
-    pub fn remaining_time(&self) -> i64 {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0);
-
-        (self.expires_at - now).max(0)
-    }
-
-    /// Check if email reset is available
-    pub fn is_reset_available(&self) -> bool {
-        let now = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .map(|d| d.as_secs() as i64)
-            .unwrap_or(0) as i32;
-
-        now >= self.reset_available_period
-    }
-
     /// Get email pattern
+    ///
+    /// Returns the email address pattern (e.g., "e***@example.com").
+    #[inline]
     pub fn email_pattern(&self) -> &str {
         &self.email_pattern
     }
 
     /// Get code length
-    pub const fn code_length(&self) -> u32 {
+    ///
+    /// Returns the length of the verification code.
+    pub const fn code_length(&self) -> i32 {
         self.code_length
     }
+
+    /// Check if the email code is empty
+    ///
+    /// Returns `true` if the email pattern is empty.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_auth::SentEmailCode;
+    ///
+    /// let code = SentEmailCode::new("e***@example.com".to_string(), 6);
+    /// assert!(!code.is_empty());
+    ///
+    /// let empty = SentEmailCode::new(String::new(), 0);
+    /// assert!(empty.is_empty());
+    /// ```
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.email_pattern.is_empty()
+    }
 }
+
+/// Deprecated type alias for backwards compatibility
+///
+/// # Deprecated
+///
+/// This type alias is deprecated since version 0.2.0.
+/// Use [`SentEmailCode`] instead.
+#[deprecated(since = "0.2.0", note = "Use SentEmailCode instead")]
+pub type EmailCodeInfo = SentEmailCode;
 
 /// Email verification
 ///
@@ -265,12 +274,34 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_email_code_info() {
-        let info = EmailCodeInfo::new("e***@test.com".to_string(), 6, 300, 60);
+    fn test_sent_email_code() {
+        let code = SentEmailCode::new("e***@test.com".to_string(), 6);
 
-        assert_eq!(info.email_pattern(), "e***@test.com");
-        assert_eq!(info.code_length(), 6);
-        assert!(info.remaining_time() >= 0);
+        assert_eq!(code.email_pattern(), "e***@test.com");
+        assert_eq!(code.code_length(), 6);
+        assert!(!code.is_empty());
+    }
+
+    #[test]
+    fn test_sent_email_code_validation() {
+        // Test negative code_length
+        let code = SentEmailCode::new("e***@test.com".to_string(), -1);
+        assert_eq!(code.code_length(), 0);
+
+        // Test code_length >= 100
+        let code = SentEmailCode::new("e***@test.com".to_string(), 100);
+        assert_eq!(code.code_length(), 0);
+
+        // Test valid code_length
+        let code = SentEmailCode::new("e***@test.com".to_string(), 99);
+        assert_eq!(code.code_length(), 99);
+    }
+
+    #[test]
+    fn test_sent_email_code_empty() {
+        let code = SentEmailCode::new(String::new(), 0);
+        assert!(code.is_empty());
+        assert_eq!(code.email_pattern(), "");
     }
 
     #[test]
@@ -321,5 +352,14 @@ mod tests {
             reason: "test".to_string()
         }
         .is_success());
+    }
+
+    #[test]
+    fn test_email_code_info_deprecated() {
+        // Test that EmailCodeInfo still works as a type alias
+        #[allow(deprecated)]
+        let info = EmailCodeInfo::new("e***@test.com".to_string(), 6);
+        assert_eq!(info.email_pattern(), "e***@test.com");
+        assert_eq!(info.code_length(), 6);
     }
 }

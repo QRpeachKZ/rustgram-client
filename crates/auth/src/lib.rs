@@ -82,12 +82,22 @@ pub mod tl;
 
 // Re-exports
 pub use code::{SentCode, SentCodeType};
-pub use email::{EmailCodeInfo, EmailVerification};
+pub use email::{EmailVerification, SentEmailCode};
 pub use error::{AuthError, AuthResult};
 pub use manager::AuthManager;
 pub use password::{PasswordInfo, PasswordKdfAlgo};
 pub use qr::{QrCodeLogin, QrCodeStatus};
 pub use state::AuthState;
+
+/// Deprecated type alias for backwards compatibility
+///
+/// # Deprecated
+///
+/// This re-export is deprecated since version 0.2.0.
+/// Use [`SentEmailCode`] instead.
+#[allow(deprecated)]
+#[deprecated(since = "0.2.0", note = "Use SentEmailCode instead")]
+pub use email::EmailCodeInfo;
 
 /// Current version of authentication protocol
 pub const AUTH_VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -5,7 +5,7 @@
 
 use crate::{
     code::SentCode,
-    email::{EmailCodeInfo, EmailSettings, EmailVerification},
+    email::{EmailSettings, EmailVerification, SentEmailCode},
     error::{AuthError, AuthResult},
     password::{InputCheckPasswordSrp, PasswordInfo},
     qr::{ImportQrCodeToken, QrCodeLogin},
@@ -70,7 +70,7 @@ pub struct AuthManager {
 
     /// Email code info
     #[allow(dead_code)]
-    email_code_info: Arc<RwLock<Option<EmailCodeInfo>>>,
+    email_code_info: Arc<RwLock<Option<SentEmailCode>>>,
 
     /// Password info
     password_info: Arc<RwLock<Option<PasswordInfo>>>,
