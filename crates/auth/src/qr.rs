@@ -317,7 +317,10 @@ mod tests {
         let token_b64 = BASE64_STANDARD.encode(&token_bytes);
         let url = format!("tg://login?token={}", token_b64);
 
-        let import = ImportQrCodeToken::from_url(&url).unwrap();
+        let import = match ImportQrCodeToken::from_url(&url) {
+            Some(i) => i,
+            None => panic!("Valid token should parse"),
+        };
         assert!(import.is_valid());
         assert_eq!(import.dc_id(), 2);
     }

@@ -739,10 +739,10 @@ mod tests {
     #[tokio::test]
     async fn test_set_phone_number() {
         let manager = AuthManager::new(12345, "test_hash".to_string());
-        manager
-            .set_phone_number("+1234567890".to_string())
-            .await
-            .unwrap();
+        match manager.set_phone_number("+1234567890".to_string()).await {
+            Ok(_) => {}
+            Err(e) => panic!("Valid phone number should succeed: {:?}", e),
+        }
 
         assert_eq!(manager.state().await, AuthState::WaitingForPhone);
         assert_eq!(
@@ -762,10 +762,13 @@ mod tests {
     #[tokio::test]
     async fn test_check_bot_token() {
         let manager = AuthManager::new(12345, "test_hash".to_string());
-        manager
+        match manager
             .check_bot_token("123456:ABCDEF1234567890ghIkl-zyx57W2v1u123ew11".to_string())
             .await
-            .unwrap();
+        {
+            Ok(_) => {}
+            Err(e) => panic!("Valid bot token should succeed: {:?}", e),
+        }
 
         assert_eq!(manager.state().await, AuthState::Authenticated);
         assert!(manager.is_bot().await);

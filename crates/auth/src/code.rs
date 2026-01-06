@@ -404,7 +404,7 @@ mod tests {
             .add_firebase_token("firebase_token".to_string())
             .with_current_number("+1234567890".to_string());
 
-        assert!(settings.allow_flash_call == false);
+        assert!(!settings.allow_flash_call);
         assert_eq!(settings.firebase_sms.len(), 1);
         assert_eq!(settings.current_number, Some("+1234567890".to_string()));
     }
