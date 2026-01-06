@@ -329,7 +329,6 @@ mod tests {
     }
 
     #[test]
-
     #[test]
     fn test_display_format_with_emoji() {
         let color = PeerColor::new(5, 12345);

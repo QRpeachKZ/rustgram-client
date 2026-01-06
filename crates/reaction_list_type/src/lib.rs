@@ -290,7 +290,6 @@ mod tests {
     }
 
     #[test]
-
     #[test]
     fn test_display_format() {
         assert_eq!(format!("{}", ReactionListType::Recent), "Recent");
