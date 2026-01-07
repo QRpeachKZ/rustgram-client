@@ -1339,6 +1339,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram_emoji_group_type"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_forum_topic_edited_data"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_forum_topic_icon"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram_group_call_join_parameters"
 version = "0.1.0"
 dependencies = [
@@ -1372,6 +1396,38 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram_referral_program_parameters"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_star_gift_settings"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_star_rating"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_sticker_list_type"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram_terms_of_service"
 version = "0.1.0"
 dependencies = [
@@ -1381,6 +1437,14 @@ dependencies = [
 
 [[package]]
 name = "rustgram_todo_completion"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_web_app_open_parameters"
 version = "0.1.0"
 dependencies = [
  "serde",
