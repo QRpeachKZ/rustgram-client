@@ -1105,6 +1105,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-channel-type"
+version = "0.1.0"
+
+[[package]]
 name = "rustgram-config"
 version = "0.1.0"
 dependencies = [
@@ -1319,6 +1323,13 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-story-content-type"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
 ]
 
 [[package]]

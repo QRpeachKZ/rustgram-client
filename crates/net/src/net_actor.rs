@@ -75,7 +75,8 @@ impl<F: Fn(NetQuery) + Send + Sync> ActorQueryCallback for F {
 /// # Example
 ///
 /// ```rust
-/// use rustgram_net::net_actor::{NetActor, ActorError, ActorResult};
+/// use std::sync::Arc;
+/// use rustgram_net::net_actor::{NetActor, ActorError, ActorResult, ActorQueryCallback};
 /// use rustgram_net::query::NetQuery;
 ///
 /// struct MyActor {

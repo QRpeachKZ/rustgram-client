@@ -346,7 +346,7 @@ mod tests {
         let called_clone = called.clone();
 
         let mut manager = ConnectionStateManager::with_state(ConnectionState::Ready);
-        manager.register_callback(Box::new(ClosureCallback::new(move |state| {
+        manager.register_callback(Box::new(ClosureCallback::new(move |_state| {
             called_clone.store(true, Ordering::Release);
             true
         })));

@@ -128,7 +128,7 @@ mod tests {
         let db_path = dir.path().join("test.db");
 
         let db = DbConnection::new(&db_path).unwrap();
-        let mut conn = db.connect().unwrap();
+        let conn = db.connect().unwrap();
 
         // Simple query to test connection
         let result: String = conn

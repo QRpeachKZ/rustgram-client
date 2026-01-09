@@ -329,7 +329,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn test_display_format_with_emoji() {
         let color = PeerColor::new(5, 12345);
         assert_eq!(format!("{}", color), "PeerColor(accent: 5, emoji: 12345)");

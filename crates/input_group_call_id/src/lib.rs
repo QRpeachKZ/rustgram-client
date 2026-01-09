@@ -416,7 +416,6 @@ mod tests {
     }
 
     #[test]
-    #[test]
     fn test_display_format() {
         let call_id = InputGroupCallId::new(12345, 67890);
         assert_eq!(format!("{}", call_id), "group call 12345");
