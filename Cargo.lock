@@ -1059,6 +1059,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-accent-color-id"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
 name = "rustgram-active-story-state"
 version = "0.1.0"
 
@@ -1102,6 +1112,48 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.17",
+]
+
+[[package]]
+name = "rustgram-bot-command"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-bot-command-scope"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-bot-menu-button"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-business-connected-bot"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "proptest",
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
