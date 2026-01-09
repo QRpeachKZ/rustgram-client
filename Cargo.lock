@@ -1063,6 +1063,14 @@ name = "rustgram-active-story-state"
 version = "0.1.0"
 
 [[package]]
+name = "rustgram-age-verification-parameters"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-auth"
 version = "0.1.0"
 dependencies = [
@@ -1131,6 +1139,22 @@ dependencies = [
  "serde",
  "serde_json",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-dimensions"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-email-verification"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1252,6 +1276,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-star-amount"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-star-gift-auction-round"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-stickersetid"
 version = "0.1.0"
 dependencies = [
@@ -1290,6 +1330,14 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-ton-amount"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
