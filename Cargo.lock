@@ -690,6 +690,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "md5"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "490cc448043f947bae3cbee9c203358d62dbee0db12107a74be5c30ccfd09771"
+
+[[package]]
 name = "memchr"
 version = "2.7.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1073,11 +1079,29 @@ name = "rustgram-active-story-state"
 version = "0.1.0"
 
 [[package]]
+name = "rustgram-affected-history"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-age-verification-parameters"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rustgram-alarm-manager"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror 2.0.17",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1094,6 +1118,30 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-auth-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-auth",
+ "rustgram-net",
+ "rustgram-types",
+ "rustgram_terms_of_service",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "rustgram-background-id"
+version = "0.1.0"
+
+[[package]]
+name = "rustgram-base-theme"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-birthdate"
 version = "0.1.0"
 dependencies = [
@@ -1103,6 +1151,10 @@ dependencies = [
  "thiserror 1.0.69",
  "tracing",
 ]
+
+[[package]]
+name = "rustgram-block-list-id"
+version = "0.1.0"
 
 [[package]]
 name = "rustgram-boost"
@@ -1145,6 +1197,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-bot-verification"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "rustgram_formatted_text",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-business-away-message"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-business-connected-bot"
 version = "0.1.0"
 dependencies = [
@@ -1157,8 +1226,85 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-business-connection-id"
+version = "0.1.0"
+
+[[package]]
+name = "rustgram-business-greeting-message"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-call-discard-reason"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "rustgram-call-id"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "rustgram-call-manager"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "rustgram-call-discard-reason",
+ "rustgram-call-id",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
 name = "rustgram-channel-type"
 version = "0.1.0"
+
+[[package]]
+name = "rustgram-chat-manager"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-chat-reactions"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rustgram-reaction-type",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-client-actor"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-common-dialog-manager"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
 
 [[package]]
 name = "rustgram-config"
@@ -1177,12 +1323,58 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-connection-state-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-connectionstate",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-connectionstate"
 version = "0.1.0"
 dependencies = [
  "rustgram-types",
  "thiserror 1.0.69",
  "tokio",
+]
+
+[[package]]
+name = "rustgram-currency-amount"
+version = "0.1.0"
+dependencies = [
+ "rustgram-star-amount",
+ "rustgram-ton-amount",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-delay-dispatcher"
+version = "0.1.0"
+dependencies = [
+ "rustgram-net",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-dh-cache"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror 2.0.17",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-dh-config"
+version = "0.1.0"
+dependencies = [
+ "hex",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1198,6 +1390,53 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-dialog-boost-link-info"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-dialog-filter-invite-link"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde_json",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "rustgram-dialog-filter-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-chat-manager",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-dialog-invite-link-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-dialog-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-chat-manager",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-dimensions"
 version = "0.1.0"
 dependencies = [
@@ -1206,11 +1445,127 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-draft-message"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-email-verification"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-bitmask"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-db-id"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-encryption-key"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-id"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-location"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "rustgram-file-type",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-source-id"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-type"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-file-upload-id"
+version = "0.1.0"
+dependencies = [
+ "rstest",
+ "rustgram-file-id",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-group-call-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "rustgram_input_group_call_id",
+ "serde",
+ "thiserror 1.0.69",
+ "tokio",
+]
+
+[[package]]
+name = "rustgram-group-call-video-payload"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-input-business-chat-link"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde_json",
+ "thiserror 2.0.17",
 ]
 
 [[package]]
@@ -1227,6 +1582,49 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-message-viewer"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde_json",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "rustgram-message_content_type"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-message_entity"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-message_extended_media"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-message_full_id"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-message_ttl"
 version = "0.1.0"
 dependencies = [
@@ -1236,6 +1634,37 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-messages-info"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-misc"
+version = "0.1.0"
+dependencies = [
+ "md5",
+ "rustgram-types",
+ "rustgram-venue",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-missing-invitee"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -1264,6 +1693,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-new-password-state"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-notification-group-type"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-notification-type"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-ordered-messages"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "rustgram-types",
+ "serde",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-passkey"
 version = "0.1.0"
 dependencies = [
@@ -1271,6 +1738,21 @@ dependencies = [
  "serde",
  "thiserror 1.0.69",
  "tracing",
+]
+
+[[package]]
+name = "rustgram-password-manager"
+version = "0.1.0"
+dependencies = [
+ "rustgram-email-verification",
+ "rustgram-new-password-state",
+ "rustgram-passkey",
+ "rustgram-temp-password-state",
+ "serde",
+ "serde_json",
+ "sha2",
+ "thiserror 1.0.69",
+ "tokio",
 ]
 
 [[package]]
@@ -1285,12 +1767,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-profile-tab"
+version = "0.1.0"
+dependencies = [
+ "rustgram-channel-type",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-reaction-type"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "md5",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tracing",
+]
+
+[[package]]
 name = "rustgram-referral-program-sort-order"
 version = "0.1.0"
 dependencies = [
  "bincode",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rustgram-saved_messages_manager"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "rstest",
+ "rustgram-types",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
@@ -1320,6 +1837,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-secret-chat-layer"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram-secret_input_media"
 version = "0.1.0"
 dependencies = [
@@ -1332,6 +1857,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-sequence-dispatcher"
+version = "0.1.0"
+dependencies = [
+ "rustgram-net",
+ "serde",
+ "tokio",
+ "tracing",
+]
+
+[[package]]
+name = "rustgram-special-sticker-set-type"
+version = "0.1.0"
+
+[[package]]
 name = "rustgram-star-amount"
 version = "0.1.0"
 dependencies = [
@@ -1341,6 +1880,39 @@ dependencies = [
 
 [[package]]
 name = "rustgram-star-gift-auction-round"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-star-gift-auction-user-state"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+]
+
+[[package]]
+name = "rustgram-star-gift-collection"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde_json",
+ "thiserror 2.0.17",
+]
+
+[[package]]
+name = "rustgram-star-subscription-pricing"
+version = "0.1.0"
+dependencies = [
+ "rustgram-star-amount",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram-sticker-type"
 version = "0.1.0"
 dependencies = [
  "serde",
@@ -1385,6 +1957,45 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-story-forward-info"
+version = "0.1.0"
+dependencies = [
+ "rustgram-active-story-state",
+ "rustgram-types",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-story-stealth-mode"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-td-c-client"
+version = "0.1.0"
+dependencies = [
+ "libc",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-td-json-client"
+version = "0.1.0"
+dependencies = [
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram-td-log"
+version = "0.1.0"
+dependencies = [
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram-temp-password-state"
 version = "0.1.0"
 dependencies = [
@@ -1420,6 +2031,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-user-privacy-setting"
+version = "0.1.0"
+dependencies = [
+ "proptest",
+ "serde",
+]
+
+[[package]]
 name = "rustgram-venue"
 version = "0.1.0"
 dependencies = [
@@ -1442,6 +2061,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram-web-page-id"
+version = "0.1.0"
+dependencies = [
+ "serde",
+]
+
+[[package]]
+name = "rustgram_auction_bid_level"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram_background_info"
 version = "0.1.0"
 dependencies = [
@@ -1450,11 +2084,40 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram_business_chat_link"
+version = "0.1.0"
+dependencies = [
+ "rustgram_formatted_text",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
 name = "rustgram_emoji_group_type"
 version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "rustgram_fact_check"
+version = "0.1.0"
+dependencies = [
+ "rustgram_formatted_text",
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
+]
+
+[[package]]
+name = "rustgram_formatted_text"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "thiserror 1.0.69",
 ]
 
 [[package]]
@@ -1491,6 +2154,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustgram_message_copy_options"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "rustgram_formatted_text",
+ "rustgram_message_input_reply_to",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_message_input_reply_to"
+version = "0.1.0"
+dependencies = [
+ "rustgram-types",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "rustgram_peer_color"
 version = "0.1.0"
 dependencies = [
@@ -1502,6 +2185,16 @@ dependencies = [
 name = "rustgram_reaction_list_type"
 version = "0.1.0"
 dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rustgram_referral_program_info"
+version = "0.1.0"
+dependencies = [
+ "rustgram-star-amount",
+ "rustgram_referral_program_parameters",
  "serde",
  "serde_json",
 ]
