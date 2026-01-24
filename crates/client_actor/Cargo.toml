@@ -10,15 +10,26 @@ repository.workspace = true
 description = "Client actor for Telegram MTProto client"
 
 [dependencies]
-thiserror = "2.0"
-tracing = "0.1"
+# Workspace dependencies
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+bytes = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+
+# Internal dependencies
+rustgram-net = { path = "../net" }
+rustgram-types = { path = "../types" }
 
 [dev-dependencies]
-serde_json = "1.0"
+serde_json = { workspace = true }
 
 [lints]
-rust = { unexpected_cfgs = "allow" }
-clippy = { all = "deny", unwrap_used = "deny", expect_used = "deny" }
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
 
 [package.metadata.docs.rs]
 all-features = true

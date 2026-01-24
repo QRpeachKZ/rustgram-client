@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-paid-reaction-type"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Paid reaction type for Telegram MTProto client"
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

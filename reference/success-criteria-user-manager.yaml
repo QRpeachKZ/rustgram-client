@@ -1,0 +1,53 @@
+title: "UserManager Network Integration Success Criteria"
+epic: "rustgram-client-ff7.4"
+
+criteria:
+  code_quality:
+    min_tests: 15
+    min_coverage: 70
+    max_cyclomatic_complexity: 15
+    no_production_unwrap: true
+    public_api_docs_coverage: 100
+
+  functional:
+    - "RealNetworkClient implements UserNetworkClient trait"
+    - "send_typed_query() for TL request/response serialization"
+    - "UserCache with TTL (300s basic, 600s full)"
+    - "Cache invalidation methods (invalidate_user, invalidate_all)"
+    - "Integration tests with mock NetQueryDispatcher"
+    - "Error conversion from QueryError to NetworkError"
+
+  code_style:
+    - "Follow rust-pro skill guidelines"
+    - "Use Result<T, E> instead of unwrap()"
+    - "Type hints for public APIs"
+    - "Doc comments on all public items"
+    - "Clippy clean with -D warnings"
+
+  testing:
+    - "Unit tests for cache TTL expiration"
+    - "Unit tests for serialization/deserialization"
+    - "Integration tests for network fetch with cache miss"
+    - "Integration tests for cache hit on subsequent fetches"
+    - "Tests for timeout handling"
+    - "Tests for error propagation"
+    - "Concurrent access tests for cache"
+    - "Minimum 15 test functions"
+
+  documentation:
+    - "README.md with usage examples"
+    - "Module documentation explaining network integration"
+    - "Public API doc comments (100% coverage)"
+    - "TL constructor ID verification notes"
+
+  alignment:
+    - "Follow DialogManager network.rs pattern exactly"
+    - "Use same oneshot channel bridge pattern"
+    - "Match error handling approach"
+    - "Match cache structure (CacheEntry, TTL, stats)"
+
+verification:
+  - "cargo clippy --workspace -- -D warnings"
+  - "cargo test --workspace"
+  - "cargo llvm-cov -p user_manager --html"
+  - "Manual review of TL constructor IDs against telegram_api.tl"

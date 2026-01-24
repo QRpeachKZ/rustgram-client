@@ -1,0 +1,62 @@
+[package]
+name = "rustgram-paper-plane-adapter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords = ["telegram", "tdlib", "json", "adapter", "paper-plane"]
+categories.workspace = true
+description = "TDLib-compatible JSON adapter for Rustgram Telegram client"
+
+[dependencies]
+# Internal dependencies
+rustgram-types = { path = "../types" }
+rustgram-dialog-manager = { path = "../dialog_manager" }
+rustgram-messages-manager = { path = "../messages_manager" }
+rustgram-user-manager = { path = "../user_manager" }
+rustgram-net = { path = "../net" }
+rustgram-client-actor = { path = "../client_actor" }
+rustgram-auth-manager = { path = "../auth_manager" }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true, features = ["sync", "rt", "rt-multi-thread", "time"] }
+
+# Async channels for glib/tokio bridge
+async-channel = "2.1"
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Collections
+indexmap = "2.2"
+
+# Time
+chrono = "0.4"
+
+# Fast mutexes
+parking_lot = "0.12"
+
+# Std channels with recv_timeout
+crossbeam-channel = "0.5"
+
+[dev-dependencies]
+# Testing
+tokio-test = "0.4"
+criterion = { workspace = true }
+
+[lib]
+name = "paper_plane_adapter"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

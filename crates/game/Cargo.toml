@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-game"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-formatted-text = { path = "../formatted-text" }
+rustgram-user-id = { path = "../user-id" }
+serde = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+serde_json = { workspace = true }

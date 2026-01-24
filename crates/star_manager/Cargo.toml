@@ -1,0 +1,17 @@
+[package]
+name = "rustgram-star-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-star-amount = { path = "../star-amount" }
+rustgram-ton-amount = { path = "../ton-amount" }
+
+tokio = { workspace = true, features = ["sync"] }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "test-util"] }

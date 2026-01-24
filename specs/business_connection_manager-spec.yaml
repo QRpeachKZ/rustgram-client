@@ -1,0 +1,510 @@
+spec:
+  module: business_connection_manager
+  version: 0.1.0
+  created: 2026-01-14T13:00:00Z
+  updated: 2026-01-14T13:00:00Z
+  language: rust
+  complexity: high
+  estimated_loc: 1200
+  is_state_machine: false
+
+plan:
+  - item: Comprehend and Analyze TDLib Implementation
+  - item: Implement BusinessConnection Internal Type
+  - item: Implement PendingMessage Type
+  - item: Implement Connection Management and Validation
+  - item: Implement Message Sending (Single and Album)
+  - item: Implement Message Editing (Text, Media, Caption, ReplyMarkup)
+  - item: Implement Media Upload Handling
+  - item: Implement File Upload Callbacks
+  - item: Implement Business Profile Management
+  - item: Implement Star Transfer and Gift Settings
+  - item: Write Comprehensive Tests and Documentation
+  - item: Review and Verify Module Compliance
+
+success_criteria:
+  code_quality:
+    max_clippy_warnings: 0
+    production_unwrap_calls: 0
+    max_cyclomatic_complexity: 15
+  
+  test_coverage:
+    min_tests: 70
+    min_line_coverage: 80
+  
+  documentation:
+    public_api_docs_percent: 100
+    examples_required: true
+  
+  tdlib_alignment:
+    api_compatibility: strict
+
+dependency_matrix:
+  - type: BusinessConnectionId
+    source: rustgram-business-connection-id
+    constructor: new(String) -> BusinessConnectionId
+    location: business_connection_id/src/lib.rs:88-90
+    verified: true
+  
+  - type: DialogId
+    source: rustgram-dialog-id
+    constructor: new(i64) -> DialogId
+    location: dialog_id/src/lib.rs:108-110
+    verified: true
+  
+  - type: MessageId
+    source: rustgram-types
+    constructor: TBD (from types/src/ids.rs)
+    location: types/src/ids.rs:355+
+    verified: true
+  
+  - type: StoryId
+    source: rustgram-active-story-state
+    constructor: new(i32) -> StoryId
+    location: active_story_state/src/lib.rs:173-175
+    verified: true
+  
+  - type: UserId
+    source: rustgram-types
+    constructor: new(i64) -> Result<UserId, TypeError>
+    location: types/src/ids.rs:40-51
+    verified: true
+  
+  - type: FileUploadId
+    source: rustgram-file-upload-id
+    constructor: new(FileId, i64) -> FileUploadId
+    location: file_upload_id/src/lib.rs:60-65
+    verified: true
+  
+  - type: DcId
+    source: rustgram-net
+    constructor: TBD
+    location: net/src/dc.rs:42+
+    verified: true
+  
+  - type: StarGiftSettings
+    source: rustgram-star-gift-settings
+    constructor: new() -> StarGiftSettings
+    location: star_gift_settings/src/lib.rs
+    verified: true
+  
+  - type: StarAmount
+    source: rustgram-star-amount
+    constructor: from_parts(i64, i32) -> Option<StarAmount>
+    location: star_amount/src/lib.rs:71-93
+    verified: true
+  
+  - type: MessageInputReplyTo
+    source: rustgram-message-input-reply-to
+    constructor: new() -> MessageInputReplyTo
+    location: message_input_reply_to/src/lib.rs
+    verified: true
+  
+  - type: ReplyMarkup
+    source: rustgram-message-copy-options
+    constructor: Default::default()
+    location: message_copy_options/src/lib.rs:15
+    verified: true
+  
+  - type: InputMessageContent
+    source: STUB REQUIRED
+    constructor: TBD
+    location: Create local stub in types.rs
+    verified: false
+  
+  - type: MessageEffectId
+    source: STUB REQUIRED
+    constructor: TBD
+    location: Create local stub (i32 wrapper)
+    verified: false
+
+risk_register:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    dependency: InputMessageContent
+    mitigation: Create local stub enum with Text, Photo, Video variants
+    impact: HIGH
+    status: MITIGATED
+  
+  - id: R2
+    type: MISSING_DEPENDENCY
+    dependency: MessageEffectId
+    mitigation: Create local stub as newtype wrapper around i64
+    impact: LOW
+    status: MITIGATED
+  
+  - id: R3
+    type: STATE_COMPLEXITY
+    dependency: Media upload state machine
+    mitigation: Use separate state enum for upload tracking
+    impact: MEDIUM
+    status: MITIGATED
+  
+  - id: R4
+    type: THREAD_SAFETY
+    dependency: Concurrent connection access
+    mitigation: Use WaitFreeHashMap or Arc<RwLock<HashMap>>
+    impact: HIGH
+    status: MITIGATED
+  
+  - id: R5
+    type: SERIALIZATION
+    dependency: TL format for messages
+    mitigation: Implement TlSerialize when TL layer ready
+    impact: MEDIUM
+    status: ACCEPTED
+  
+  - id: R6
+    type: COMPLEXITY
+    dependency: Media album coordination
+    mitigation: Use request ID pattern for album grouping
+    impact: MEDIUM
+    status: MITIGATED
+
+reference:
+  tdlib_header: references/td/td/telegram/BusinessConnectionManager.h
+  tdlib_impl: references/td/td/telegram/BusinessConnectionManager.cpp
+  connection_id_header: references/td/td/telegram/BusinessConnectionId.h
+
+type_definitions:
+  BusinessConnection:
+    docs: |
+      Internal structure representing an active business connection.
+      
+      Contains connection metadata including user ID, DC ID,
+      connection state, and pending operations.
+    fields:
+      - name: connection_id
+        type: BusinessConnectionId
+        docs: Unique connection identifier
+      - name: user_id
+        type: UserId
+        docs: The user who owns the business account
+      - name: dc_id
+        type: DcId
+        docs: Data center for the connection
+      - name: can_send_stars
+        type: bool
+        docs: Whether stars can be transferred
+      - name: is_deleted
+        type: bool
+        docs: Whether the connection is deleted
+  
+  PendingMessage:
+    docs: |
+      Message waiting to be sent or uploaded.
+      
+      Used for tracking messages through the upload and send process.
+    fields:
+      - name: business_connection_id
+        type: BusinessConnectionId
+        docs: Connection to send through
+      - name: dialog_id
+        type: DialogId
+        docs: Target dialog
+      - name: reply_to
+        type: MessageInputReplyTo
+        docs: Reply information
+      - name: disable_notification
+        type: bool
+        docs: Send silently
+      - name: protect_content
+        type: bool
+        docs: Prevent forwarding/saving
+      - name: effect_id
+        type: MessageEffectId
+        docs: Message effect to apply
+      - name: content
+        type: InputMessageContent
+        docs: Message content
+      - name: reply_markup
+        type: Option<ReplyMarkup>
+        docs: Inline keyboard
+
+  MediaGroupSendRequest:
+    docs: |
+      Tracks album send operations across multiple media uploads.
+    fields:
+      - name: finished_count
+        type: usize
+        docs: Number of uploads completed
+      - name: upload_results
+        type: Vec<Result<UploadMediaResult>>
+        docs: Results of each upload
+      - name: promise
+        type: Promise<BusinessMessages>
+        docs: Response channel
+
+api_methods:
+  - name: check_business_connection
+    signature: |
+      check_business_connection(
+          connection_id: BusinessConnectionId,
+      ) -> Result<(), Error>
+    docs: |
+      Validate that a business connection exists and is active.
+      Returns error if connection is invalid or deleted.
+    params:
+      - name: connection_id
+        type: BusinessConnectionId
+        docs: Connection to validate
+    returns: Ok(()) if valid, Err otherwise
+    thread_safety: Thread-safe (read-only)
+
+  - name: get_business_connection_user_id
+    signature: |
+      get_business_connection_user_id(
+          connection_id: BusinessConnectionId,
+      ) -> Result<UserId, Error>
+    docs: |
+      Get the user ID for a business connection.
+    params:
+      - name: connection_id
+        type: BusinessConnectionId
+        docs: Connection to query
+    returns: UserId of the business account owner
+    thread_safety: Thread-safe (read-only)
+
+  - name: send_message
+    signature: |
+      send_message(
+          business_connection_id: BusinessConnectionId,
+          dialog_id: DialogId,
+          reply_to: MessageInputReplyTo,
+          disable_notification: bool,
+          protect_content: bool,
+          effect_id: MessageEffectId,
+          reply_markup: Option<ReplyMarkup>,
+          content: InputMessageContent,
+      ) -> impl Future<Output = Result<BusinessMessage, Error>>
+    docs: |
+      Send a message through a business connection.
+      
+      Handles media upload if necessary.
+    params:
+      - name: business_connection_id
+        type: BusinessConnectionId
+        docs: Connection to send through
+      - name: dialog_id
+        type: DialogId
+        docs: Target dialog
+      - name: content
+        type: InputMessageContent
+        docs: Message content
+    returns: Future yielding sent message info
+    thread_safety: Thread-safe with pending queue
+
+  - name: send_message_album
+    signature: |
+      send_message_album(
+          business_connection_id: BusinessConnectionId,
+          dialog_id: DialogId,
+          reply_to: MessageInputReplyTo,
+          disable_notification: bool,
+          protect_content: bool,
+          effect_id: MessageEffectId,
+          contents: Vec<InputMessageContent>,
+      ) -> impl Future<Output = Result<BusinessMessages, Error>>
+    docs: |
+      Send an album of messages through a business connection.
+      
+      Coordinates concurrent uploads and sends as an album group.
+    params:
+      - name: contents
+        type: Vec<InputMessageContent>
+        docs: Album contents (2-10 items)
+    returns: Future yielding sent album info
+    thread_safety: Thread-safe with album tracking
+
+  - name: edit_business_message_text
+    signature: |
+      edit_business_message_text(
+          business_connection_id: BusinessConnectionId,
+          dialog_id: DialogId,
+          message_id: MessageId,
+          reply_markup: Option<ReplyMarkup>,
+          content: InputMessageContent,
+      ) -> impl Future<Output = Result<BusinessMessage, Error>>
+    docs: |
+      Edit a text message in a business chat.
+    thread_safety: Thread-safe
+
+  - name: edit_business_message_media
+    signature: |
+      edit_business_message_media(
+          business_connection_id: BusinessConnectionId,
+          dialog_id: DialogId,
+          message_id: MessageId,
+          reply_markup: Option<ReplyMarkup>,
+          content: InputMessageContent,
+      ) -> impl Future<Output = Result<BusinessMessage, Error>>
+    docs: |
+      Edit a media message in a business chat.
+      
+      Handles media upload if necessary.
+    thread_safety: Thread-safe
+
+  - name: delete_business_messages
+    signature: |
+      delete_business_messages(
+          business_connection_id: BusinessConnectionId,
+          message_ids: Vec<MessageId>,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Delete messages from a business chat.
+    thread_safety: Thread-safe
+
+  - name: delete_business_story
+    signature: |
+      delete_business_story(
+          business_connection_id: BusinessConnectionId,
+          story_id: StoryId,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Delete a story from a business account.
+    thread_safety: Thread-safe
+
+  - name: set_business_name
+    signature: |
+      set_business_name(
+          business_connection_id: BusinessConnectionId,
+          first_name: String,
+          last_name: String,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Set the business account display name.
+      
+      Names are limited to MAX_NAME_LENGTH characters.
+    params:
+      - name: first_name
+        type: String
+        docs: First name (max 64 chars)
+      - name: last_name
+        type: String
+        docs: Last name (max 64 chars)
+    thread_safety: Thread-safe
+
+  - name: set_business_about
+    signature: |
+      set_business_about(
+          business_connection_id: BusinessConnectionId,
+          about: String,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Set the business account bio/description.
+    thread_safety: Thread-safe
+
+  - name: set_business_username
+    signature: |
+      set_business_username(
+          business_connection_id: BusinessConnectionId,
+          username: String,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Set the business account username.
+    thread_safety: Thread-safe
+
+  - name: set_business_gift_settings
+    signature: |
+      set_business_gift_settings(
+          business_connection_id: BusinessConnectionId,
+          settings: StarGiftSettings,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Configure star gift settings for the business account.
+    params:
+      - name: settings
+        type: StarGiftSettings
+        docs: Gift restrictions and display settings
+    thread_safety: Thread-safe
+
+  - name: get_business_star_status
+    signature: |
+      get_business_star_status(
+          business_connection_id: BusinessConnectionId,
+      ) -> impl Future<Output = Result<StarAmount, Error>>
+    docs: |
+      Get the current star balance for the business account.
+    returns: Future yielding star balance
+    thread_safety: Thread-safe (read-only)
+
+  - name: transfer_business_stars
+    signature: |
+      transfer_business_stars(
+          business_connection_id: BusinessConnectionId,
+          star_count: i64,
+      ) -> impl Future<Output = Result<(), Error>>
+    docs: |
+      Transfer stars from the business account.
+      
+      Requires can_send_stars permission.
+    params:
+      - name: star_count
+        type: i64
+        docs: Number of stars to transfer
+    thread_safety: Thread-safe
+
+constants:
+  - name: MAX_NAME_LENGTH
+    value: 64
+    docs: Maximum length for first/last name (server-side limit)
+
+  - name: MAX_ALBUM_SIZE
+    value: 10
+    docs: Maximum number of media items in an album
+
+test_plan:
+  unit_tests:
+    - test_business_connection_new
+    - test_business_connection_validation
+    - test_pending_message_new
+    - test_manager_new
+    - test_check_connection_valid
+    - test_check_connection_invalid
+    - test_check_connection_missing
+    - test_get_connection_user_id
+    - test_send_message_text
+    - test_send_message_with_media
+    - test_send_message_album
+    - test_send_message_album_upload_failure
+    - test_edit_message_text
+    - test_edit_message_media
+    - test_delete_messages
+    - test_delete_story
+    - test_set_business_name_valid
+    - test_set_business_name_too_long
+    - test_set_business_about
+    - test_set_business_username
+    - test_set_gift_settings
+    - test_get_star_status
+    - test_transfer_stars
+    - test_transfer_stars_insufficient
+    - test_concurrent_message_sends
+    - test_media_upload_callback
+    - test_album_send_request_tracking
+    - test_name_validation
+
+  edge_cases:
+    - Empty message content
+    - Album with 0 items
+    - Album with more than 10 items
+    - Name exceeding MAX_NAME_LENGTH
+    - Transfer more stars than available
+    - Edit non-existent message
+    - Delete non-existent story
+    - Connection closed during operation
+    - Media upload timeout
+    - Concurrent edits to same message
+
+tdlib_deviations:
+  - description: Actor pattern replaced with async/await
+    rationale: Rust async ecosystem prefers async/await over actor model
+    impact: API remains compatible, internal implementation differs
+  
+  - description: Promise replaced with Future
+    rationale: idiomatic Rust uses Future for async operations
+    impact: API remains compatible, return types use impl Future
+  
+  - description: WaitFreeHashMap may use RwLock<HashMap>
+    rationale: WaitFreeHashMap requires external crate, RwLock is std
+    impact: Minimal, same thread-safety guarantees

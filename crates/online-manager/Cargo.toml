@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-online-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Online presence manager for Telegram MTProto client"
+keywords = ["telegram", "online", "presence", "mtproto"]
+categories = ["api-bindings"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+
+[features]
+default = []
+serde = []

@@ -1,0 +1,22 @@
+[package]
+name = "rustgram-notification-settings-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Notification settings manager for Telegram MTProto client"
+keywords = ["telegram", "notification", "settings", "mtproto"]
+categories = ["api-bindings"]
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-scope-notification-settings = { path = "../scope_notification-settings" }
+rustgram-reaction-notification-settings = { path = "../reaction_notification-settings" }
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+
+[features]
+default = []
+serde = []

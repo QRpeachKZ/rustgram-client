@@ -1,0 +1,34 @@
+[package]
+name = "rustgram-reaction-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Reaction manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-reaction-type = { path = "../reaction-type" }
+rustgram-chat-reactions = { path = "../chat-reactions" }
+rustgram-message-effect-id = { path = "../message_effect-id" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-saved-messages-manager = { path = "../saved_messages-manager" }
+rustgram-paid-reaction-type = { path = "../paid_reaction-type" }
+rustgram-types = { path = "../types" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

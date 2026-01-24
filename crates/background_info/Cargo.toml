@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_background_info"
+name = "rustgram-background-info"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

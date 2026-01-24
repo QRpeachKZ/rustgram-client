@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-tl-core"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Core TL (Type Language) deserialization for Telegram MTProto"
+repository = "https://github.com/yourusername/rustgram-client"
+keywords = ["telegram", "mtproto", "tl", "deserialization"]
+categories = ["parsing", "encoding"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+bytes = "1.5"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+criterion = "0.5"
+proptest = "1.0"
+hex = "0.4"

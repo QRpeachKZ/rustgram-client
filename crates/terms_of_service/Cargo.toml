@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_terms_of_service"
+name = "rustgram-terms-of-service"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

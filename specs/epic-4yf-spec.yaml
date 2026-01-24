@@ -1,0 +1,875 @@
+# Technical Specification: Epic 4yf - TDLib Migration Epic 22/47
+# Story Manager, Suggested Action Manager, Terms Of Service Manager
+
+version: "1.0"
+created: "2026-01-14"
+author: "analyst-agent"
+epic_id: "rustgram-client-4yf"
+epic_title: "TDLib Migration Epic 22/47"
+
+# ============================================================================
+# Module Overview
+# ============================================================================
+
+modules:
+  - name: "story_manager"
+    crate_name: "rustgram-story-manager"
+    estimated_loc: 2500
+    complexity: "HIGH"
+    module_type: "Manager"
+    reference: "references/td/td/telegram/StoryManager.h"
+    description: |
+      Manages Telegram stories (ephemeral content that expires after 24 hours).
+      Handles story lifecycle: sending, editing, deleting, viewing, reactions.
+      Manages story albums, stealth mode, and active story tracking.
+    
+  - name: "suggested_action_manager"
+    crate_name: "rustgram-suggested-action-manager"
+    estimated_loc: 800
+    complexity: "MEDIUM"
+    module_type: "Manager"
+    reference: "references/td/td/telegram/SuggestedActionManager.h"
+    description: |
+      Manages suggested actions shown to users (setup prompts, feature suggestions).
+      Tracks dismissed actions and dialog-specific suggestions.
+    
+  - name: "terms_of_service_manager"
+    crate_name: "rustgram-terms-of-service-manager"
+    estimated_loc: 600
+    complexity: "MEDIUM"
+    module_type: "Manager"
+    reference: "references/td/td/telegram/TermsOfServiceManager.h"
+    description: |
+      Manages Telegram terms of service acceptance and tracking.
+      Handles periodic ToS fetching and acceptance state.
+
+# ============================================================================
+# Dependency Verification Matrix (Phase 2.5 Gate)
+# ============================================================================
+
+dependency_verification:
+
+  # StoryManager Dependencies
+  story_manager:
+    existing_types:
+      - type: "StoryId"
+        source_crate: "rustgram-active-story-state"
+        constructor: "new(i32)"
+        verified: true
+        file: "crates/active_story_state/src/lib.rs"
+        
+      - type: "StoryFullId"
+        source_crate: "rustgram-types"
+        constructor: "new(DialogId, StoryId)"
+        verified: true
+        file: "crates/types/src/ids.rs"
+        
+      - type: "DialogId"
+        source_crate: "rustgram-dialog-id"
+        constructor: "new(i64)"
+        verified: true
+        file: "crates/dialog_id/src/lib.rs"
+        
+      - type: "UserId"
+        source_crate: "rustgram-types"
+        constructor: "new(i64) -> Result<UserId>"
+        verified: true
+        file: "crates/types/src/ids.rs"
+        
+      - type: "ChannelId"
+        source_crate: "rustgram-types"
+        constructor: "new(i64) -> Result<ChannelId>"
+        verified: true
+        file: "crates/types/src/ids.rs"
+        
+      - type: "ReactionType"
+        source_crate: "rustgram-reaction-type"
+        constructor: "emoji(&str), custom_emoji(&[u8]), paid()"
+        verified: true
+        file: "crates/reaction_type/src/lib.rs"
+        
+      - type: "FormattedText"
+        source_crate: "rustgram-formatted-text"
+        constructor: "new(&str)"
+        verified: true
+        file: "crates/formatted_text/src/lib.rs"
+        
+      - type: "StoryStealthMode"
+        source_crate: "rustgram-story-stealth-mode"
+        constructor: "new(), with_dates(i32, i32)"
+        verified: true
+        file: "crates/story_stealth_mode/src/lib.rs"
+
+    missing_types:
+      - type: "StoryContent"
+        status: "STUB_REQUIRED"
+        reason: "Complex type for story media (photo, video, etc.)"
+        stub_fields:
+          - "content_type: String"
+          - "duration: Option<i32>"
+        tdlib_reference: "references/td/td/telegram/StoryContent.h"
+        
+      - type: "StoryForwardInfo"
+        status: "STUB_REQUIRED"
+        reason: "Forward information for stories"
+        stub_fields:
+          - "origin: DialogId"
+          - "date: i32"
+          - "author_signature: Option<String>"
+        tdlib_reference: "references/td/td/telegram/StoryForwardInfo.h"
+        
+      - type: "StoryInteractionInfo"
+        status: "STUB_REQUIRED"
+        reason: "Story interaction statistics"
+        stub_fields:
+          - "view_count: i32"
+          - "reaction_count: i32"
+          - "forward_count: i32"
+        tdlib_reference: "references/td/td/telegram/StoryInteractionInfo.h"
+        
+      - type: "StoryAlbumId"
+        status: "STUB_REQUIRED"
+        reason: "Story album identifier"
+        stub_fields:
+          - "id: i64"
+        constructor: "new(i64) -> Self"
+        tdlib_reference: "references/td/td/telegram/StoryAlbumId.h"
+        
+      - type: "StoryListId"
+        status: "STUB_REQUIRED"
+        reason: "Story list identifier (main, archive)"
+        stub_fields:
+          - "list_type: i8"
+        constructor: "main() -> Self, archive() -> Self"
+        tdlib_reference: "references/td/td/telegram/StoryListId.h"
+        
+      - type: "StoryDb"
+        status: "NOT_IMPLEMENTED"
+        reason: "Database layer for stories"
+        note: "Will use simplified storage interface"
+        
+      - type: "MediaArea"
+        status: "STUB_REQUIRED"
+        reason: "Interactive areas on story media"
+        stub_fields:
+          - "area_type: String"
+          - "coordinates: (f32, f32, f32, f32)"
+        tdlib_reference: "references/td/td/telegram/MediaArea.h"
+        
+      - type: "FileId"
+        status: "SEARCH_REQUIRED"
+        note: "Check if exists in file-related crates"
+        
+      - type: "FileSourceId"
+        status: "SEARCH_REQUIRED"
+        note: "Check if exists in file-related crates"
+        
+      - type: "FileUploadId"
+        status: "SEARCH_REQUIRED"
+        note: "Check if exists in file-related crates"
+        
+      - type: "MessageFullId"
+        status: "SEARCH_REQUIRED"
+        note: "May exist in message crates"
+
+  # SuggestedActionManager Dependencies
+  suggested_action_manager:
+    existing_types:
+      - type: "DialogId"
+        source_crate: "rustgram-dialog-id"
+        constructor: "new(i64)"
+        verified: true
+        file: "crates/dialog_id/src/lib.rs"
+        
+      - type: "FormattedText"
+        source_crate: "rustgram-formatted-text"
+        constructor: "new(&str)"
+        verified: true
+        file: "crates/formatted_text/src/lib.rs"
+
+    missing_types:
+      - type: "SuggestedAction"
+        status: "CREATE_NEW"
+        reason: "Core type for suggested actions"
+        specification:
+          enum_type: true
+          variants:
+            - "Empty"
+            - "EnableArchiveAndMuteNewChats"
+            - "CheckPhoneNumber"
+            - "ViewChecksHint"
+            - "ConvertToGigagroup"
+            - "CheckPassword"
+            - "SetPassword"
+            - "UpgradePremium"
+            - "SubscribeToAnnualPremium"
+            - "RestorePremium"
+            - "GiftPremiumForChristmas"
+            - "BirthdaySetup"
+            - "PremiumGrace"
+            - "StarsSubscriptionLowBalance"
+            - "UserpicSetup"
+            - "Custom { custom_type: String }"
+            - "SetupLoginEmail"
+            - "SetupLoginEmailNoskip"
+            - "SetupPasskey"
+          additional_fields:
+            - "dialog_id: Option<DialogId>"
+            - "otherwise_relogin_days: i32"
+            - "title: Option<FormattedText>"
+            - "description: Option<FormattedText>"
+            - "url: Option<String>"
+        tdlib_reference: "references/td/td/telegram/SuggestedAction.h"
+
+  # TermsOfServiceManager Dependencies
+  terms_of_service_manager:
+    existing_types:
+      - type: "TermsOfService"
+        source_crate: "rustgram-terms-of-service"
+        constructor: "new(String, String, i32, bool)"
+        verified: true
+        file: "crates/terms_of_service/src/lib.rs"
+
+    missing_types: []
+
+# ============================================================================
+# TDLib API Analysis
+# ============================================================================
+
+tdlib_api:
+
+  StoryManager:
+    public_methods:
+      - name: "get_story"
+        signature: "get_story(DialogId owner, StoryId story_id, bool only_local) -> Result<Story>"
+        description: "Get a story by owner and story ID"
+        callback_pattern: "Promise<td_api::story>"
+        
+      - name: "send_story"
+        signature: "send_story(DialogId dialog, InputStoryContent content, StoryPrivacySettings settings, ...) -> Result<Story>"
+        description: "Send a new story"
+        callback_pattern: "Promise<td_api::story>"
+        complexity: "HIGH"
+        
+      - name: "edit_story"
+        signature: "edit_story(DialogId owner, StoryId story_id, InputStoryContent content, ...) -> Result<()>"
+        description: "Edit an existing story"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "delete_story"
+        signature: "delete_story(DialogId owner, StoryId story_id) -> Result<()>"
+        description: "Delete a story"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "set_story_reaction"
+        signature: "set_story_reaction(StoryFullId story, ReactionType reaction) -> Result<()>"
+        description: "React to a story"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "get_story_interactions"
+        signature: "get_story_interactions(StoryId story_id, string query, bool only_contacts, ...) -> Result<StoryInteractions>"
+        description: "Get story viewers and reactors"
+        callback_pattern: "Promise<td_api::storyInteractions>"
+        
+      - name: "toggle_story_is_pinned"
+        signature: "toggle_story_is_pinned(DialogId owner, StoryId story_id, bool is_pinned) -> Result<()>"
+        description: "Pin/unpin a story"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "get_dialog_pinned_stories"
+        signature: "get_dialog_pinned_stories(DialogId owner, StoryId from, i32 limit) -> Result<Stories>"
+        description: "Get pinned stories for a dialog"
+        callback_pattern: "Promise<td_api::stories>"
+        
+      - name: "get_story_archive"
+        signature: "get_story_archive(DialogId owner, StoryId from, i32 limit) -> Result<Stories>"
+        description: "Get archived stories"
+        callback_pattern: "Promise<td_api::stories>"
+        
+      - name: "activate_stealth_mode"
+        signature: "activate_stealth_mode() -> Result<()>"
+        description: "Activate stealth mode for viewing stories"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "load_active_stories"
+        signature: "load_active_stories(StoryListId list_id) -> Result<()>"
+        description: "Load active stories from server"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "on_update_read_stories"
+        signature: "on_update_read_stories(DialogId owner, StoryId max_read_id) -> bool"
+        description: "Update read stories state (internal)"
+        callback_pattern: "None (returns bool)"
+        
+      - name: "on_get_story"
+        signature: "on_get_story(DialogId owner, telegram_api::StoryItem) -> StoryId"
+        description: "Process incoming story from server"
+        callback_pattern: "None (internal)"
+        
+      internal_structures:
+        - name: "Story"
+          fields:
+            - "sender_dialog_id: DialogId"
+            - "date: i32"
+            - "expire_date: i32"
+            - "is_edited: bool"
+            - "is_pinned: bool"
+            - "is_public: bool"
+            - "is_for_close_friends: bool"
+            - "is_live: bool"
+            - "is_outgoing: bool"
+            - "noforwards: bool"
+            - "forward_info: Option<StoryForwardInfo>"
+            - "interaction_info: StoryInteractionInfo"
+            - "chosen_reaction_type: ReactionType"
+            - "privacy_rules: UserPrivacySettingRules"
+            - "content: Box<StoryContent>"
+            - "areas: Vec<MediaArea>"
+            - "album_ids: Vec<StoryAlbumId>"
+            - "caption: FormattedText"
+            - "global_id: i64"
+            
+        - name: "ActiveStories"
+          fields:
+            - "max_read_story_id: StoryId"
+            - "story_ids: Vec<StoryId>"
+            - "story_list_id: StoryListId"
+            - "private_order: i64"
+            - "public_order: i64"
+            - "can_be_archived: bool"
+
+  SuggestedActionManager:
+    public_methods:
+      - name: "update_suggested_actions"
+        signature: "update_suggested_actions(Vec<SuggestedAction> actions)"
+        description: "Update the list of suggested actions"
+        callback_pattern: "None"
+        
+      - name: "hide_suggested_action"
+        signature: "hide_suggested_action(SuggestedAction action)"
+        description: "Hide a suggested action temporarily"
+        callback_pattern: "None"
+        
+      - name: "dismiss_suggested_action"
+        signature: "dismiss_suggested_action(SuggestedAction action) -> Result<()>"
+        description: "Permanently dismiss a suggested action"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "remove_dialog_suggested_action"
+        signature: "remove_dialog_suggested_action(SuggestedAction action)"
+        description: "Remove a dialog-specific suggested action"
+        callback_pattern: "None"
+        
+      - name: "set_dialog_pending_suggestions"
+        signature: "set_dialog_pending_suggestions(DialogId dialog, Vec<String> suggestions)"
+        description: "Set pending suggestions for a dialog"
+        callback_pattern: "None"
+        
+      - name: "is_login_email_address_required"
+        signature: "is_login_email_address_required() -> Result<bool>"
+        description: "Check if login email is required"
+        callback_pattern: "Promise<Unit>"
+        
+      internal_structures:
+        - name: "SuggestedActionState"
+          fields:
+            - "suggested_actions: Vec<SuggestedAction>"
+            - "dialog_suggested_actions: HashMap<DialogId, Vec<SuggestedAction>>"
+            - "dismissed_queries: HashMap<SuggestedAction, Vec<Promise<Unit>>>"
+
+  TermsOfServiceManager:
+    public_methods:
+      - name: "init"
+        signature: "init()"
+        description: "Initialize the manager"
+        callback_pattern: "None"
+        
+      - name: "accept_terms_of_service"
+        signature: "accept_terms_of_service(String terms_id) -> Result<()>"
+        description: "Accept terms of service"
+        callback_pattern: "Promise<Unit>"
+        
+      - name: "get_terms_of_service"
+        signature: "get_terms_of_service() -> Result<(i32, TermsOfService)>"
+        description: "Get current terms of service"
+        callback_pattern: "Promise<(i32, TermsOfService)>"
+        internal: true
+        
+      internal_structures:
+        - name: "TermsOfServiceManagerState"
+          fields:
+            - "pending_terms_of_service: Option<TermsOfService>"
+            - "is_inited: bool"
+
+# ============================================================================
+# Stub Specifications
+# ============================================================================
+
+stubs:
+
+  StoryContent:
+    description: "Story media content (photo, video, etc.)"
+    stub_file: "crates/story_manager/src/stubs/story_content.rs"
+    fields:
+      - name: "content_type"
+        type: "String"
+        description: "Type of content ('photo', 'video', 'etc.')"
+      - name: "duration"
+        type: "Option<i32>"
+        description: "Duration for video stories"
+    constructors:
+      - name: "new"
+        signature: "new(content_type: String) -> Self"
+      - name: "photo"
+        signature: "photo() -> Self"
+      - name: "video"
+        signature: "video(duration: i32) -> Self"
+    methods:
+      - name: "content_type"
+        signature: "content_type(&self) -> &str"
+      - name: "duration"
+        signature: "duration(&self) -> Option<i32>"
+      - name: "is_video"
+        signature: "is_video(&self) -> bool"
+    note: "TODO: Replace with full StoryContent implementation"
+
+  StoryForwardInfo:
+    description: "Forward information for stories"
+    stub_file: "crates/story_manager/src/stubs/story_forward_info.rs"
+    fields:
+      - name: "origin"
+        type: "DialogId"
+        description: "Original sender of the story"
+      - name: "date"
+        type: "i32"
+        description: "Original story date"
+      - name: "author_signature"
+        type: "Option<String>"
+        description: "Author signature if forwarded from channel"
+    constructors:
+      - name: "new"
+        signature: "new(origin: DialogId, date: i32) -> Self"
+    methods:
+      - name: "origin"
+        signature: "origin(&self) -> DialogId"
+      - name: "date"
+        signature: "date(&self) -> i32"
+      - name: "author_signature"
+        signature: "author_signature(&self) -> Option<&str>"
+    note: "TODO: Add full forward info support"
+
+  StoryInteractionInfo:
+    description: "Story interaction statistics"
+    stub_file: "crates/story_manager/src/stubs/story_interaction_info.rs"
+    fields:
+      - name: "view_count"
+        type: "i32"
+        description: "Number of views"
+      - name: "reaction_count"
+        type: "i32"
+        description: "Number of reactions"
+      - name: "forward_count"
+        type: "i32"
+        description: "Number of forwards"
+    constructors:
+      - name: "new"
+        signature: "new() -> Self"
+      - name: "with_counts"
+        signature: "with_counts(views: i32, reactions: i32, forwards: i32) -> Self"
+    methods:
+      - name: "view_count"
+        signature: "view_count(&self) -> i32"
+      - name: "reaction_count"
+        signature: "reaction_count(&self) -> i32"
+      - name: "forward_count"
+        signature: "forward_count(&self) -> i32"
+    note: "TODO: Add interaction detail tracking"
+
+  StoryAlbumId:
+    description: "Story album identifier"
+    stub_file: "crates/story_manager/src/types.rs"
+    fields:
+      - name: "id"
+        type: "i64"
+        description: "Album ID"
+    constructors:
+      - name: "new"
+        signature: "new(id: i64) -> Self"
+      - name: "from_raw"
+        signature: "from_raw(id: i64) -> Self"
+    methods:
+      - name: "get"
+        signature: "get(&self) -> i64"
+      - name: "is_valid"
+        signature: "is_valid(&self) -> bool"
+    implements_trait:
+      - "Clone"
+      - "Copy"
+      - "PartialEq"
+      - "Eq"
+      - "Hash"
+    note: "TODO: Verify ID range with TDLib"
+
+  StoryListId:
+    description: "Story list identifier"
+    stub_file: "crates/story_manager/src/types.rs"
+    enum_variants:
+      - name: "Main"
+        description: "Main story list"
+      - name: "Archive"
+        description: "Archived stories"
+    constructors:
+      - name: "main"
+        signature: "main() -> Self"
+      - name: "archive"
+        signature: "archive() -> Self"
+    methods:
+      - name: "is_main"
+        signature: "is_main(&self) -> bool"
+      - name: "is_archive"
+        signature: "is_archive(&self) -> bool"
+    implements_trait:
+      - "Clone"
+      - "Copy"
+      - "PartialEq"
+      - "Eq"
+      - "Hash"
+    note: "TDLib: enum class StoryListId { int32 type = 0; };"
+
+  MediaArea:
+    description: "Interactive area on story media"
+    stub_file: "crates/story_manager/src/stubs/media_area.rs"
+    fields:
+      - name: "area_type"
+        type: "String"
+        description: "Type of area ('location', 'venue', 'reaction', etc.)"
+      - name: "coordinates"
+        type: "(f32, f32, f32, f32)"
+        description: "(x, y, width, height) as percentages"
+    constructors:
+      - name: "new"
+        signature: "new(area_type: String, coordinates: (f32, f32, f32, f32)) -> Self"
+    methods:
+      - name: "area_type"
+        signature: "area_type(&self) -> &str"
+      - name: "coordinates"
+        signature: "coordinates(&self) -> (f32, f32, f32, f32)"
+    note: "TODO: Add full media area support with specific types"
+
+  SuggestedAction:
+    description: "Suggested action type and data"
+    stub_file: "crates/suggested_action_manager/src/types.rs"
+    type: "enum"
+    variants:
+      - name: "Empty"
+        description: "Empty/invalid action"
+      - name: "EnableArchiveAndMuteNewChats"
+        description: "Enable archive and mute new chats"
+      - name: "CheckPhoneNumber"
+        description: "Check phone number"
+      - name: "ViewChecksHint"
+        description: "View checks hint"
+      - name: "ConvertToGigagroup"
+        description: "Convert to gigagroup"
+      - name: "CheckPassword"
+        description: "Check password"
+      - name: "SetPassword"
+        description: "Set password"
+      - name: "UpgradePremium"
+        description: "Upgrade to Premium"
+      - name: "SubscribeToAnnualPremium"
+        description: "Subscribe to annual Premium"
+      - name: "RestorePremium"
+        description: "Restore Premium"
+      - name: "GiftPremiumForChristmas"
+        description: "Gift Premium for Christmas"
+      - name: "BirthdaySetup"
+        description: "Setup birthday"
+      - name: "PremiumGrace"
+        description: "Premium grace period"
+      - name: "StarsSubscriptionLowBalance"
+        description: "Stars subscription low balance"
+      - name: "UserpicSetup"
+        description: "Setup userpic"
+      - name: "Custom"
+        description: "Custom action type"
+        fields:
+          - name: "custom_type"
+            type: "String"
+      - name: "SetupLoginEmail"
+        description: "Setup login email"
+      - name: "SetupLoginEmailNoskip"
+        description: "Setup login email (no skip)"
+      - name: "SetupPasskey"
+        description: "Setup passkey"
+    additional_fields:
+      - name: "dialog_id"
+        type: "Option<DialogId>"
+        description: "Associated dialog if action is dialog-specific"
+      - name: "otherwise_relogin_days"
+        type: "i32"
+        description: "Days until re-login required"
+      - name: "title"
+        type: "Option<FormattedText>"
+        description: "Action title"
+      - name: "description"
+        type: "Option<FormattedText>"
+        description: "Action description"
+      - name: "url"
+        type: "Option<String>"
+        description: "Action URL"
+    constructors:
+      - name: "empty"
+        signature: "empty() -> Self"
+      - name: "with_type"
+        signature: "with_type(variant: SuggestedActionType) -> Self"
+    methods:
+      - name: "is_empty"
+        signature: "is_empty(&self) -> bool"
+      - name: "is_persistent"
+        signature: "is_persistent(&self) -> bool"
+      - name: "action_type"
+        signature: "action_type(&self) -> SuggestedActionType"
+    note: "Aligns with TDLib SuggestedAction enum"
+
+# ============================================================================
+# Risk Register
+# ============================================================================
+
+risks:
+  - id: "R1"
+    type: "MISSING_DEPENDENCY"
+    description: "StoryContent type not implemented"
+    module: "story_manager"
+    impact: "HIGH"
+    mitigation: "Create stub with basic content type support"
+    outcome: "TBD"
+    
+  - id: "R2"
+    type: "MISSING_DEPENDENCY"
+    description: "Story database layer not implemented"
+    module: "story_manager"
+    impact: "MEDIUM"
+    mitigation: "Use simplified in-memory storage initially"
+    outcome: "TBD"
+    
+  - id: "R3"
+    type: "COMPLEXITY"
+    description: "StoryManager has 50+ public methods"
+    module: "story_manager"
+    impact: "MEDIUM"
+    mitigation: "Implement in phases: basic CRUD first, then advanced features"
+    outcome: "TBD"
+    
+  - id: "R4"
+    type: "STATE_MANAGEMENT"
+    description: "Active story tracking requires complex state management"
+    module: "story_manager"
+    impact: "MEDIUM"
+    mitigation: "Implement clear state transitions with comprehensive tests"
+    outcome: "TBD"
+    
+  - id: "R5"
+    type: "UNVERIFIED_API"
+    description: "FileId, FileUploadId may not exist in expected crates"
+    module: "story_manager"
+    impact: "LOW"
+    mitigation: "Search file-related crates, create stubs if needed"
+    outcome: "TBD"
+    
+  - id: "R6"
+    type: "TL_TYPE"
+    description: "StoryManager uses TL types not yet implemented"
+    module: "story_manager"
+    impact: "MEDIUM"
+    mitigation: "Create local TL stubs for telegram_api types"
+    outcome: "TBD"
+    
+  - id: "R7"
+    type: "SERIALIZATION"
+    description: "Story structures need binary serialization for database"
+    module: "story_manager"
+    impact: "LOW"
+    mitigation: "Implement store/parse methods following TDLib pattern"
+    outcome: "TBD"
+    
+  - id: "R8"
+    type: "NEW_TYPE"
+    description: "SuggestedAction type needs to be created from scratch"
+    module: "suggested_action_manager"
+    impact: "LOW"
+    mitigation: "Follow TDLib enum structure exactly"
+    outcome: "TBD"
+
+# ============================================================================
+# Implementation Phases
+# ============================================================================
+
+phases:
+
+  Phase 1: Story Manager - Core Types
+    modules:
+      - "story_manager"
+    tasks:
+      - "Create StoryContent stub"
+      - "Create StoryForwardInfo stub"
+      - "Create StoryInteractionInfo stub"
+      - "Create StoryAlbumId type"
+      - "Create StoryListId type"
+      - "Create MediaArea stub"
+      - "Create Story struct"
+      - "Create StoryInfo struct"
+    estimated_tests: 80
+    estimated_loc: 800
+    
+  Phase 2: Story Manager - Basic Operations
+    modules:
+      - "story_manager"
+    tasks:
+      - "Implement get_story()"
+      - "Implement send_story()"
+      - "Implement edit_story()"
+      - "Implement delete_story()"
+      - "Implement story storage (in-memory)"
+    estimated_tests: 100
+    estimated_loc: 1000
+    
+  Phase 3: Story Manager - Advanced Features
+    modules:
+      - "story_manager"
+    tasks:
+      - "Implement set_story_reaction()"
+      - "Implement get_story_interactions()"
+      - "Implement toggle_story_is_pinned()"
+      - "Implement get_dialog_pinned_stories()"
+      - "Implement get_story_archive()"
+      - "Implement activate_stealth_mode()"
+      - "Implement load_active_stories()"
+    estimated_tests: 120
+    estimated_loc: 700
+    
+  Phase 4: Suggested Action Manager
+    modules:
+      - "suggested_action_manager"
+    tasks:
+      - "Create SuggestedAction enum"
+      - "Implement update_suggested_actions()"
+      - "Implement hide_suggested_action()"
+      - "Implement dismiss_suggested_action()"
+      - "Implement remove_dialog_suggested_action()"
+      - "Implement set_dialog_pending_suggestions()"
+    estimated_tests: 60
+    estimated_loc: 600
+    
+  Phase 5: Terms Of Service Manager
+    modules:
+      - "terms_of_service_manager"
+    tasks:
+      - "Implement init()"
+      - "Implement accept_terms_of_service()"
+      - "Implement get_terms_of_service()"
+      - "Implement periodic fetching logic"
+    estimated_tests: 40
+    estimated_loc: 400
+
+# ============================================================================
+# Test Requirements
+# ============================================================================
+
+test_requirements:
+
+  story_manager:
+    unit_tests: 200
+    integration_tests: 20
+    doc_tests: 30
+    coverage_target: 85
+    critical_tests:
+      - "Story creation and storage"
+      - "Story expiration logic"
+      - "Active story tracking"
+      - "Stealth mode activation"
+      - "Story reaction handling"
+      - "Story privacy settings"
+      
+  suggested_action_manager:
+    unit_tests: 60
+    integration_tests: 10
+    doc_tests: 15
+    coverage_target: 80
+    critical_tests:
+      - "Action persistence"
+      - "Action dismissal"
+      - "Dialog-specific actions"
+      - "Email requirement check"
+      
+  terms_of_service_manager:
+    unit_tests: 40
+    integration_tests: 5
+    doc_tests: 10
+    coverage_target: 80
+    critical_tests:
+      - "Terms acceptance"
+      - "Terms fetching"
+      - "Periodic updates"
+
+# ============================================================================
+# Quality Standards
+# ============================================================================
+
+quality_standards:
+  clippy_warnings: 0
+  unwrap_in_production: 0
+  documentation_coverage: 100
+  public_api_docs: 100
+  serialization_support: true
+  thread_safety:
+    story_manager: "Arc<RwLock<T>> for shared state"
+    suggested_action_manager: "Arc<RwLock<T>> for shared state"
+    terms_of_service_manager: "Arc<RwLock<T>> for shared state"
+
+# ============================================================================
+# Success Criteria
+# ============================================================================
+
+success_criteria:
+  code_quality:
+    - "Zero clippy warnings"
+    - "Zero unwrap() in production code"
+    - "100% public API documentation"
+    - "All tests passing"
+    
+  functionality:
+    - "Story CRUD operations working"
+    - "Story reactions functional"
+    - "Stealth mode working"
+    - "Suggested actions tracked"
+    - "Terms of service accepted"
+    
+  performance:
+    - "Story retrieval < 100ms (in-memory)"
+    - "Active story updates < 50ms"
+    - "Action updates < 10ms"
+
+# ============================================================================
+# Dependencies Summary
+# ============================================================================
+
+dependencies_summary:
+  existing_crates:
+    - "rustgram-dialog-id"
+    - "rustgram-active-story-state"
+    - "rustgram-types"
+    - "rustgram-reaction-type"
+    - "rustgram-formatted-text"
+    - "rustgram-story-stealth-mode"
+    - "rustgram-terms-of-service"
+    
+  new_crates_required:
+    - "rustgram-story-manager"
+    - "rustgram-suggested-action-manager"
+    - "rustgram-terms-of-service-manager"
+    
+  external_dependencies:
+    - "serde (serialization)"
+    - "tokio (async runtime)"
+    - "base64 (custom emoji encoding)"

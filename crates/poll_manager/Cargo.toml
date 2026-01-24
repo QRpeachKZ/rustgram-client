@@ -1,0 +1,29 @@
+[package]
+name = "rustgram-poll-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Poll manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-message-full-id = { path = "../message_full-id" }
+rustgram-formatted-text = { path = "../formatted-text" }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

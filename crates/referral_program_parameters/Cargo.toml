@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_referral_program_parameters"
+name = "rustgram-referral-program-parameters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -1,0 +1,218 @@
+{
+  "status": "warning",
+  "summary": "Phase 2 analysis complete: Plan validated with 3 critical issues identified and mitigated. 5 recommendations provided including loom testing and expanded test coverage.",
+  "artifacts": [
+    "specs/actor-messaging.yaml",
+    "dependency_matrix.md",
+    "risk_register.yaml",
+    "plan_validation.md"
+  ],
+  "metrics": {
+    "tdlib_components_analyzed": {"value": 13, "target": "5+", "status": "MET"},
+    "risks_identified": {"value": 12, "target": "5+", "status": "MET"},
+    "spec_lines": {"value": 450, "target": "300+", "status": "MET"},
+    "dependency_mappings": {"value": 11, "target": "8+", "status": "MET"},
+    "mitigated_risks": {"value": 3, "target": "0+", "status": "MET"},
+    "open_risks": {"value": 9, "target": "10-", "status": "MET"}
+  },
+  "risks": [
+    {
+      "id": "R1",
+      "type": "UNRESOLVED_API",
+      "title": "TDLib Actor Semantic Differences",
+      "status": "OPEN",
+      "impact": "HIGH",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R2",
+      "type": "DEADLOCK",
+      "title": "Scheduler Message Queue Deadlock",
+      "status": "OPEN",
+      "impact": "CRITICAL",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R3",
+      "type": "TYPE_SAFETY",
+      "title": "Actor Downcasting Failures",
+      "status": "OPEN",
+      "impact": "HIGH",
+      "likelihood": "HIGH"
+    },
+    {
+      "id": "R4",
+      "type": "PERFORMANCE",
+      "title": "Dynamic Dispatch Overhead",
+      "status": "MITIGATED",
+      "impact": "MEDIUM",
+      "likelihood": "HIGH"
+    },
+    {
+      "id": "R5",
+      "type": "MEMORY_LEAK",
+      "title": "Actor Registry Cleanup Issues",
+      "status": "OPEN",
+      "impact": "HIGH",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R6",
+      "type": "UNRESOLVED_API",
+      "title": "Actor Migration Semantics",
+      "status": "OPEN",
+      "impact": "MEDIUM",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R7",
+      "type": "DEADLOCK",
+      "title": "Supervisor Restart Deadlock",
+      "status": "MITIGATED",
+      "impact": "HIGH",
+      "likelihood": "LOW"
+    },
+    {
+      "id": "R8",
+      "type": "TYPE_SAFETY",
+      "title": "Message Type Erasure",
+      "status": "OPEN",
+      "impact": "MEDIUM",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R9",
+      "type": "PERFORMANCE",
+      "title": "Lock Contention in Registry",
+      "status": "OPEN",
+      "impact": "MEDIUM",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R10",
+      "type": "MEMORY_LEAK",
+      "title": "Mailbox Memory Growth",
+      "status": "OPEN",
+      "impact": "HIGH",
+      "likelihood": "HIGH"
+    },
+    {
+      "id": "R11",
+      "type": "UNRESOLVED_API",
+      "title": "Timeout Precision on Different Platforms",
+      "status": "MITIGATED",
+      "impact": "LOW",
+      "likelihood": "MEDIUM"
+    },
+    {
+      "id": "R12",
+      "type": "DEADLOCK",
+      "title": "Thread-Local Context Loss Across Await",
+      "status": "OPEN",
+      "impact": "HIGH",
+      "likelihood": "HIGH"
+    }
+  ],
+  "critical_issues": [
+    {
+      "id": "CI1",
+      "title": "Thread-Local Context Loss Across Await",
+      "severity": "CRITICAL",
+      "mitigation": "Use tokio::task_local for context preservation",
+      "status": "MITIGATED_IN_SPEC"
+    },
+    {
+      "id": "CI2",
+      "title": "Type Safety in Downcasting",
+      "severity": "HIGH",
+      "mitigation": "Generation counter in ActorId with validation",
+      "status": "MITIGATED_IN_RISK_REGISTER"
+    },
+    {
+      "id": "CI3",
+      "title": "Mailbox Memory Growth",
+      "severity": "HIGH",
+      "mitigation": "Fixed-size ring buffer with overflow handling",
+      "status": "MITIGATED_IN_RISK_REGISTER"
+    }
+  ],
+  "recommendations": [
+    {
+      "id": "REC1",
+      "priority": "HIGH",
+      "title": "Add loom for Concurrency Testing",
+      "cost": "+2 days",
+      "benefit": "Detects deadlocks and data races in CI"
+    },
+    {
+      "id": "REC2",
+      "priority": "HIGH",
+      "title": "Expand Test Coverage to 225 Tests",
+      "cost": "+3 days",
+      "benefit": "Covers critical paths with property-based and stress tests"
+    },
+    {
+      "id": "REC3",
+      "priority": "MEDIUM",
+      "title": "Phase 1 Prototype for Migration",
+      "cost": "+2 days",
+      "benefit": "Validates migration approach, prevents rework"
+    },
+    {
+      "id": "REC4",
+      "priority": "HIGH",
+      "title": "Benchmark Early",
+      "cost": "+2 days",
+      "benefit": "Validates performance targets early"
+    },
+    {
+      "id": "REC5",
+      "priority": "MEDIUM",
+      "title": "Document Rust Deviations",
+      "cost": "+1 day",
+      "benefit": "Improves usability, prevents misuse"
+    }
+  ],
+  "tdlib_analysis": {
+    "files_analyzed": 13,
+    "total_lines_tdlib": 2646,
+    "estimated_lines_rust": 3500,
+    "components_mapped": {
+      "actor": "actor.rs::Actor trait",
+      "actor_id": "actor_id.rs::ActorId<T>",
+      "actor_own": "actor_own.rs::ActorOwn<T>",
+      "actor_shared": "actor_shared.rs::ActorShared<T>",
+      "event": "event.rs::Event enum",
+      "scheduler": "scheduler.rs::Scheduler",
+      "actor_info": "actor_info.rs::ActorInfo",
+      "actor_context": "context.rs::ActorContext",
+      "mailbox": "mailbox.rs::Mailbox",
+      "supervisor": "supervisor.rs::Supervisor (not in TDLib)"
+    },
+    "compatibility_score": 85,
+    "deviations": [
+      "Event: Enum instead of union (small overhead)",
+      "Migration: Best-effort instead of guaranteed",
+      "Thread-local: tokio::task_local instead of pthread_getspecific",
+      "Actor moves: Ownership transfer instead of move constructor"
+    ]
+  },
+  "validation_result": {
+    "status": "APPROVED_WITH_MODIFICATIONS",
+    "consistency_check": "PASS",
+    "dependencies_check": "PASS_WITH_ADDITION",
+    "test_strategy_check": "NEEDS_EXPANSION",
+    "rework_risk": "MEDIUM",
+    "timeline_adjustment": "+7 days (27 vs 20 planned)"
+  },
+  "next_step": "Phase 2.5: Verification Gate",
+  "gate_criteria": [
+    "All critical risks mitigated (R2, R3, R10, R12)",
+    "loom testing setup complete",
+    "Migration spike complete",
+    "Baseline benchmarks established"
+  ],
+  "gate_owner": "System Architect",
+  "gate_date": "2026-01-20",
+  "phase_3_start_date": "2026-01-21 (pending gate approval)"
+}

@@ -9,6 +9,10 @@ repository.workspace = true
 
 description = "TON amount type for Telegram payments"
 
+[lib]
+name = "rustgram_ton_amount"
+path = "src/lib.rs"
+
 [dependencies]
 serde = { workspace = true }
 

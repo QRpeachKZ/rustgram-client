@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-formatted-text"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Formatted text with entities for Telegram messages"
+
+[lib]
+name = "rustgram_formatted_text"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

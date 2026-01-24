@@ -728,6 +728,11 @@ impl<'de> Deserialize<'de> for TlInt256 {
     }
 }
 
+/// UInt256 type (32 bytes).
+///
+/// Alias for TlInt256 for TDLib compatibility.
+pub type UInt256 = TlInt256;
+
 /// TL Bool type.
 ///
 /// In MTProto, bool values have specific constructor IDs:

@@ -1,0 +1,17 @@
+[package]
+name = "rustgram-forum-topic-full-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram_dialog_id = { path = "../dialog_id" }
+rustgram_forum_topic_id = { path = "../forum_topic_id" }
+serde = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+serde_json = { workspace = true }

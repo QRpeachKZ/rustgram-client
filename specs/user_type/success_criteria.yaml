@@ -1,0 +1,141 @@
+# Success Criteria: UserType Module
+# Epic: rustgram-client-bz7
+# Phase: All phases
+# Version: 1.0
+
+criteria:
+  compilation:
+    - id: "SC-001"
+      description: "Crate compiles without errors"
+      metric: "cargo build --package rustgram-user-type"
+      target: "exit code 0"
+      priority: "MUST"
+
+    - id: "SC-002"
+      description: "Zero clippy warnings"
+      metric: "cargo clippy --package rustgram-user-type -- -D warnings"
+      target: "0 warnings"
+      priority: "MUST"
+
+  code_coverage:
+    - id: "SC-003"
+      description: "Minimum test count"
+      metric: "cargo test --package rustgram-user-type | grep 'test result:'"
+      target: ">= 35 tests passing"
+      priority: "MUST"
+
+    - id: "SC-004"
+      description: "Test all enum variants"
+      metric: "Coverage analysis"
+      target: "All 4 variants have tests"
+      priority: "MUST"
+
+  api_completeness:
+    - id: "SC-005"
+      description: "All 4 enum variants exist"
+      metric: "Code inspection"
+      target: "Regular, Deleted, Bot (11 fields), Unknown"
+      priority: "MUST"
+
+    - id: "SC-006"
+      description: "Conversion methods implemented"
+      metric: "Method existence check"
+      target: "from_td_api_name, to_td_api_name, from_i32, to_i32"
+      priority: "MUST"
+
+    - id: "SC-007"
+      description: "Trait implementations"
+      metric: "Derive/impl check"
+      target: "Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Display, Serialize, Deserialize"
+      priority: "MUST"
+
+  documentation:
+    - id: "SC-008"
+      description: "Documentation coverage"
+      metric: "missing_docs lint"
+      target: "No missing_docs warnings"
+      priority: "SHOULD"
+
+  tl_schema_compliance:
+    - id: "SC-009"
+      description: "Bot field count matches TL schema"
+      metric: "Field count check"
+      target: "Exactly 11 fields in UserType::Bot"
+      priority: "MUST"
+
+    - id: "SC-010"
+      description: "TL schema name mapping"
+      metric: "Conversion test"
+      target: "Correct mapping for userTypeRegular, userTypeDeleted, userTypeBot, userTypeUnknown"
+      priority: "MUST"
+
+  performance:
+    - id: "SC-011"
+      description: "Enum is Copy"
+      metric: "std::mem::size_of::<UserType>()"
+      target: "Copy trait derived (data variants use Copy types)"
+      priority: "SHOULD"
+
+verification_command: |
+  #!/bin/bash
+  set -e
+  cd /Users/alfa/Documents/Self_projects/github/rustgram-client
+
+  echo "=== Verifying UserType Module ==="
+
+  # Build
+  echo "Building..."
+  cargo build --package rustgram-user-type
+
+  # Clippy
+  echo "Checking clippy..."
+  cargo clippy --package rustgram-user-type -- -D warnings
+
+  # Tests
+  echo "Running tests..."
+  cargo test --package rustgram-user-type
+
+  # Count tests
+  TEST_COUNT=$(cargo test --package rustgram-user-type --no-run 2>&1 | grep -o '[0-9]\+ tests' | grep -o '[0-9]\+' || echo "0")
+  echo "Test count: $TEST_COUNT"
+
+  if [ "$TEST_COUNT" -lt 35 ]; then
+    echo "FAIL: Need at least 35 tests, got $TEST_COUNT"
+    exit 1
+  fi
+
+  echo "=== All criteria passed ==="
+
+exit_criteria:
+  phase1_planning:
+    - "clarification_qa.md created with 4 Q&A pairs"
+    - "plan.yaml created with 7 implementation steps"
+    - "success_criteria.yaml created with quantifiable metrics"
+    - "No critical unknowns remain"
+
+  phase2_implementation:
+    - "All SC-001 through SC-010 criteria met"
+    - "Verification script passes"
+    - "Code review approved"
+
+  phase3_completion:
+    - "All SC criteria met"
+    - "Documentation complete"
+    - "Ready for integration"
+
+dependencies_satisfied:
+  external:
+    - "serde 1.0 with derive feature available in workspace"
+
+  internal: []  # No internal dependencies
+
+notes: |
+  The UserType module is a foundational type used throughout the client for
+  distinguishing between regular users, deleted accounts, bots, and unknown
+  user types. It must match TDLib's TL schema exactly for protocol compatibility.
+
+  Key considerations:
+  - Bot variant carries significant data (11 fields)
+  - Must be Copy for ergonomics (all field types are Copy)
+  - TL schema name conversion is critical for wire protocol compatibility
+  - Default should be Regular (most common case)

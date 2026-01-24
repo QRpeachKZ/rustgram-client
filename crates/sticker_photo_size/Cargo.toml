@@ -1,0 +1,18 @@
+[package]
+name = "rustgram-sticker-photo-size"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Sticker photo size for Telegram MTProto client"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+rustgram-custom-emoji-id = { workspace = true, features = ["serde"] }
+rustgram-sticker-set-id = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json.workspace = true

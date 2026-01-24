@@ -1,0 +1,16 @@
+[package]
+name = "rustgram-emoji-status"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-custom-emoji-id = { path = "../custom_emoji-id, features = ["serde"] }
+serde = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+serde_json = { workspace = true }

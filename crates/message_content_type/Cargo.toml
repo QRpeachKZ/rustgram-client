@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_message_content_type"
+name = "rustgram-message-content-type"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

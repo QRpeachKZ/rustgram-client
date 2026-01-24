@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-bot-verification"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Bot verification types for Telegram"
+
+[dependencies]
+# Local crates
+rustgram-types = { path = "../types" }
+rustgram-formatted-text = { path = "../formatted-text" }
+
+# Serialization
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

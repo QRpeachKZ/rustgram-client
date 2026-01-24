@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-quick-reply-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Quick reply manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-quick-reply-shortcut-id = { path = "../quick_reply_shortcut-id" }
+rustgram-quick-reply-message-full-id = { path = "../quick_reply_message_full-id" }
+rustgram-dialog-id = { path = "../dialog-id" }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_peer_color"
+name = "rustgram-peer-color"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

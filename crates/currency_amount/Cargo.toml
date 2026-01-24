@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-currency-amount"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Currency amount enum wrapper for Telegram payments"
+
+[dependencies]
+# Local crates
+rustgram-star-amount = { path = "../star-amount" }
+rustgram-ton-amount = { path = "../ton-amount" }
+
+# Serialization
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

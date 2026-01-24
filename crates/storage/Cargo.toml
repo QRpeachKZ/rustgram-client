@@ -10,8 +10,12 @@ repository = "https://github.com/rustgram/rustgram-client"
 [features]
 default = ["dialog"]
 dialog = []
+message = []
+user = []
+chat = []
+file = []
 secure = ["dep:aes", "dep:cbc", "dep:pbkdf2", "dep:sha2", "dep:rand", "dep:getrandom"]
-full = ["dialog", "secure"]
+full = ["dialog", "message", "user", "chat", "file", "secure"]
 
 [dependencies]
 rustgram-types = { path = "../types" }

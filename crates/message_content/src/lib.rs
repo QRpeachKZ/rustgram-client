@@ -231,6 +231,12 @@ impl MessagePhoto {
     }
 }
 
+impl Default for MessagePhoto {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Sticker message content.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MessageSticker {
@@ -502,18 +508,18 @@ impl MessageChatAddUsers {
     }
 }
 
+impl Default for MessageChatAddUsers {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// User joined via invite link message content.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessageChatJoinedByLink {
     /// Is approved
     #[serde(default)]
     pub is_approved: bool,
-}
-
-impl Default for MessageChatJoinedByLink {
-    fn default() -> Self {
-        Self { is_approved: false }
-    }
 }
 
 /// User removed from chat message content.
@@ -939,23 +945,15 @@ impl MessageWebsiteConnected {
 }
 
 /// Passport data sent message content.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessagePassportDataSent {
     /// Secure value types
     #[serde(default)]
     pub types: Vec<String>,
 }
 
-impl Default for MessagePassportDataSent {
-    fn default() -> Self {
-        Self {
-            types: Vec::new(),
-        }
-    }
-}
-
 /// Passport data received message content.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessagePassportDataReceived {
     /// Values (placeholder)
     #[serde(default)]
@@ -979,15 +977,6 @@ pub struct Credentials {
     /// Data hash
     #[serde(default)]
     pub data_hash: Vec<u8>,
-}
-
-impl Default for MessagePassportDataReceived {
-    fn default() -> Self {
-        Self {
-            values: Vec::new(),
-            credentials: Credentials::default(),
-        }
-    }
 }
 
 /// Poll message content.
@@ -1151,7 +1140,13 @@ pub struct MessageGiftPremium {
 impl MessageGiftPremium {
     /// Creates a new gift premium message content.
     #[must_use]
-    pub fn new(from_user_id: UserId, to_user_id: UserId, currency: String, amount: i64, months: i32) -> Self {
+    pub fn new(
+        from_user_id: UserId,
+        to_user_id: UserId,
+        currency: String,
+        amount: i64,
+        months: i32,
+    ) -> Self {
         Self {
             from_user_id,
             to_user_id,
@@ -1184,7 +1179,7 @@ impl MessageTopicCreate {
 }
 
 /// Topic edited message content.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessageTopicEdit {
     /// Title (optional)
     #[serde(default)]
@@ -1192,15 +1187,6 @@ pub struct MessageTopicEdit {
     /// Icon emoji ID (optional)
     #[serde(default)]
     pub icon_emoji_id: Option<i64>,
-}
-
-impl Default for MessageTopicEdit {
-    fn default() -> Self {
-        Self {
-            title: None,
-            icon_emoji_id: None,
-        }
-    }
 }
 
 /// Suggest profile photo message content.
@@ -1254,7 +1240,7 @@ impl Default for MessageWebViewWriteAccessAllowed {
 }
 
 /// Set background message content.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessageSetBackground {
     /// Background (placeholder)
     #[serde(default)]
@@ -1266,14 +1252,6 @@ pub struct MessageSetBackground {
 pub struct BackgroundData {
     /// Background ID
     pub id: i64,
-}
-
-impl Default for MessageSetBackground {
-    fn default() -> Self {
-        Self {
-            background: BackgroundData::default(),
-        }
-    }
 }
 
 /// Story message content.
@@ -1768,7 +1746,10 @@ impl MessageSuggestedPostSuccess {
     /// Creates a new suggested post success message content.
     #[must_use]
     pub fn new(dialog_id: DialogId, message_id: MessageId) -> Self {
-        Self { dialog_id, message_id }
+        Self {
+            dialog_id,
+            message_id,
+        }
     }
 }
 
@@ -1785,7 +1766,10 @@ impl MessageSuggestedPostRefund {
     /// Creates a new suggested post refund message content.
     #[must_use]
     pub fn new(dialog_id: DialogId, message_id: MessageId) -> Self {
-        Self { dialog_id, message_id }
+        Self {
+            dialog_id,
+            message_id,
+        }
     }
 }
 
@@ -1802,7 +1786,10 @@ impl MessageSuggestedPostApproval {
     /// Creates a new suggested post approval message content.
     #[must_use]
     pub fn new(dialog_id: DialogId, message_id: MessageId) -> Self {
-        Self { dialog_id, message_id }
+        Self {
+            dialog_id,
+            message_id,
+        }
     }
 }
 
@@ -1839,7 +1826,10 @@ impl MessageStarGiftPurchaseOffer {
     /// Creates a new star gift purchase offer message content.
     #[must_use]
     pub fn new(gift_id: i64, star_count: i32) -> Self {
-        Self { gift_id, star_count }
+        Self {
+            gift_id,
+            star_count,
+        }
     }
 }
 
@@ -2139,7 +2129,9 @@ impl MessageContent {
             Self::SuggestedPostApproval(_) => MessageContentType::SuggestedPostApproval,
             Self::SuggestBirthday(_) => MessageContentType::SuggestBirthday,
             Self::StarGiftPurchaseOffer(_) => MessageContentType::StarGiftPurchaseOffer,
-            Self::StarGiftPurchaseOfferDeclined(_) => MessageContentType::StarGiftPurchaseOfferDeclined,
+            Self::StarGiftPurchaseOfferDeclined(_) => {
+                MessageContentType::StarGiftPurchaseOfferDeclined
+            }
         }
     }
 
@@ -2213,17 +2205,25 @@ pub enum MessageContentError {
     /// Invalid content type for the requested operation
     #[error("Invalid content type: expected {expected}, got {actual}")]
     InvalidContentType {
+        /// The expected content type
         expected: MessageContentType,
+        /// The actual content type received
         actual: MessageContentType,
     },
 
     /// Missing required field
     #[error("Missing required field: {field}")]
-    MissingField { field: String },
+    MissingField {
+        /// Name of the missing field
+        field: String,
+    },
 
     /// Invalid data format
     #[error("Invalid data format: {reason}")]
-    InvalidFormat { reason: String },
+    InvalidFormat {
+        /// Reason why the format is invalid
+        reason: String,
+    },
 }
 
 // ============================================================================
@@ -2259,7 +2259,8 @@ mod tests {
 
     #[test]
     fn test_is_service() {
-        let content = MessageContent::ChatCreate(Box::new(MessageChatCreate::new("Test".to_string())));
+        let content =
+            MessageContent::ChatCreate(Box::new(MessageChatCreate::new("Test".to_string())));
         assert!(content.is_service());
 
         let text = FormattedText::new("Hello");
@@ -2392,7 +2393,10 @@ mod tests {
     #[test]
     fn test_modern_features() {
         // Story
-        let story = MessageContent::Story(Box::new(MessageStory::new(DialogId::from_user(UserId(1)), 123)));
+        let story = MessageContent::Story(Box::new(MessageStory::new(
+            DialogId::from_user(UserId(1)),
+            123,
+        )));
         assert_eq!(story.content_type(), MessageContentType::Story);
 
         // Giveaway
@@ -2433,7 +2437,8 @@ mod tests {
         let launch = MessageContent::GiveawayLaunch(Box::new(MessageGiveawayLaunch::new(1)));
         assert_eq!(launch.content_type(), MessageContentType::GiveawayLaunch);
 
-        let results = MessageContent::GiveawayResults(Box::new(MessageGiveawayResults::new(1, 5, 2)));
+        let results =
+            MessageContent::GiveawayResults(Box::new(MessageGiveawayResults::new(1, 5, 2)));
         assert_eq!(results.content_type(), MessageContentType::GiveawayResults);
 
         let winners = MessageContent::GiveawayWinners(Box::new(MessageGiveawayWinners::new(1, 10)));
@@ -2442,18 +2447,12 @@ mod tests {
 
     #[test]
     fn test_star_types() {
-        let gift_stars = MessageContent::GiftStars(Box::new(MessageGiftStars::new(
-            UserId(1),
-            UserId(2),
-            100,
-        )));
+        let gift_stars =
+            MessageContent::GiftStars(Box::new(MessageGiftStars::new(UserId(1), UserId(2), 100)));
         assert_eq!(gift_stars.content_type(), MessageContentType::GiftStars);
 
-        let prize_stars = MessageContent::PrizeStars(Box::new(MessagePrizeStars::new(
-            UserId(1),
-            UserId(2),
-            50,
-        )));
+        let prize_stars =
+            MessageContent::PrizeStars(Box::new(MessagePrizeStars::new(UserId(1), UserId(2), 50)));
         assert_eq!(prize_stars.content_type(), MessageContentType::PrizeStars);
 
         let star_gift = MessageContent::StarGift(Box::new(MessageStarGift::new(
@@ -2471,7 +2470,10 @@ mod tests {
         assert_eq!(todo_list.content_type(), MessageContentType::ToDoList);
 
         let completions = MessageContent::TodoCompletions(Box::new(MessageTodoCompletions::new(1)));
-        assert_eq!(completions.content_type(), MessageContentType::TodoCompletions);
+        assert_eq!(
+            completions.content_type(),
+            MessageContentType::TodoCompletions
+        );
 
         let append = MessageContent::TodoAppendTasks(Box::new(MessageTodoAppendTasks::new(1)));
         assert_eq!(append.content_type(), MessageContentType::TodoAppendTasks);
@@ -2483,10 +2485,9 @@ mod tests {
         assert_eq!(paid.content_type(), MessageContentType::PaidMedia);
         assert!(paid.is_media());
 
-        let refunded = MessageContent::PaidMessagesRefunded(Box::new(MessagePaidMessagesRefunded::new(
-            UserId(1),
-            3,
-        )));
+        let refunded = MessageContent::PaidMessagesRefunded(Box::new(
+            MessagePaidMessagesRefunded::new(UserId(1), 3),
+        ));
         assert!(refunded.is_service());
 
         let price = MessageContent::PaidMessagesPrice(Box::new(MessagePaidMessagesPrice::new(100)));
@@ -2495,37 +2496,53 @@ mod tests {
 
     #[test]
     fn test_web_view_types() {
-        let sent = MessageContent::WebViewDataSent(Box::new(MessageWebViewDataSent::new("data".to_string())));
-        assert_eq!(sent.content_type(), MessageContentType::WebViewDataSent);
-
-        let received = MessageContent::WebViewDataReceived(Box::new(MessageWebViewDataReceived::new(
+        let sent = MessageContent::WebViewDataSent(Box::new(MessageWebViewDataSent::new(
             "data".to_string(),
         )));
-        assert_eq!(received.content_type(), MessageContentType::WebViewDataReceived);
+        assert_eq!(sent.content_type(), MessageContentType::WebViewDataSent);
 
-        let access = MessageContent::WebViewWriteAccessAllowed(Box::new(MessageWebViewWriteAccessAllowed::default()));
-        assert_eq!(access.content_type(), MessageContentType::WebViewWriteAccessAllowed);
+        let received = MessageContent::WebViewDataReceived(Box::new(
+            MessageWebViewDataReceived::new("data".to_string()),
+        ));
+        assert_eq!(
+            received.content_type(),
+            MessageContentType::WebViewDataReceived
+        );
+
+        let access = MessageContent::WebViewWriteAccessAllowed(Box::new(
+            MessageWebViewWriteAccessAllowed::default(),
+        ));
+        assert_eq!(
+            access.content_type(),
+            MessageContentType::WebViewWriteAccessAllowed
+        );
     }
 
     #[test]
     fn test_suggested_post_types() {
-        let success = MessageContent::SuggestedPostSuccess(Box::new(MessageSuggestedPostSuccess::new(
-            DialogId::from_user(UserId(1)),
-            MessageId(1),
-        )));
-        assert_eq!(success.content_type(), MessageContentType::SuggestedPostSuccess);
+        let success = MessageContent::SuggestedPostSuccess(Box::new(
+            MessageSuggestedPostSuccess::new(DialogId::from_user(UserId(1)), MessageId(1)),
+        ));
+        assert_eq!(
+            success.content_type(),
+            MessageContentType::SuggestedPostSuccess
+        );
 
-        let refund = MessageContent::SuggestedPostRefund(Box::new(MessageSuggestedPostRefund::new(
-            DialogId::from_user(UserId(1)),
-            MessageId(1),
-        )));
-        assert_eq!(refund.content_type(), MessageContentType::SuggestedPostRefund);
+        let refund = MessageContent::SuggestedPostRefund(Box::new(
+            MessageSuggestedPostRefund::new(DialogId::from_user(UserId(1)), MessageId(1)),
+        ));
+        assert_eq!(
+            refund.content_type(),
+            MessageContentType::SuggestedPostRefund
+        );
 
-        let approval = MessageContent::SuggestedPostApproval(Box::new(MessageSuggestedPostApproval::new(
-            DialogId::from_user(UserId(1)),
-            MessageId(1),
-        )));
-        assert_eq!(approval.content_type(), MessageContentType::SuggestedPostApproval);
+        let approval = MessageContent::SuggestedPostApproval(Box::new(
+            MessageSuggestedPostApproval::new(DialogId::from_user(UserId(1)), MessageId(1)),
+        ));
+        assert_eq!(
+            approval.content_type(),
+            MessageContentType::SuggestedPostApproval
+        );
     }
 
     #[test]

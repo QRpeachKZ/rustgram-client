@@ -1,0 +1,17 @@
+[package]
+name = "rustgram-photo-size-source"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-file-type = { path = "../file_type" }
+rustgram-photo-size-type = { path = "../photo_size-type" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = [
+  "dep:serde",
+  "rustgram-photo-size-type/serde",
+]

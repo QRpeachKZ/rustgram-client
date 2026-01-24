@@ -1,0 +1,45 @@
+[package]
+name = "rustgram_suggested_action"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Suggested action types for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "suggestions", "actions"]
+categories = ["data-structures"]
+
+[dependencies]
+# Formatting
+rustgram-formatted-text = { path = "../formatted-text" }
+
+# Dialog ID
+rustgram-dialog-id = { path = "../dialog-id" }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[lib]
+name = "rustgram_suggested_action"
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -27,8 +27,8 @@ default = []
 serde = ["dep:serde"]
 
 [lints]
-rust = { unexpected_cfgs = "allow" }
-clippy = { all = "deny", unwrap_used = "deny", expect_used = "deny" }
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
 
 [package.metadata.docs.rs]
 all-features = true

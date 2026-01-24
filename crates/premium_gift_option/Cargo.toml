@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-premium-gift-option"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

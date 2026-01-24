@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-custom-emoji-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Custom emoji identifier type for Telegram MTProto client"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-background-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Background manager for Telegram MTProto client"
+rust-version.workspace = true
+
+[dependencies]
+rustgram-background-id = { path = "../background-id" }
+rustgram-background-type = { path = "../background-type, package = "rustgram-background-type" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-file-source-id = { path = "../file_source-id" }
+rustgram-file-upload-id = { path = "../file_upload-id" }
+rustgram-types = { path = "../types" }
+rustgram-logevent = { path = "../logevent" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+rstest = "0.23"

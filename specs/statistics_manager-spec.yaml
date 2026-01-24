@@ -1,0 +1,248 @@
+# StatisticsManager Module Specification
+
+## Module Information
+module: statistics_manager
+crate: rustgram-statistics-manager
+type: Manager
+complexity: HIGH
+tdlib_reference: references/td/td/telegram/StatisticsManager.h
+epic: 21
+
+## Overview
+StatisticsManager is responsible for fetching and managing Telegram statistics data for channels, messages, and stories. It handles async statistics queries, graph data loading, and public forwards retrieval.
+
+## Public API Methods
+
+### Channel Statistics
+- **get_channel_statistics**
+  - TDLib: `get_channel_statistics(DialogId dialog_id, bool is_dark, Promise<td_api::object_ptr<td_api::ChatStatistics>> promise)`
+  - Rust: `pub fn get_channel_statistics(&self, dialog_id: DialogId, is_dark: bool) -> impl Future<Output = Result<ChatStatistics, Error>>`
+  - Description: Fetch statistics for a channel/supergroup
+  - Dependencies: DialogId, ChatStatistics
+
+- **get_channel_message_statistics**
+  - TDLib: `get_channel_message_statistics(MessageFullId message_full_id, bool is_dark, Promise<td_api::object_ptr<td_api::messageStatistics>> promise)`
+  - Rust: `pub fn get_channel_message_statistics(&self, message_full_id: MessageFullId, is_dark: bool) -> impl Future<Output = Result<MessageStatistics, Error>>`
+  - Description: Fetch statistics for a message in a channel
+  - Dependencies: MessageFullId, MessageStatistics
+
+- **get_channel_story_statistics**
+  - TDLib: `get_channel_story_statistics(StoryFullId story_full_id, bool is_dark, Promise<td_api::object_ptr<td_api::storyStatistics>> promise)`
+  - Rust: `pub fn get_channel_story_statistics(&self, story_full_id: StoryFullId, is_dark: bool) -> impl Future<Output = Result<StoryStatistics, Error>>`
+  - Description: Fetch statistics for a story in a channel
+  - Dependencies: StoryFullId, StoryStatistics
+
+### Revenue Statistics
+- **get_dialog_revenue_statistics**
+  - TDLib: `get_dialog_revenue_statistics(DialogId dialog_id, bool is_dark, Promise<td_api::object_ptr<td_api::chatRevenueStatistics>> promise)`
+  - Rust: `pub fn get_dialog_revenue_statistics(&self, dialog_id: DialogId, is_dark: bool) -> impl Future<Output = Result<ChatRevenueStatistics, Error>>`
+  - Description: Fetch revenue statistics for a channel
+  - Dependencies: DialogId, ChatRevenueStatistics
+
+- **get_dialog_revenue_withdrawal_url**
+  - TDLib: `get_dialog_revenue_withdrawal_url(DialogId dialog_id, const string &password, Promise<string> promise)`
+  - Rust: `pub fn get_dialog_revenue_withdrawal_url(&self, dialog_id: DialogId, password: &str) -> impl Future<Output = Result<String, Error>>`
+  - Description: Get URL for withdrawing revenue from a channel
+  - Dependencies: DialogId
+
+- **get_dialog_revenue_transactions**
+  - TDLib: `get_dialog_revenue_transactions(DialogId dialog_id, const string &offset, int32 limit, Promise<td_api::object_ptr<td_api::chatRevenueTransactions>> promise)`
+  - Rust: `pub fn get_dialog_revenue_transactions(&self, dialog_id: DialogId, offset: &str, limit: i32) -> impl Future<Output = Result<ChatRevenueTransactions, Error>>`
+  - Description: Fetch revenue transactions for a channel with pagination
+  - Dependencies: DialogId, ChatRevenueTransactions
+
+### Graph Data
+- **load_statistics_graph**
+  - TDLib: `load_statistics_graph(DialogId dialog_id, string token, int64 x, Promise<td_api::object_ptr<td_api::StatisticalGraph>> promise)`
+  - Rust: `pub fn load_statistics_graph(&self, dialog_id: DialogId, token: String, x: i64) -> impl Future<Output = Result<StatisticalGraph, Error>>`
+  - Description: Load detailed statistical graph data using token
+  - Dependencies: DialogId, StatisticalGraph
+
+### Public Forwards
+- **get_message_public_forwards**
+  - TDLib: `get_message_public_forwards(MessageFullId message_full_id, string offset, int32 limit, Promise<td_api::object_ptr<td_api::publicForwards>> promise)`
+  - Rust: `pub fn get_message_public_forwards(&self, message_full_id: MessageFullId, offset: String, limit: i32) -> impl Future<Output = Result<PublicForwards, Error>>`
+  - Description: Fetch public forwards of a message with pagination
+  - Dependencies: MessageFullId, PublicForwards
+
+- **get_story_public_forwards**
+  - TDLib: `get_story_public_forwards(StoryFullId story_full_id, string offset, int32 limit, Promise<td_api::object_ptr<td_api::publicForwards>> promise)`
+  - Rust: `pub fn get_story_public_forwards(&self, story_full_id: StoryFullId, offset: String, limit: i32) -> impl Future<Output = Result<PublicForwards, Error>>`
+  - Description: Fetch public forwards of a story with pagination
+  - Dependencies: StoryFullId, PublicForwards
+
+### Internal Methods (for testing)
+- **on_update_dialog_revenue_transactions**
+  - TDLib: `on_update_dialog_revenue_transactions(DialogId dialog_id, telegram_api::object_ptr<telegram_api::starsRevenueStatus> status)`
+  - Rust: `pub(crate) fn on_update_dialog_revenue_transactions(&self, dialog_id: DialogId, status: StarsRevenueStatus)`
+  - Description: Internal callback for revenue transaction updates
+  - Dependencies: DialogId, StarsRevenueStatus
+
+- **convert_stats_graph** (static)
+  - TDLib: `static td_api::object_ptr<td_api::StatisticalGraph> convert_stats_graph(telegram_api::object_ptr<telegram_api::StatsGraph> obj)`
+  - Rust: `pub fn convert_stats_graph(obj: StatsGraph) -> StatisticalGraph`
+  - Description: Convert TL StatsGraph to td_api StatisticalGraph
+  - Dependencies: StatsGraph (TL), StatisticalGraph
+
+## Required Types
+
+### Existing Types (Verified)
+- **DialogId** - `rustgram-dialog-id` - Constructor: `default()`, `from(i64)` ✅
+- **MessageFullId** - `rustgram-message-full-id` - Constructor: `new(MessageId, DialogId)` ✅
+- **FileId** - `rustgram-file-id` - Constructor: `default()`, `from(i64)` ✅
+- **ChannelId** - Need to verify if exists or use `DialogId` for channels
+- **StoryFullId** - Need to verify if exists
+- **UserId** - Need to verify if exists
+- **DcId** - Need to verify if exists (data center ID)
+
+### New Types (Requires Implementation)
+- **ChatStatistics** - Channel/supergroup statistics data structure
+  - Fields: period, member_count, mean_view_count, mean_share_count, etc.
+  - Source: TDLib td_api::chatStatistics
+
+- **MessageStatistics** - Message statistics data structure
+  - Fields: views, forwards, reactions
+  - Source: TDLib td_api::messageStatistics
+
+- **StoryStatistics** - Story statistics data structure
+  - Fields: views, shares, reactions
+  - Source: TDLib td_api::storyStatistics
+
+- **StatisticalGraph** - Statistical graph data
+  - Fields: token, data, error
+  - Source: TDLib td_api::statisticalGraph
+  - Complex type with async loading
+
+- **ChatRevenueStatistics** - Channel revenue statistics
+  - Fields: revenue_amount, usd_rate, revenue_status
+  - Source: TDLib td_api::chatRevenueStatistics
+
+- **ChatRevenueTransactions** - Revenue transaction list
+  - Fields: transactions, total_count
+  - Source: TDLib td_api::chatRevenueTransactions
+
+- **PublicForwards** - Public forwards list
+  - Fields: forwards, total_count, next_offset
+  - Source: TDLib td_api::publicForwards
+
+- **StarsRevenueStatus** - TL type for revenue status
+  - Fields: status, withdrawal_url
+  - Source: TL telegram_api::starsRevenueStatus
+
+- **StatsGraph** - TL type for graph data
+  - Fields: token, data, error
+  - Source: TL telegram_api::StatsGraph
+
+## Dependencies
+
+### External Crates
+- **rustgram-dialog-id** - For DialogId type
+- **rustgram-message-full-id** - For MessageFullId type
+- **rustgram-file-id** - For FileId type
+- **rustgram-types** - For common primitive types
+- **tokio** - For async runtime (features: ["sync", "rt", "macros"])
+- **serde** - For serialization (features: ["derive"])
+- **async-trait** - For async trait support
+- **thiserror** - For error handling
+- **tracing** - For logging
+
+### Internal Dependencies (from TDLib)
+- **Td** - Main TDLib instance
+- **ActorShared** - Actor framework for concurrency
+- **Promise** - Async promise type
+
+## Error Types
+
+### StatisticsError
+```rust
+pub enum StatisticsError {
+    /// Dialog does not exist or is not a channel
+    InvalidDialog,
+    /// Message does not exist
+    InvalidMessage,
+    /// Story does not exist
+    InvalidStory,
+    /// Statistics are not available for this dialog
+    NotAvailable,
+    /// Network error
+    NetworkError(String),
+    /// Rate limited
+    RateLimited,
+    /// Internal error
+    Internal(String),
+}
+```
+
+## TDLib Alignment Notes
+
+### State Management
+- **Caching**: TDLib caches statistics data. Should implement similar caching with TTL.
+- **Async Queries**: All statistics queries are async via Promise pattern. Use Rust async/await.
+- **DcId Handling**: Statistics queries need to be routed to correct data center.
+
+### Graph Data Handling
+- **Token-based Loading**: Graph data is loaded in two stages:
+  1. Initial response with token
+  2. Async data loading using token
+- **is_dark Parameter**: Controls graph color scheme. Should pass through to UI.
+
+### Public Forwards
+- **Pagination**: Uses offset string and limit pattern
+- **Dialog Differences**: May need additional queries for missing dialog info
+
+### Revenue Statistics
+- **Password Authentication**: Withdrawal URL requires password verification
+- **Stars Currency**: Revenue is in Telegram Stars currency
+- **Transaction Pagination**: Similar to message forwards pagination
+
+## Thread Safety
+- Use `Arc<RwLock<T>>` for shared mutable state (cache, pending queries)
+- Use `tokio::sync::Mutex` for async-exclusive access
+- No `unwrap()` in production code - all error paths must be handled
+
+## Caching Strategy
+- Cache statistics data with configurable TTL (default: 5 minutes)
+- Separate cache for graph data (shorter TTL: 2 minutes)
+- Cache key: `(dialog_id/message_id/story_id, is_dark)`
+- Invalidation: explicit clear + TTL expiry
+
+## Testing Requirements
+- **Unit Tests**: Mock TDlib client, test query construction
+- **Integration Tests**: Test against TDLib mock server
+- **Cache Tests**: Verify cache hit/miss behavior
+- **Error Tests**: Verify all error variants
+- **Thread Safety Tests**: Concurrent query handling
+- **Target Test Count**: 50-70 tests for manager type
+
+## Implementation Priority
+
+### Phase 1: Core Statistics
+1. ChatStatistics, MessageStatistics, StoryStatistics types
+2. get_channel_statistics
+3. get_channel_message_statistics
+4. get_channel_story_statistics
+
+### Phase 2: Revenue
+5. ChatRevenueStatistics, ChatRevenueTransactions types
+6. get_dialog_revenue_statistics
+7. get_dialog_revenue_transactions
+8. get_dialog_revenue_withdrawal_url
+
+### Phase 3: Graphs & Forwards
+9. StatisticalGraph type with async loading
+10. load_statistics_graph
+11. PublicForwards type
+12. get_message_public_forwards
+13. get_story_public_forwards
+
+### Phase 4: Internal & Integration
+14. Internal update handlers
+15. Conversion utilities
+16. Cache layer
+17. Full integration tests
+
+## Estimated Metrics
+- **LOC**: 1200-1800 (manager type with complex types)
+- **Tests**: 50-70
+- **Complexity**: HIGH (async operations, caching, multiple data types)
+- **Dependencies**: 7 external crates, 5+ new types

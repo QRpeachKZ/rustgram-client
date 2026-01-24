@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-min-channel"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+
+license = "MIT OR Apache-2.0"
+authors = ["rustgram-client contributors"]
+description = "Minimal channel info for Telegram MTProto client"
+repository = "https://github.com/your-org/rustgram-client"
+
+[dependencies]
+rustgram-accent-color-id = { path = "../accent_color-id" }
+rustgram-dialog-photo = { path = "../dialog-photo" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "rustgram-accent-color-id/serde"]

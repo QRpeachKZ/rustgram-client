@@ -1,0 +1,694 @@
+# Execution Plan: Phase 2A - Core TL Deserialization
+# Epic: rustgram-client-29c
+# Version: 1.0
+# Date: 2026-01-21
+# Status: Draft
+
+---
+
+## 1. Overview
+
+**Title:** Core TL (Type Language) Deserialization Implementation
+
+**Objective:** Implement manual TL binary deserialization for core Telegram types, enabling proper parsing of network responses from TDLib-compatible servers.
+
+**Epic Context:**
+- Enables Phase 2 (User & Chat Data) functionality
+- Critical for network integration
+- Blocks: user_manager, dialog_manager, photo_downloader
+
+**Timeline:** 3 weeks (21 calendar days)
+
+---
+
+## 2. Implementation Approach
+
+### 2.1 Philosophy
+
+**Manual Implementation (Not Derived Macros)**
+- Full control over binary format
+- Match TDLib behavior exactly
+- Better error messages for debugging
+- Per-field validation
+
+**Full Nested Types (No Stubs)**
+- Implement all Photo, ChatFull, UserFull types
+- Prevent rework
+- Handle complex flag-based fields
+
+**TDLib-Captured Test Data**
+- Real network responses as golden tests
+- Binary format validation
+- Constructor ID verification
+
+### 2.2 Module Structure
+
+**New Crate:** `crates/tl_core/`
+
+```
+tl_core/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs           # Public API exports
+│   ├── error.rs         # TlError enum + conversions
+│   ├── photo.rs         # Photo, PhotoSize variants
+│   ├── peer.rs          # Peer, InputPeer variants
+│   ├── notify.rs        # PeerNotifySettings
+│   ├── chat_full.rs     # ChatFull + all nested types
+│   ├── user_full.rs     # UserFull + all nested types
+│   ├── flags.rs         # Flag parsing utilities
+│   └── tests/
+│       ├── golden/      # Binary test vectors
+│       └── mod.rs       # Integration tests
+└── README.md
+```
+
+---
+
+## 3. Step-by-Step Implementation Plan
+
+### Step 1: Foundation (Days 1-3)
+
+**Tasks:**
+1. Create `crates/tl_core/` crate structure
+2. Implement `error.rs` with structured error types
+3. Implement `flags.rs` with flag parsing utilities
+4. Add basic tests for error handling
+
+**Deliverables:**
+- [ ] `tl_core/Cargo.toml` with dependencies
+- [ ] `tl_core/src/error.rs` (200 LOC)
+- [ ] `tl_core/src/flags.rs` (150 LOC)
+- [ ] `tl_core/src/lib.rs` (50 LOC)
+- [ ] Unit tests passing (20+ tests)
+
+**Acceptance Criteria:**
+- All error variants tested
+- Flag parsing utility handles all bit positions
+- Documentation coverage 90%+
+
+**Dependencies:**
+- None (new crate)
+
+**Code Example:**
+```rust
+// tl_core/src/error.rs
+#[derive(Debug, thiserror::Error)]
+pub enum TlError {
+    #[error("Unknown constructor ID: 0x{found:08x}, expected one of: {expected:?}")]
+    UnknownConstructor {
+        expected: Vec<u32>,
+        found: u32,
+        context: String,
+    },
+    
+    #[error("Unexpected EOF: requested {requested} bytes, {remaining} remaining for type '{type_name}'")]
+    UnexpectedEof {
+        requested: usize,
+        remaining: usize,
+        type_name: String,
+    },
+    
+    // ... more variants
+}
+
+// tl_core/src/flags.rs
+pub struct FlagReader {
+    flags: u32,
+}
+
+impl FlagReader {
+    pub fn new(flags: u32) -> Self { /* ... */ }
+    
+    pub fn has(&self, bit: u32) -> bool {
+        self.flags & (1 << bit) != 0
+    }
+    
+    pub fn read_optional<T, F>(
+        &self,
+        bit: u32,
+        reader: F,
+    ) -> Result<Option<T>, TlError>
+    where
+        F: FnOnce() -> Result<T, TlError>,
+    {
+        if self.has(bit) {
+            Some(reader()?).transpose()
+        } else {
+            Ok(None)
+        }
+    }
+}
+```
+
+---
+
+### Step 2: Photo Types (Days 4-7)
+
+**Tasks:**
+1. Implement `Photo` struct (telegram_api.tl:234)
+2. Implement all `PhotoSize` variants:
+   - `PhotoSizeEmpty`
+   - `PhotoSize`
+   - `PhotoCachedSize`
+   - `PhotoStrippedSize`
+   - `PhotoSizeProgressive`
+   - `PhotoPathSize`
+3. Add `UserProfilePhoto` variants
+4. Implement `TlDeserialize` for all types
+
+**TL Schema:**
+```tl
+photoEmpty#2331b22d id:long = Photo;
+photo#fb197a65 flags:# has_stickers:flags.0?true id:long access_hash:long 
+    file_reference:bytes date:int sizes:Vector<PhotoSize> 
+    video_sizes:flags.1?Vector<VideoSize> dc_id:int = Photo;
+
+photoSizeEmpty#e17e23c type:string = PhotoSize;
+photoSize#75c78e60 type:string w:int h:int size:int = PhotoSize;
+photoCachedSize#21e1ad6 type:string w:int h:int bytes:bytes = PhotoSize;
+photoStrippedSize#e0b0bc2e type:string bytes:bytes = PhotoSize;
+photoSizeProgressive#fa3efb95 type:string w:int h:int sizes:Vector<int> = PhotoSize;
+photoPathSize#d8214d41 type:string bytes:bytes = PhotoSize;
+
+userProfilePhotoEmpty#4f11bae1 = UserProfilePhoto;
+userProfilePhoto#82d1f706 flags:# has_video:flags.0?true personal:flags.2?true 
+    photo_id:long stripped_thumb:flags.1?bytes dc_id:int = UserProfilePhoto;
+```
+
+**Deliverables:**
+- [ ] `tl_core/src/photo.rs` (600 LOC)
+- [ ] All PhotoSize enum variants
+- [ ] TlDeserialize implementations
+- [ ] Unit tests (40+ tests)
+- [ ] Golden tests (5+ test vectors)
+
+**Acceptance Criteria:**
+- All 6 PhotoSize variants deserialize correctly
+- Flag handling for `has_stickers`, `video_sizes`
+- Constructor IDs verified against telegram_api.tl
+- Golden tests pass with TDLib-captured data
+
+**Dependencies:**
+- types crate (TlHelper, Bytes)
+- tl_core error, flags modules
+
+**Code Example:**
+```rust
+// tl_core/src/photo.rs
+#[derive(Debug, Clone, PartialEq)]
+pub enum Photo {
+    Empty { id: i64 },
+    Photo {
+        has_stickers: bool,
+        id: i64,
+        access_hash: i64,
+        file_reference: Vec<u8>,
+        date: i32,
+        sizes: Vec<PhotoSize>,
+        video_sizes: Option<Vec<VideoSize>>,
+        dc_id: i32,
+    },
+}
+
+impl TlDeserialize for Photo {
+    fn deserialize_tl(buf: &mut Bytes) -> Result<Self, TlError> {
+        let constructor = u32::from(TlHelper::read_constructor_id(buf)?);
+        
+        match constructor {
+            0x2331b22d => {
+                // photoEmpty
+                let id = TlHelper::read_i64(buf)?;
+                Ok(Self::Empty { id })
+            }
+            0xfb197a65 => {
+                // photo
+                let flags = u32::from(TlHelper::read_i32(buf)?);
+                let flag_reader = FlagReader::new(flags);
+                
+                let has_stickers = flag_reader.has(0);
+                let id = TlHelper::read_i64(buf)?;
+                let access_hash = TlHelper::read_i64(buf)?;
+                let file_reference = TlHelper::read_bytes(buf)?;
+                let date = TlHelper::read_i32(buf)?;
+                let sizes = deserialize_vector::<PhotoSize>(buf)?;
+                let video_sizes = flag_reader.read_optional(1, || {
+                    deserialize_vector::<VideoSize>(buf)
+                })?;
+                let dc_id = TlHelper::read_i32(buf)?;
+                
+                Ok(Self::Photo { /* fields */ })
+            }
+            _ => Err(TlError::UnknownConstructor {
+                expected: vec![0x2331b22d, 0xfb197a65],
+                found: constructor,
+                context: "Photo".to_string(),
+            }),
+        }
+    }
+}
+```
+
+---
+
+### Step 3: Peer & Notify Settings (Days 8-10)
+
+**Tasks:**
+1. Implement `Peer` enum variants
+2. Implement `InputPeer` enum variants (8 variants)
+3. Implement `PeerNotifySettings`
+4. Implement `InputPeerNotifySettings`
+5. Implement `NotificationSound` enum
+
+**TL Schema:**
+```tl
+peerUser#59511722 user_id:long = Peer;
+peerChat#36c6019a chat_id:long = Peer;
+peerChannel#a2a5371e channel_id:long = Peer;
+
+inputPeerEmpty#7f3b18ea = InputPeer;
+inputPeerSelf#7da07ec9 = InputPeer;
+inputPeerChat#35a95cb9 chat_id:long = InputPeer;
+inputPeerUser#dde8a54c user_id:long access_hash:long = InputPeer;
+inputPeerChannel#27bcbbfc channel_id:long access_hash:long = InputPeer;
+inputPeerUserFromMessage#a87b0a1c peer:InputPeer msg_id:int user_id:long = InputPeer;
+inputPeerChannelFromMessage#bd2a0840 peer:InputPeer msg_id:int channel_id:long = InputPeer;
+
+peerNotifySettings#99622c0c flags:# show_previews:flags.0?Bool 
+    silent:flags.1?Bool mute_until:flags.2?int 
+    ios_sound:flags.3?NotificationSound android_sound:flags.4?NotificationSound 
+    other_sound:flags.5?NotificationSound stories_muted:flags.6?Bool 
+    stories_hide_sender:flags.7?Bool stories_ios_sound:flags.8?NotificationSound 
+    stories_android_sound:flags.9?NotificationSound 
+    stories_other_sound:flags.10?NotificationSound = PeerNotifySettings;
+
+inputPeerNotifySettings#cacb6ae2 flags:# show_previews:flags.0?Bool 
+    silent:flags.1?Bool mute_until:flags.2?int sound:flags.3?NotificationSound 
+    stories_muted:flags.6?Bool stories_hide_sender:flags.7?Bool 
+    stories_sound:flags.8?NotificationSound = InputPeerNotifySettings;
+```
+
+**Deliverables:**
+- [ ] `tl_core/src/peer.rs` (400 LOC)
+- [ ] `tl_core/src/notify.rs` (300 LOC)
+- [ ] All Peer/InputPeer variants
+- [ ] TlDeserialize implementations
+- [ ] Unit tests (30+ tests)
+
+**Acceptance Criteria:**
+- All 3 Peer variants deserialize
+- All 8 InputPeer variants deserialize
+- Complex flag handling for NotifySettings (11 flags)
+- NotificationSound enum with all variants
+
+---
+
+### Step 4: ChatFull & Participants (Days 11-15)
+
+**Tasks:**
+1. Implement `ChatFull` struct (20+ optional fields)
+2. Implement `ChatParticipants` enum variants
+3. Implement `ChannelParticipants` struct
+4. Implement `ChannelParticipant` enum variants
+5. Implement `ChatAdminRights`, `ChatBannedRights`
+6. Implement `ExportedChatInvite`
+
+**TL Schema (simplified):**
+```tl
+chatFull#2633421b flags:# can_set_username:flags.7?true 
+    has_scheduled:flags.8?true translations_disabled:flags.19?true 
+    id:long about:string participants:ChatParticipants 
+    chat_photo:flags.2?Photo notify_settings:PeerNotifySettings 
+    exported_invite:flags.13?ExportedChatInvite 
+    bot_info:flags.3?Vector<BotInfo> pinned_msg_id:flags.6?int 
+    folder_id:flags.11?int call:flags.12?InputGroupCall 
+    ttl_period:flags.14?int groupcall_default_join_as:flags.15?Peer 
+    theme_emoticon:flags.16?string requests_pending:flags.17?int 
+    recent_requesters:flags.17?Vector<long> 
+    available_reactions:flags.18?ChatReactions reactions_limit:flags.20?int 
+    = ChatFull;
+```
+
+**Deliverables:**
+- [ ] `tl_core/src/chat_full.rs` (1200 LOC)
+- [ ] ChatFull with all 20+ fields
+- [ ] ChatParticipants enum (ChatParticipants, ChatParticipantsForbidden)
+- [ ] ChannelParticipants struct
+- [ ] ChannelParticipant enum (10+ variants)
+- [ ] Unit tests (60+ tests)
+
+**Acceptance Criteria:**
+- All 20+ ChatFull fields deserialize correctly
+- Complex flag handling (flags 0-20)
+- Nested types (Photo, Vector<BotInfo>, etc.)
+- Golden tests with real TDLib ChatFull responses
+
+**Dependencies:**
+- Photo types (Step 2)
+- Peer types (Step 3)
+- BotInfo (implement stub or full)
+
+---
+
+### Step 5: UserFull (Days 16-18)
+
+**Tasks:**
+1. Implement `UserFull` struct
+2. Implement `BotInfo` struct
+3. Add user-specific nested types
+4. Implement TlDeserialize
+
+**TL Schema:**
+```tl
+userFull#e24898fc flags:# blocked:flags.0?true phone_calls_available:flags.4?true 
+    phone_calls_private:flags.5?true can_pin_message:flags.7?true 
+    has_scheduled:flags.12?true video_calls_available:flags.13?true 
+    id:long about:string settings:PeerSettings personal_photo:flags.2?Photo 
+    profile_photo:Photo fallback_photo:flags.16?Photo 
+    notify_settings:PeerNotifySettings bot_info:flags.3?BotInfo 
+    pinned_msg_id:flags.6?int common_chat_count:int folder_id:flags.11?int 
+    ttl_period:flags.14?int theme_emoticon:flags.15?string 
+    private_forward_name:flags.17?string voice_messages_forbidden:flags.18?true 
+    birthdays:flags.19?UserBirthdays business_work_hours:flags.21?BusinessWorkHours 
+    personal_channel_id:flags.22?long personal_channel_message:flags.22?int 
+    = UserFull;
+```
+
+**Deliverables:**
+- [ ] `tl_core/src/user_full.rs` (500 LOC)
+- [ ] UserFull struct
+- [ ] BotInfo struct
+- [ ] Unit tests (25+ tests)
+
+**Acceptance Criteria:**
+- All UserFull fields deserialize
+- Flag handling for 22+ flags
+- Nested Photo types
+- BotInfo with nested types
+
+---
+
+### Step 6: Integration & Testing (Days 19-21)
+
+**Tasks:**
+1. Create golden test vectors from TDLib
+2. Add integration tests
+3. Performance benchmarks
+4. Documentation
+5. Code review
+
+**Deliverables:**
+- [ ] 10+ golden test files
+- [ ] Integration test suite
+- [ ] Benchmark suite
+- [ ] Complete API documentation
+- [ ] README with examples
+
+**Acceptance Criteria:**
+- All golden tests pass
+- 80%+ code coverage
+- Performance: < 1ms per 1KB
+- All documentation complete
+- Code review approved
+
+---
+
+## 4. Dependencies
+
+### Internal Dependencies
+
+| Crate | Used By | Purpose |
+|-------|---------|---------|
+| `rustgram-types` | tl_core | TlHelper, Bytes, TlDeserialize trait |
+| `rustgram-types` | user_manager | User types |
+| `rustgram-types` | dialog_manager | Dialog types |
+
+| New Crate | Depends On | Purpose |
+|-----------|------------|---------|
+| `tl_core` | rustgram-types | TL deserialization implementations |
+| `user_manager` | tl_core | UserFull deserialization |
+| `dialog_manager` | tl_core | ChatFull deserialization |
+
+### External Dependencies
+
+```toml
+[dependencies]
+bytes = "1.5"
+thiserror = "1.0"
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+criterion = "0.5"  # Benchmarks
+proptest = "1.0"   # Property testing
+hex = "0.4"        # Golden test encoding
+```
+
+---
+
+## 5. Testing Strategy
+
+### 5.1 Unit Tests (60% coverage target)
+
+**Per-Type Tests:**
+```rust
+#[cfg(test)]
+mod tests {
+    use super::*;
+    
+    #[test]
+    fn test_photo_empty_deserialize() {
+        let mut buf = include_bytes!("../golden/photo_empty.bin");
+        let result = Photo::deserialize_tl(&mut Bytes::new(buf.to_vec()));
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap(), Photo::Empty { id: 123 });
+    }
+    
+    #[test]
+    fn test_photo_with_all_flags() {
+        // Test has_stickers + video_sizes flags
+    }
+    
+    #[test]
+    fn test_photosize_progressive() {
+        // Test progressive JPEG variant
+    }
+    
+    #[test]
+    fn test_peernotifysettings_all_flags() {
+        // Test all 11 notification flags
+    }
+    
+    #[test]
+    fn test_chatfull_all_fields() {
+        // Test ChatFull with all 20+ fields populated
+    }
+    
+    #[test]
+    fn test_flag_reader_bit_positions() {
+        // Test flag bits 0-31
+    }
+}
+```
+
+### 5.2 Golden Tests (20% coverage target)
+
+**Test Vector Capture:**
+```bash
+# Run TDLib with logging
+./test_client --log-level=debug > tdlib.log
+
+# Extract binary responses
+python3 scripts/extract_responses.py tdlib.log tl_core/tests/golden/
+
+# Generates:
+# tl_core/tests/golden/
+# ├── chat_full.bin
+# ├── photo.bin
+# ├── user_full.bin
+# └── ...
+```
+
+**Golden Test Implementation:**
+```rust
+#[test]
+fn test_golden_chatfull() {
+    let data = include_bytes!("golden/chat_full.bin");
+    let mut buf = Bytes::new(data.to_vec());
+    
+    let result = ChatFull::deserialize_tl(&mut buf);
+    assert!(result.is_ok(), "Failed to deserialize: {:?}", result);
+    
+    let chat_full = result.unwrap();
+    // Validate critical fields
+    assert_eq!(chat_full.id, 123456);
+    assert!(!chat_full.about.is_empty());
+}
+```
+
+### 5.3 Property Tests (10% coverage target)
+
+```rust
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn test_photo_roundtrip(photo in any_photo()) {
+        let mut buf = BytesMut::new();
+        photo.serialize_tl(&mut buf).unwrap();
+        
+        let mut read_buf = Bytes::new(buf.freeze().to_vec());
+        let deserialized = Photo::deserialize_tl(&mut read_buf).unwrap();
+        
+        prop_assert_eq!(photo, deserialized);
+    }
+}
+```
+
+### 5.4 Fuzz Tests (5% coverage target)
+
+```rust
+#[no_mangle]
+extern "C" fn LLVMFuzzerTestOneInput(data: &[u8]) {
+    let mut buf = Bytes::new(data.to_vec());
+    
+    // Should never panic or crash
+    let _ = Photo::deserialize_tl(&mut buf);
+}
+```
+
+---
+
+## 6. Risk Mitigation
+
+### 6.1 Risk: TL Schema Mismatch
+
+**Probability:** Medium  
+**Impact:** High
+
+**Mitigation:**
+1. Verify all constructor IDs against telegram_api.tl
+2. Create verification table before implementation
+3. Pin TDLib commit hash
+4. Add CRC32 validation tests
+
+### 6.2 Risk: Complex Flag Handling
+
+**Probability:** High  
+**Impact:** Medium
+
+**Mitigation:**
+1. Create FlagReader utility
+2. Unit test each bit position
+3. Add flag validation tests
+4. Document flag indices in comments
+
+### 6.3 Risk: Missing Test Data
+
+**Probability:** Medium  
+**Impact:** High
+
+**Mitigation:**
+1. Set up TDLib test client first (Week 1, Day 1)
+2. Capture all response types early
+3. Manually construct fallback vectors
+4. Share test vectors across team
+
+### 6.4 Risk: Performance Issues
+
+**Probability:** Low  
+**Impact:** Medium
+
+**Mitigation:**
+1. Benchmark each type
+2. Profile hot paths
+3. Optimize flag checking
+4. Use zero-copy where possible
+
+---
+
+## 7. Success Criteria
+
+### 7.1 Functional Requirements
+
+- [ ] All Photo types deserialize correctly
+- [ ] All Peer/InputPeer variants work
+- [ ] PeerNotifySettings with all flags
+- [ ] ChatFull with all 20+ fields
+- [ ] UserFull with all nested types
+- [ ] All constructor IDs verified
+
+### 7.2 Code Quality Metrics
+
+- [ ] **Test Coverage:** 80%+ (tl_core crate)
+- [ ] **Documentation:** 90%+ public API documented
+- [ ] **Clippy:** Zero warnings
+- [ ] **Format:** Passes cargo fmt --check
+- [ ] **unwrap():** Zero in production code
+
+### 7.3 Performance Metrics
+
+- [ ] **Photo:** < 500μs to deserialize (3-5 KB)
+- [ ] **ChatFull:** < 2ms to deserialize (10-20 KB)
+- [ ] **UserFull:** < 1.5ms to deserialize (8-15 KB)
+- [ ] **Memory:** No allocations in flag checking
+
+### 7.4 Integration Requirements
+
+- [ ] user_manager can deserialize UserFull
+- [ ] dialog_manager can deserialize ChatFull
+- [ ] photo_downloader can deserialize Photo
+- [ ] All managers updated to use tl_core
+
+---
+
+## 8. Timeline Summary
+
+| Week | Days | Focus | Deliverables |
+|------|------|-------|--------------|
+| 1 | 1-3 | Foundation | error.rs, flags.rs, lib.rs |
+| 1 | 4-7 | Photo Types | photo.rs (600 LOC, 40 tests) |
+| 2 | 8-10 | Peer & Notify | peer.rs, notify.rs (700 LOC, 30 tests) |
+| 2 | 11-15 | ChatFull | chat_full.rs (1200 LOC, 60 tests) |
+| 3 | 16-18 | UserFull | user_full.rs (500 LOC, 25 tests) |
+| 3 | 19-21 | Integration | Tests, docs, review |
+
+**Total:** 3 weeks (21 calendar days)
+
+**Key Milestones:**
+- Day 7: Photo types complete, first golden tests passing
+- Day 15: ChatFull complete (most complex type)
+- Day 18: All core types implemented
+- Day 21: All tests passing, ready for integration
+
+---
+
+## 9. Open Questions
+
+1. **Q:** Should we implement `VideoSize` types referenced by Photo?
+   **A:** Yes, implement stub for now (priority 4)
+
+2. **Q:** How to handle `NotificationSound` enum variants?
+   **A:** Implement all variants from TDLib reference
+
+3. **Q:** Should `BotInfo` be full implementation or stub?
+   **A:** Full implementation (part of UserFull)
+
+4. **Q:** What about `ChatReactions` referenced by ChatFull?
+   **A:** Implement basic structure, expand later
+
+---
+
+## 10. Next Steps
+
+1. **Create** `success_criteria.yaml` with quantifiable metrics
+2. **Create** `dependency_matrix.md` mapping all dependencies
+3. **Create** `risk_register.yaml` with all identified risks
+4. **Review** plan with technical lead
+5. **Begin** Step 1: Foundation
+
+---
+
+**Version:** 1.0  
+**Status:** Draft  
+**Owner:** Analyst Agent  
+**Review Date:** 2026-01-21

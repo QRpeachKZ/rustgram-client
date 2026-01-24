@@ -1,0 +1,49 @@
+[package]
+name = "rustgram-stickers-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+# Error handling
+thiserror.workspace = true
+anyhow.workspace = true
+
+# Serialization
+serde.workspace = true
+serde_json.workspace = true
+
+# Async runtime
+tokio = { workspace = true, features = ["sync", "rt", "macros", "fs", "time"] }
+
+# Logging
+tracing.workspace = true
+
+# Concurrent data structures
+dashmap = "6.0"
+
+# LRU cache
+lru = "0.12"
+
+# Local workspace crates
+rustgram-file-id = { path = "../file_id" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-sticker-type = { path = "../sticker-type" }
+rustgram-sticker-format = { path = "../sticker-format" }
+rustgram-sticker-set-id = { path = "../sticker_set-id" }
+rustgram-sticker-set-info = { path = "../sticker_set-info" }
+rustgram-sticker-set-type = { path = "../sticker_set-type" }
+rustgram-custom-emoji-id = { path = "../custom_emoji-id" }
+rustgram-message-full-id = { path = "../message_full-id" }
+rustgram-dimensions = { path = "../dimensions" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+proptest.workspace = true
+rstest.workspace = true
+criterion.workspace = true

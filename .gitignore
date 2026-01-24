@@ -33,3 +33,6 @@ tools/*
 # Build artifacts
 *.log
 difficult_modules.txt
+
+.env*
+*.pem

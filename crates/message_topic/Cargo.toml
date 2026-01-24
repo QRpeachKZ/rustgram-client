@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-message-topic"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_message_topic"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-forum-topic-id = { path = "../forum_topic-id" }
+rustgram-saved-messages-manager = { path = "../saved_messages-manager" }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }

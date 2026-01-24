@@ -1,0 +1,205 @@
+# Execution Plan: AuthManager Network Integration
+# Task ID: rustgram-client-ff7.2
+# Phase 0: Network Layer Integration
+
+plan:
+  name: "AuthManager Network Integration"
+  task_id: "rustgram-client-ff7.2"
+  complexity: "state_machine"  # State machine with network I/O
+  language: "rust"
+  estimated_duration: "3-4 days"
+
+batches:
+  # Batch 1: TL Request/Response Types (1 day)
+  - id: "batch-1"
+    name: "TL Request/Response Types"
+    duration: "1 day"
+    description: "Define TL serialization for auth requests and responses"
+    tasks:
+      - id: "batch-1.1"
+        title: "Create auth request types in types crate"
+        file: "crates/types/src/auth_requests.rs"
+        description: |
+          Implement SendCodeRequest, SignInRequest, LogOutRequest structs with:
+          - TL serialization (traits from crates/net/src/tl/)
+          - From/To conversions for domain types
+          - Unit tests for serialization/deserialization
+        dependencies: []
+
+      - id: "batch-1.2"
+        title: "Create auth response types in types crate"
+        file: "crates/types/src/auth_responses.rs"
+        description: |
+          Implement Authorization, SentCode, LoggedOut response types:
+          - TL deserialization
+          - From/To conversions for domain types
+          - Unit tests for serialization/deserialization
+        dependencies: ["batch-1.1"]
+
+      - id: "batch-1.3"
+        title: "Add auth module to types/Cargo.toml"
+        file: "crates/types/Cargo.toml"
+        description: "Add mod auth_requests, mod auth_responses to lib.rs"
+        dependencies: ["batch-1.2"]
+
+  # Batch 2: AuthManager State Machine + Network Integration (1.5 days)
+  - id: "batch-2"
+    name: "AuthManager Network Integration"
+    duration: "1.5 days"
+    description: "Integrate NetQueryDispatcher into AuthManager state machine"
+    tasks:
+      - id: "batch-2.1"
+        title: "Add NetQueryDispatcher handle to AuthManager"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Add NetQueryDispatcher field to AuthManager struct:
+          - Store dispatcher handle from ClientActor
+          - Add pending_requests: HashMap<NetQueryId, PendingAuthRequest>
+          - Implement request timeout logic
+        dependencies: ["batch-1"]
+
+      - id: "batch-2.2"
+        title: "Implement auth.sendCode network call"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Create send_code() method that:
+          - Creates SendCodeRequest
+          - Calls NetQueryDispatcher::send_request()
+          - Stores pending request with timeout
+          - Transitions to state::WaitingCode
+        dependencies: ["batch-2.1"]
+
+      - id: "batch-2.3"
+        title: "Implement auth.signIn network call"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Create sign_in() method that:
+          - Creates SignInRequest
+          - Calls NetQueryDispatcher::send_request()
+          - Stores pending request
+          - Transitions to state::SigningIn
+        dependencies: ["batch-2.2"]
+
+      - id: "batch-2.4"
+        title: "Implement auth.logOut network call"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Create log_out() method that:
+          - Creates LogOutRequest
+          - Calls NetQueryDispatcher::send_request()
+          - Transitions to state::LoggingOut
+        dependencies: ["batch-2.3"]
+
+      - id: "batch-2.5"
+        title: "Implement response handler callback"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Implement on_auth_result() callback for NetQueryDispatcher:
+          - Match response by NetQueryId
+          - Handle Authorization, SentCode, LoggedOut responses
+          - Update state machine based on response
+          - Handle errors with retry logic
+        dependencies: ["batch-2.4"]
+
+      - id: "batch-2.6"
+        title: "Add error states and retry logic"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Add to AuthState enum:
+          - WaitingRetry { attempts: u32, delay: Duration }
+          - NetworkError(NetworkError)
+          Implement retry: max 3 attempts, exponential backoff
+        dependencies: ["batch-2.5"]
+
+  # Batch 3: Testing & Integration (1 day)
+  - id: "batch-3"
+    name: "Testing & Integration"
+    duration: "1 day"
+    description: "Unit tests, integration tests, coverage"
+    tasks:
+      - id: "batch-3.1"
+        title: "Unit tests for TL request/response serialization"
+        file: "crates/types/src/auth_requests.rs"
+        description: |
+          Test coverage for:
+          - SendCodeRequest serialization
+          - SignInRequest serialization
+          - LogOutRequest serialization
+          - Response deserialization
+          - Edge cases (empty strings, invalid phone numbers)
+        dependencies: ["batch-1"]
+
+      - id: "batch-3.2"
+        title: "Unit tests for AuthManager state transitions"
+        file: "crates/auth_manager/src/lib.rs"
+        description: |
+          Test coverage for:
+          - send_code() → WaitingCode
+          - sign_in() → SigningIn → Authorized
+          - log_out() → LoggingOut → Idle
+          - Error states and retry logic
+          - Timeout handling
+          - Concurrent request handling
+        dependencies: ["batch-2"]
+
+      - id: "batch-3.3"
+        title: "Integration test with mock NetQueryDispatcher"
+        file: "crates/auth_manager/tests/integration_test.rs"
+        description: |
+          Mock NetQueryDispatcher for integration testing:
+          - Test full auth flow: sendCode → signIn → logOut
+          - Test error scenarios: network failure, timeout, server error
+          - Test state recovery after retry
+        dependencies: ["batch-2", "batch-3.2"]
+
+      - id: "batch-3.4"
+        title: "Coverage verification"
+        file: "crates/auth_manager/"
+        description: |
+          Run cargo llvm-cov -p auth_manager:
+          - Verify >= 70% coverage
+          - Add tests for uncovered lines
+        dependencies: ["batch-3.1", "batch-3.2", "batch-3.3"]
+
+test_strategy:
+  unit_tests:
+    - TL serialization (auth_requests.rs)
+    - TL deserialization (auth_responses.rs)
+    - State machine transitions (auth_manager)
+    - Error handling and retry logic
+    - Timeout handling
+    - Concurrent request handling
+
+  integration_tests:
+    - Full auth flow (sendCode → signIn → logOut)
+    - Error scenarios (network failure, timeout)
+    - State recovery after retry
+
+  property_tests:
+    - TL serialization roundtrip (proptest)
+    - State machine transition validity
+
+dependencies:
+  internal:
+    - crate: "net"
+      reason: "MTProto protocol, NetQueryDispatcher, TL serialization"
+      status: "COMPLETED"
+    - crate: "client_actor"
+      reason: "NetQueryDispatcher integration pattern"
+      status: "COMPLETED (rustgram-client-ff7.1)"
+    - crate: "types"
+      reason: "TL type definitions"
+      status: "EXISTING"
+
+  external:
+    - crate: "tokio"
+      reason: "Async runtime"
+      version: "1"
+    - crate: "serde"
+      reason: "Serialization (if needed for TL)"
+      version: "1"
+
+references:
+  - "references/td/td/tdscheme/td_api.tl"
+  - "references/td/td/telegram/AuthManager.cpp"
+  - "crates/client_actor/src/lib.rs" (NetQueryDispatcher pattern)

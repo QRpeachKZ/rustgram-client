@@ -1,6 +1,72 @@
 [workspace]
-members = ["crates/*"]
+# DialogManager network integration - Phase 3 development
+# Phase 1 Basic Messaging - rustgram-message-types
+members = [
+    "crates/types",
+    "crates/net",
+    "crates/auth_manager",
+    "crates/dialog_manager",
+    "crates/chat-manager",
+    "crates/user_manager",
+    "crates/issue_tracker",
+    "crates/photo",
+    "crates/photo_downloader",
+    "crates/dialog-photo",
+    "crates/user-id",
+    "crates/usernames",
+    "crates/terms_of_service",
+    # Phase 1 Basic Messaging
+    "crates/rustgram_message_types",
+    "crates/message_content",
+    "crates/message_content_type",
+    "crates/formatted_text",
+    "crates/message_input_reply_to",
+    "crates/message_forward_info",
+    "crates/message_db",
+    "crates/message_full_id",
+    "crates/messages_manager",
+    # Phase 2A: TL Deserialization
+    "crates/tl_core",
+    # Phase 2: TUI Prototype
+    "crates/tui",
+    # Phase 3: Paper Plane Adapter
+    "crates/paper_plane_adapter",
+    # CLI Test Client
+    "crates/bin",
+    # Storage layer (Phase 1B)
+    "crates/storage",
+    "crates/td_db",
+    # Updates Manager (Phase 3)
+    "crates/updates_manager",
+    # File statistics
+    "crates/file_stats",
+    # Resource and load management
+    "crates/resource_manager",
+    "crates/file_load_manager",
+    "crates/resource_state",
+    # File download and upload
+    "crates/file_downloader",
+    "crates/file_uploader",
+    "crates/file_download_manager",
+    "crates/file_loader_utils",
+    "crates/parts_manager",
+    # File types and locations
+    "crates/file_encryption_key",
+    "crates/file_id",
+    "crates/file_location",
+    "crates/file_source_id",
+    "crates/file_type",
+    "crates/file_bitmask",
+    # File database
+    "crates/file_db",
+    # Paper Plane reference client (excluded from build - reference only)
+    # "references/paper-plane",
+]
 resolver = "2"
+
+[workspace.lints]
+rust = { unexpected_cfgs = "allow" }
+clippy = { all = "deny", unwrap_used = "deny", expect_used = "deny" }
 
 [workspace.package]
 version = "0.1.0"
@@ -9,27 +75,67 @@ rust-version = "1.75"
 license = "MIT OR Apache-2.0"
 authors = ["rustgram-client contributors"]
 repository = "https://github.com/your-org/rustgram-client"
+keywords = ["telegram", "mtproto", "client", "messaging"]
+categories = ["api-bindings", "network-programming"]
 
 [workspace.dependencies]
 # Async runtime
 tokio = { version = "1.35", features = ["full"] }
 tokio-util = "0.7"
+async-trait = "0.1"
+async-channel = "2.0"
 
 # Serialization
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+
+# Bytes utilities
+bytes = "1.5"
+
+# Concurrency
+parking_lot = "0.12"
+
+# Encoding
+bincode = "1.3"
+
+# Internal types
+rustgram-types = { path = "crates/types" }
+rustgram-tl-core = { path = "crates/tl_core" }
+rustgram-net = { path = "crates/net" }
+rustgram-auth = { path = "crates/auth" }
+rustgram-terms-of-service = { path = "crates/terms_of_service" }
+rustgram-photo = { path = "crates/photo" }
+rustgram-custom-emoji-id = { path = "crates/custom_emoji_id" }
+rustgram-sticker-set-id = { path = "crates/sticker_set_id" }
+# Phase 1 Basic Messaging
+rustgram-message-types = { path = "crates/rustgram_message_types" }
+rustgram-message-content = { path = "crates/message_content" }
+rustgram-message-content-type = { path = "crates/message_content_type" }
+rustgram-formatted-text = { path = "crates/formatted_text" }
+rustgram-message-input-reply-to = { path = "crates/message_input_reply_to" }
+rustgram-message-forward-info = { path = "crates/message_forward_info" }
+rustgram-message-db = { path = "crates/message_db" }
+rustgram-message-full-id = { path = "crates/message_full_id" }
+rustgram-messages-manager = { path = "crates/messages_manager" }
+
+# File types and IDs
+rustgram-file-type = { path = "crates/file_type" }
+rustgram-dialog-id = { path = "crates/dialog_id" }
 
 # Protocol buffers
 prost = "0.12"
 prost-build = "0.12"
 
 # Error handling
-thiserror = "1.0"
+thiserror = "2.0"
 anyhow = "1.0"
 
 # Logging
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled"] }
 
 # Cryptography (for MTProto)
 aes = "0.8"
@@ -46,6 +152,7 @@ hex = "0.4"
 proptest = "1.4"
 criterion = "0.5"
 rstest = "0.23"
+tempfile = "3.8"
 
 [profile.dev]
 opt-level = 0

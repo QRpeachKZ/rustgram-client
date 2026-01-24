@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_message_content"
+name = "rustgram-message-content"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -8,9 +8,9 @@ authors.workspace = true
 repository.workspace = true
 
 [dependencies]
-rustgram_formatted_text = { path = "../formatted_text" }
-rustgram_message_content_type = { path = "../message_content_type" }
-rustgram_types = { path = "../types" }
+rustgram-formatted-text = { path = "../formatted_text" }
+rustgram-message-content-type = { path = "../message_content_type" }
+rustgram-types = { path = "../types" }
 
 serde = { workspace = true }
 thiserror = { workspace = true }

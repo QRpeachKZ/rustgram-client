@@ -1,0 +1,26 @@
+# Copyright (c) 2024 rustgram-client contributors
+#
+# Licensed under MIT OR Apache-2.0
+
+[package]
+name = "rustgram-voice-notes-manager"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Voice notes manager for Telegram client"
+repository = "https://github.com/rustgram/rustgram-client"
+
+[dependencies]
+rustgram-file-id = { path = "../file_id" }
+rustgram-transcription-info = { path = "../transcription-info" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+tokio = { version = "1.40", features = ["sync"], optional = true }
+
+[features]
+default = ["tokio", "serde"]
+async = ["tokio"]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+tokio = { version = "1.40", features = ["rt", "macros", "sync"] }

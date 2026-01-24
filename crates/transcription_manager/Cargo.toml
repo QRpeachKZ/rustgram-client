@@ -1,0 +1,18 @@
+[package]
+name = "rustgram-transcription-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-transcription-info = { workspace = true }
+rustgram-file-id = { workspace = true }
+rustgram-message-content-type = { workspace = true }
+rustgram-message-full-id = { workspace = true }
+rustgram-types = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

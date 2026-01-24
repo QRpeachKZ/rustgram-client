@@ -1,0 +1,294 @@
+# Success Criteria for Phase 1B: Database Layer (Persistence)
+# Epic: rustgram-client-a7u
+
+code_quality:
+  clippy_warnings:
+    value: 0  # Target
+    status: "PENDING"
+    notes: "All storage code must pass clippy -- -D warnings"
+
+  no_unwrap:
+    value: true
+    target: true
+    status: "PENDING"
+    notes: "deny(clippy::unwrap_used) in all storage modules"
+
+  no_expect:
+    value: true
+    target: true
+    status: "PENDING"
+    notes: "deny(clippy::expect_used) in all storage modules"
+
+  documentation:
+    value: 0  # Current
+    target: 100  # Percentage
+    status: "PENDING"
+    notes: "All public API items must have doc comments"
+
+testing:
+  unit_tests:
+    value: 0
+    target: 120  # Minimum test count
+    status: "PENDING"
+    breakdown:
+      message_db: 30
+      user_db: 25
+      chat_db: 25
+      file_db: 20
+      td_db_coordinator: 20
+    notes: "30 tests per database module minimum"
+
+  integration_tests:
+    value: 0
+    target: 12  # Minimum integration test count
+    status: "PENDING"
+    breakdown:
+      message_db_integration: 3
+      user_db_integration: 2
+      chat_db_integration: 2
+      file_db_integration: 2
+      td_db_integration: 3
+    notes: "Manager-database integration tests"
+
+  migration_tests:
+    value: 0
+    target: 8
+    status: "PENDING"
+    notes: "Forward migration tests for each database"
+
+  corruption_tests:
+    value: 0
+    target: 6
+    status: "PENDING"
+    breakdown:
+      wal_corruption: 2
+      header_corruption: 2
+      page_corruption: 2
+    notes: "Corruption detection and recovery tests"
+
+  coverage:
+    value: 0
+    target: 70
+    status: "PENDING"
+    notes: "70% line coverage for all storage modules (critical: 80%)"
+    breakdown:
+      storage_src: 70
+      message_db: 80
+      user_db: 75
+      chat_db: 75
+      file_db: 75
+
+performance:
+  single_entity_query:
+    value: "PENDING"
+    target: "< 10ms"
+    status: "PENDING"
+    notes: "P99 latency for get_message, get_user, get_chat, get_file"
+    measurement: "Benchmark with 100K row database"
+
+  batch_query:
+    value: "PENDING"
+    target: "< 100ms"
+    status: "PENDING"
+    notes: "Get 100 messages from single dialog"
+    measurement: "Benchmark with realistic data"
+
+  migration_time:
+    value: "PENDING"
+    target: "< 1s"
+    status: "PENDING"
+    notes: "Single migration on 100K row database"
+
+  database_size:
+    value: "PENDING"
+    target: "< 1MB per 1000 messages"
+    status: "PENDING"
+    notes: "Efficient BLOB storage for TL types"
+
+database:
+  schema_completeness:
+    value: 0
+    target: 4
+    status: "PENDING"
+    databases:
+      - name: "message_db"
+        tables: ["messages", "scheduled_messages"]
+        indexes: ["idx_messages_pk", "idx_messages_date", "idx_messages_sender"]
+        migrations: 4
+        status: "PENDING"
+      - name: "user_db"
+        tables: ["users", "user_full"]
+        indexes: ["idx_users_pk"]
+        migrations: 2
+        status: "PENDING"
+      - name: "chat_db"
+        tables: ["chats", "chat_full"]
+        indexes: ["idx_chats_pk"]
+        migrations: 2
+        status: "PENDING"
+      - name: "file_db"
+        tables: ["files", "file_data"]
+        indexes: ["idx_files_pk", "idx_files_location"]
+        migrations: 1
+        status: "PENDING"
+
+  migration_coverage:
+    value: 0
+    target: 9
+    status: "PENDING"
+    notes: "Total migrations across all databases"
+
+  tdlib_alignment:
+    value: "PENDING"
+    target: "High"
+    status: "PENDING"
+    notes: "Schema structure matches TDLib MessageDb.h, TdDb.h"
+    checks:
+      - "Message table: dialog_id, message_id, sender_id, date, content"
+      - "User table: user_id, data_blob, profile_photo_blob"
+      - "Chat table: chat_id, data_blob, photo_blob"
+      - "File table: file_db_id, file_data_blob, remote/local location"
+
+functional:
+  persistence:
+    - name: "message_add_retrieve"
+      status: "PENDING"
+      description: "Add message to DB and retrieve it successfully"
+    - name: "user_add_retrieve"
+      status: "PENDING"
+      description: "Add user to DB and retrieve it successfully"
+    - name: "chat_add_retrieve"
+      status: "PENDING"
+      description: "Add chat to DB and retrieve it successfully"
+    - name: "file_add_retrieve"
+      status: "PENDING"
+      description: "Add file to DB and retrieve it successfully"
+    - name: "batch_operations"
+      status: "PENDING"
+      description: "Add/retrieve multiple entities in single transaction"
+
+  manager_integration:
+    - name: "messages_manager_db"
+      status: "PENDING"
+      description: "MessagesManager persists messages to database"
+    - name: "user_manager_db"
+      status: "PENDING"
+      description: "UserManager persists users to database"
+    - name: "chat_manager_db"
+      status: "PENDING"
+      description: "ChatManager persists chats to database"
+    - name: "download_manager_db"
+      status: "PENDING"
+      description: "DownloadManager persists file metadata to database"
+
+  corruption_recovery:
+    - name: "detect_corruption"
+      status: "PENDING"
+      description: "Detect corrupted database on open"
+    - name: "wal_recovery"
+      status: "PENDING"
+      description: "Recover from corrupted WAL file"
+    - name: "header_recovery"
+      status: "PENDING"
+      description: "Attempt recovery from corrupted header"
+    - name: "database_rebuild"
+      status: "PENDING"
+      description: "Rebuild database when recovery fails"
+    - name: "recovery_logging"
+      status: "PENDING"
+      description: "Log recovered/lost data counts"
+
+  queries:
+    - name: "pagination"
+      status: "PENDING"
+      description: "Paginated message queries work correctly"
+    - name: "filtering"
+      status: "PENDING"
+      description: "Basic LIKE text search (defer FTS5)"
+    - name: "batch_get"
+      status: "PENDING"
+      description: "Get multiple users/chats in single query"
+    - name: "by_date"
+      status: "PENDING"
+      description: "Query messages by date range"
+
+api_compatibility:
+  public_methods:
+    message_db:
+      - "add_message(MessageFullId, Bytes)"
+      - "get_message(MessageFullId) -> Bytes"
+      - "delete_message(MessageFullId)"
+      - "get_dialog_messages(DialogId, limit) -> Vec<Message>"
+      - "add_scheduled_message(MessageFullId, Bytes)"
+      - "get_scheduled_messages(DialogId, limit)"
+    user_db:
+      - "add_user(UserId, Bytes)"
+      - "get_user(UserId) -> Bytes"
+      - "get_users(Vec<UserId>) -> Vec<Bytes>"
+    chat_db:
+      - "add_chat(ChatId, Bytes)"
+      - "get_chat(ChatId) -> Bytes"
+      - "get_chats(Vec<ChatId>) -> Vec<Bytes>"
+    file_db:
+      - "merge_file_data(FileDbId, Bytes)"
+      - "get_file_data(String) -> Bytes"
+      - "clear_file_data(FileDbId)"
+      - "get_next_file_db_id() -> FileDbId"
+    td_db:
+      - "open(TdDbParameters) -> Result<TdDb>"
+      - "close()"
+      - "get_message_db() -> &MessageDbSync"
+      - "get_user_db() -> &UserDbSync"
+      - "get_chat_db() -> &ChatDbSync"
+      - "get_file_db() -> &FileDbSync"
+      - "destroy(TdDbParameters)"
+
+build_verification:
+  all_builds:
+    - crate: "storage"
+      status: "PENDING"
+    - crate: "message_db"
+      status: "PENDING"
+    - crate: "td_db"
+      status: "PENDING"
+    - crate: "messages_manager"
+      status: "PENDING"
+    - crate: "user_manager"
+      status: "PENDING"
+    - crate: "chat_manager"
+      status: "PENDING"
+    - crate: "download_manager"
+      status: "PENDING"
+  notes: "Run ./tools/build-verify.sh for each affected crate"
+
+acceptance_criteria:
+  - criterion: "Schema supports all rustgram entities"
+    status: "PENDING"
+    verification: "Schema review against TL types"
+
+  - criterion: "Migrations work forward"
+    status: "PENDING"
+    verification: "Migration tests pass"
+
+  - criterion: "Can survive database corruption"
+    status: "PENDING"
+    verification: "Corruption recovery tests pass"
+
+  - criterion: "All managers can persist/restore state"
+    status: "PENDING"
+    verification: "Manager integration tests pass"
+
+  - criterion: "Performance: < 10ms for single entity queries"
+    status: "PENDING"
+    verification: "Performance benchmarks pass"
+
+summary:
+  total_criteria: 40+
+  completed: 0
+  pending: 40+
+  overall_status: "PENDING"
+  confidence: "High"
+  notes: |
+    Success criteria are well-defined and measurable.
+    Main risks are FTS5 scope (deferred) and corruption recovery (fixtures needed).
+    Timeline of 6-7 weeks is realistic for 4 database implementations.

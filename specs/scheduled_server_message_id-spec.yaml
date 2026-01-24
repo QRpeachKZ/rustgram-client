@@ -1,0 +1,59 @@
+# Specification: ScheduledServerMessageId
+module: scheduled_server_message_id
+crate: rustgram-scheduled-server-message-id
+tdlib_reference: references/td/td/telegram/ScheduledServerMessageId.h
+complexity: LOW
+module_type: ID Type
+estimated_loc: 150-200
+estimated_tests: 25-35
+
+types:
+  - name: ScheduledServerMessageId
+    description: |
+      Identifier for scheduled messages on the server.
+      
+      Represents a unique identifier for messages scheduled for future delivery.
+      Valid IDs are in the range 0 < id < 2^18.
+    fields:
+      - name: id
+        type: i32
+        description: The raw message ID value
+        optional: false
+
+external_dependencies:
+  - type: None (primitive type wrapper)
+    verified: true
+
+constructors:
+  - name: new
+    description: Creates a new ScheduledServerMessageId from an i32 value
+    returns: Self
+  - name: default
+    description: Creates a default (zero) ScheduledServerMessageId
+    returns: Self
+
+methods:
+  - name: is_valid
+    description: Checks if the ID is valid (0 < id < 2^18)
+    returns: bool
+  - name: get
+    description: Returns the inner i32 value
+    returns: i32
+
+traits:
+  - Debug
+  - Clone
+  - Copy
+  - PartialEq
+  - Eq
+  - Hash
+  - Serialize
+  - Deserialize
+
+test_plan:
+  unit_tests: 25
+  doc_tests: 8
+
+notes: |
+  Similar pattern to MessageId but with different valid range.
+  The valid range is 0 < id < 262144 (2^18).

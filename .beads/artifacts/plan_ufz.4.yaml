@@ -1,0 +1,67 @@
+task: rustgram-client-ufz.4
+title: Update Request Functions
+complexity: simple
+estimated_loc: 80
+estimated_duration: "2-3 days"
+
+modules:
+  - name: paper_plane_adapter::mapper
+    file: crates/paper_plane_adapter/src/mapper.rs
+    changes:
+      - description: "Add auth_manager field to RequestMapper struct"
+        estimate_loc: 5
+      - description: "Update RequestMapper::new() to accept AuthManager parameter"
+        estimate_loc: 3
+      - description: "Implement GetMe handler - call user_manager.get_me()"
+        estimate_loc: 8
+      - description: "Implement GetUser handler - call user_manager.get_user()"
+        estimate_loc: 8
+      - description: "Implement GetUserFull handler - call user_manager.get_full_user()"
+        estimate_loc: 8
+      - description: "Implement GetChats handler - call dialog_manager.load_dialogs()"
+        estimate_loc: 10
+      - description: "Implement GetChat handler - call dialog_manager.get_chat()"
+        estimate_loc: 8
+      - description: "Implement SendMessage handler - call messages_manager.send_text()"
+        estimate_loc: 12
+      - description: "Implement auth handlers - call auth_manager methods"
+        estimate_loc: 15
+      - description: "Update error handling to map ManagerError to Response::Error"
+        estimate_loc: 10
+      - description: "Update tests to use real manager calls (remove stub tests)"
+        estimate_loc: 20
+
+  - name: paper_plane_adapter::response
+    file: crates/paper_plane_adapter/src/response.rs
+    changes:
+      - description: "Add Response::User variant with UserInfo serialization"
+        estimate_loc: 10
+      - description: "Add Response::Chat variant with chat info serialization"
+        estimate_loc: 10
+      - description: "Extend Response enum with all TDLib-compatible response types"
+        estimate_loc: 20
+
+  - name: paper_plane_adapter::lib
+    file: crates/paper_plane_adapter/src/lib.rs
+    changes:
+      - description: "Update InternalClientConfig to include AuthManager"
+        estimate_loc: 5
+
+dependencies:
+  external: []
+  internal:
+    - crate: rustgram_dialog_manager
+      reason: For get_chats, get_chat operations
+    - crate: rustgram_user_manager
+      reason: For get_me, get_user, get_user_full operations
+    - crate: rustgram_messages_manager
+      reason: For send_message operation
+    - crate: rustgram_auth_manager
+      reason: For authentication operations
+
+acceptance_criteria:
+  - All RequestMapper::process_request() branches call actual manager methods
+  - No TODO comments remain in mapper.rs
+  - Response enum includes all necessary TDLib-compatible types
+  - Error handling maps manager errors to TDLib-style error responses
+  - All tests pass with real manager implementations

@@ -51,6 +51,16 @@ impl TlHelper {
         buf.put_i32_le(value);
     }
 
+    /// Writes a constructor ID (u32) to the buffer as little-endian bytes.
+    ///
+    /// Constructor IDs in MTProto are conceptually unsigned, but are
+    /// written as raw bytes. When read back, they are interpreted as i32.
+    /// This function handles the conversion correctly.
+    #[inline]
+    pub fn write_constructor_id(buf: &mut BytesMut, value: u32) {
+        buf.put_u32_le(value);
+    }
+
     /// Writes an i64 to the buffer in little-endian format.
     #[inline]
     pub fn write_i64(buf: &mut BytesMut, value: i64) {

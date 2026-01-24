@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 # Workspace dependencies
+rustgram-types = { path = "../types" }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
@@ -22,6 +23,16 @@ aes = { workspace = true }
 rand = { workspace = true }
 sha1 = { workspace = true }
 sha2 = { workspace = true }
+rsa = "0.9"
+pkcs1 = "0.4"
+spki = "0.6"
+num-bigint = "0.4"
+num-traits = "0.2"
+num-integer = "0.1"
+hmac = "0.12"
+pbkdf2 = "0.12"
+generic-array = "0.14"
+typenum = "1.16"
 
 # Additional dependencies
 bytes = "1.5"
@@ -42,3 +53,4 @@ proptest = []
 [[bench]]
 name = "query_benchmark"
 harness = false
+path = "benches/query_benchmark.rs"

@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-boost-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Boost manager for Telegram MTProto client"
+rust-version.workspace = true
+
+[dependencies]
+rustgram-boost = { path = "../boost" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-types = { path = "../types" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+rstest = "0.23"

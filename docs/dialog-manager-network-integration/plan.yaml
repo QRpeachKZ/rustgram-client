@@ -1,0 +1,226 @@
+# Phase 1: Execution Plan
+**Epic**: rustgram-client-4gl - DialogManager Network Integration
+**Date**: 2026-01-18
+**Phase**: 1 - Planning + Requirements Clarification
+
+## Overview
+8-step implementation plan for integrating DialogManager with net crate.
+
+---
+
+## Execution Steps
+
+### Step 1: Network Client Integration
+**Agent**: @dev-rust
+**Depends On**: None
+**Estimated LOC**: 150-200
+
+**Tasks**:
+- Add `rustgram-net` dependency to `dialog_manager/Cargo.toml`
+- Create `network` module in DialogManager
+- Implement `NetworkClient` wrapper around `NetQueryDispatcher`
+- Add `tokio::sync::oneshot` channel for async responses
+
+**Deliverables**:
+- `crates/dialog_manager/src/network.rs`
+- Updated `Cargo.toml`
+
+**Acceptance**:
+- Compiles without errors
+- NetworkClient can send NetQuery
+
+---
+
+### Step 2: TL Request/Response Types
+**Agent**: @dev-rust
+**Depends On**: Step 1
+**Estimated LOC**: 100-150
+
+**Tasks**:
+- Define `GetDialogsRequest` struct
+- Define `GetDialogsResponse` struct
+- Implement TL serialization/deserialization
+- Add type mapping for `messages.Dialogs` -> internal types
+
+**Deliverables**:
+- `crates/dialog_manager/src/tl_types.rs`
+- Unit tests for TL types
+
+**Acceptance**:
+- TL types serialize correctly
+- Unit tests pass
+
+---
+
+### Step 3: Dialog Loading from Server
+**Agent**: @dev-rust
+**Depends On**: Step 2
+**Estimated LOC**: 200-250
+
+**Tasks**:
+- Implement `async fn load_dialogs(&self, params) -> Result<Vec<Dialog>>`
+- Add pagination support (offset_date, offset_id, limit)
+- Handle `AuthFlag::On` requirement
+- Map network errors to DialogError
+
+**Deliverables**:
+- `load_dialogs()` method in DialogManager
+- Integration tests (mocked network)
+
+**Acceptance**:
+- Async method compiles
+- Returns paginated dialogs
+- Errors handled correctly
+
+---
+
+### Step 4: Dialog Creation via Network
+**Agent**: @dev-rust
+**Depends On**: Step 2
+**Estimated LOC**: 150-200
+
+**Tasks**:
+- Implement `async fn create_dialog(&self, peer) -> Result<DialogId>`
+- Wrap `messages.createChat` or appropriate TL method
+- Handle dialog ID generation
+- Update local cache on success
+
+**Deliverables**:
+- `create_dialog()` method
+- Cache update logic
+
+**Acceptance**:
+- Dialog created successfully
+- Cache updated
+
+---
+
+### Step 5: Dialog Metadata Updates
+**Agent**: @dev-rust
+**Depends On**: Step 3, Step 4
+**Estimated LOC**: 100-150
+
+**Tasks**:
+- Implement `async fn update_dialog_title(&self, id, title)`
+- Implement `async fn update_dialog_photo(&self, id, photo)`
+- Sync with server on change
+- Update local cache
+
+**Deliverables**:
+- Metadata update methods
+- Server sync logic
+
+**Acceptance**:
+- Changes sync to server
+- Cache updated
+
+---
+
+### Step 6: Caching Layer
+**Agent**: @dev-rust
+**Depends On**: Step 5
+**Estimated LOC**: 150-200
+
+**Tasks**:
+- Implement cache invalidation strategy
+- Add TTL for cached dialogs
+- Implement `reload_dialog()` for cache refresh
+- Add cache stats tracking
+
+**Deliverables**:
+- Cache management module
+- Cache metrics
+
+**Acceptance**:
+- Cache invalidates correctly
+- Reload works
+
+---
+
+### Step 7: Error Handling
+**Agent**: @dev-rust
+**Depends On**: Step 3, Step 4, Step 5
+**Estimated LOC**: 100-150
+
+**Tasks**:
+- Extend `DialogError` enum with network variants
+- Implement retry logic for transient errors
+- Add timeout handling
+- Add circuit breaker for repeated failures
+
+**Deliverables**:
+- Extended error types
+- Retry logic
+
+**Acceptance**:
+- All errors mapped
+- Retry works for transient errors
+
+---
+
+### Step 8: Testing Expansion
+**Agent**: @tester
+**Depends On**: Steps 1-7
+**Estimated LOC**: 300-400 (tests)
+
+**Tasks**:
+- Add unit tests for network operations
+- Add integration tests (mocked network)
+- Add coverage for error paths
+- Verify test count >= 40, coverage >= 70%
+
+**Deliverables**:
+- Test suite
+- Coverage report
+
+**Acceptance**:
+- All tests pass
+- Coverage >= 70%
+- No clippy warnings
+
+---
+
+## Dependency Graph
+
+```
+Step 1 (Network Client)
+    |
+    +---> Step 2 (TL Types)
+              |
+              +---> Step 3 (Load Dialogs)
+              |         |
+              |         +---> Step 5 (Metadata Updates)
+              |                   |
+              |                   +---> Step 6 (Caching)
+              |
+              +---> Step 4 (Create Dialog)
+                        |
+                        +---> Step 5 (Metadata Updates)
+                                  |
+                                  +---> Step 6 (Caching)
+                                            |
+                                            +---> Step 7 (Error Handling)
+                                                      |
+                                                      +---> Step 8 (Testing)
+```
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation | Step |
+|------|-----------|------|
+| R-001: Async mismatch | Use oneshot channels | Step 1 |
+| R-002: TL schema unknown | Start with getDialogs only | Step 2 |
+| R-003: Query ID pattern | Use async/await Future | Step 1 |
+
+---
+
+## Estimated Total
+
+- **Total LOC**: 1,250-1,650 (including tests)
+- **Estimated Complexity**: Medium
+- **Test Target**: 40+ tests
+- **Coverage Target**: 70%+
+
+**Next Phase**: Phase 2 - Analysis + Spec Creation

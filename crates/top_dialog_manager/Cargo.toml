@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-top-dialog-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Top dialog manager for Telegram MTProto client"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+rustgram-top-dialog-category = { path = "../top_dialog-category" }
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

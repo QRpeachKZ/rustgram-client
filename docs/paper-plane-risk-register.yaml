@@ -1,0 +1,362 @@
+# Risk Register: Paper Plane Integration Testing
+
+**Task:** rustgram-client-ufz.5.2 - Phase 2: Analysis
+**Epic:** rustgram-client-ufz - Phase 4: Paper Plane Integration
+**Date:** 2026-01-21
+**Version:** 1.0
+
+---
+
+risk_register:
+  version: "1.0"
+  last_updated: "2026-01-21"
+  total_risks: 5
+  open_risks: 3
+  mitigated_risks: 2
+  blocker_risks: 0
+
+risks:
+  - id: "R1"
+    type: "UNRESOLVED_API"
+    status: "OPEN"
+    title: "Manager integration not complete"
+    description: |
+      RequestMapper has Option-wrapped managers that return stub responses.
+      Real manager integration may have different behavior than stubs.
+      
+      Current implementation in mapper.rs:
+      - Lines 31-43: Managers are Option<Arc<T>>
+      - Lines 72-83: getMe returns None if UserManager not available
+      - Lines 134-144: getChats returns empty response if network client missing
+      
+      This creates a gap between test behavior (with mocks) and production
+      behavior (with real managers).
+    impact: "HIGH"
+    probability: "MEDIUM"
+    impact_score: 8
+    probability_score: 6
+    risk_score: 48
+    category: "integration"
+    
+    mitigation_strategy: |
+      1. Use mock-only testing approach (per clarification decisions)
+      2. Document that tests verify JSON mapping, not manager behavior
+      3. Add TODO comment for future end-to-end tests with real managers
+      4. Document expected behavior for each manager method
+      
+    mitigation_actions:
+      - action: "Create mock manager fixtures in tests/fixtures/"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Document mock limitations in README.md"
+        owner: "analyst"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Add integration test TODO for real manager testing"
+        owner: "dev-rust"
+        due: "Phase 3, Day 3"
+        status: "PENDING"
+        
+    contingency_plan: |
+      If real manager behavior differs significantly from mocks:
+      1. Update mock fixtures to match real behavior
+      2. Add specific tests for observed differences
+      3. Document known discrepancies
+      4. Create follow-up task for manager integration testing
+      
+    references:
+      - "docs/paper-plane-clarification-qa.md (Q1: Mock vs Real Managers)"
+      - "crates/paper_plane_adapter/src/mapper.rs:31-43"
+
+  - id: "R2"
+    type: "TIME_CONSTRAINT"
+    status: "OPEN"
+    title: "2-3 day deadline may be insufficient"
+    description: |
+      Testing plan targets 33 new integration tests with 60% coverage in 2-3 days.
+      
+      Breakdown:
+      - Day 1: Fixtures + helpers + Batch 1 (15 tests) = ~5 hours
+      - Day 2: Batch 2 (10 tests) + Batch 3 (8 tests) = ~5 hours
+      - Day 3: Coverage gaps + bug fixes + clippy = ~3 hours
+      
+      Total estimated: 13 hours of focused work
+      
+      Risk factors:
+      - Unforeseen compilation errors in manager APIs
+      - Test flakiness requiring debugging
+      - Coverage gaps requiring additional tests
+      - Clippy warnings requiring code changes
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    impact_score: 6
+    probability_score: 5
+    risk_score: 30
+    category: "schedule"
+    
+    mitigation_strategy: |
+      1. Prioritize Batch 1 (critical path)
+      2. Defer Batch 3 state machine tests if needed
+      3. Accept 55% coverage minimum (vs 60% target)
+      4. Use existing unit test patterns to speed development
+      
+    mitigation_actions:
+      - action: "Complete Batch 1 first (foundational patterns)"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Create test templates to speed test writing"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Set daily checkpoint at 60% progress"
+        owner: "dev-rust"
+        due: "Daily"
+        status: "PENDING"
+        
+    contingency_plan: |
+      If deadline cannot be met:
+      1. Defer Batch 3 to follow-up task
+      2. Accept minimum viable test suite (Batch 1 + 2)
+      3. Document remaining tests in backlog
+      4. Create follow-up task for completion
+      
+    references:
+      - "docs/paper-plane-testing-plan.md (Timeline section)"
+      - "reference/success-criteria-paper-plane.yaml"
+
+  - id: "R3"
+    type: "MOCK_PARITY"
+    status: "MITIGATED"
+    title: "Mocks may not match real TDLib behavior"
+    description: |
+      Mock managers return simplified responses that may not match TDLib's
+      actual response format or behavior.
+      
+      Examples of potential mismatches:
+      - TDLib returns nested objects; mocks might flatten
+      - TDLib has specific error codes; mocks use generic codes
+      - TDLib has optional fields; mocks might omit them
+      - TDLib has specific state transitions; mocks might skip states
+      
+      This could lead to:
+      - Tests passing but integration failing
+      - Paper Plane getting unexpected JSON format
+      - Debugging difficulty in production
+      
+      However, this risk is mitigated by:
+      1. Using same response types as production (Response enum)
+      2. Following TDLib JSON format in serialization
+      3. Testing JSON format explicitly
+    impact: "MEDIUM"
+    probability: "LOW"
+    impact_score: 5
+    probability_score: 3
+    risk_score: 15
+    category: "quality"
+    
+    mitigation_strategy: |
+      1. Document mock limitations explicitly
+      2. Reference TDLib documentation in test comments
+      3. Add TODO for real TDLib comparison tests
+      4. Use Paper Plane as final integration test
+      
+    mitigation_actions:
+      - action: "Add mock limitations doc to each test file"
+        owner: "dev-rust"
+        due: "Phase 3, Day 2"
+        status: "PENDING"
+      - action: "Reference TDLib docs for each tested method"
+        owner: "analyst"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Create test compatibility checklist"
+        owner: "analyst"
+        due: "Phase 2.5"
+        status: "COMPLETED"
+        
+    contingency_plan: |
+      If mock behavior is found to be incorrect:
+      1. Update mock to match TDLib behavior
+      2. Add regression test for the specific case
+      3. Update all affected tests
+      4. Document the TDLib behavior for reference
+      
+    references:
+      - "docs/paper-plane-clarification-qa.md (Q3: Network Testing Approach)"
+      - "crates/paper_plane_adapter/src/response.rs"
+
+  - id: "R4"
+    type: "TEST_FLAKINESS"
+    status: "OPEN"
+    title: "Async/concurrent test issues"
+    description: |
+      Integration tests use async/await and concurrent execution, which
+      can lead to flaky tests due to:
+      
+      1. Race conditions in concurrent request processing
+      2. Timeout timing variations
+      3. Tokio runtime thread pool behavior
+      4. Resource cleanup between tests
+      
+      Current async usage in lib.rs:
+      - Line 258: tokio::spawn for request processor
+      - Line 261: while loop with running flag
+      - Line 96: crossbeam channels for std/tokio bridge
+      
+      Flaky tests would:
+      - Fail intermittently without code changes
+      - Waste debugging time
+      - Reduce confidence in test suite
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    impact_score: 5
+    probability_score: 5
+    risk_score: 25
+    category: "quality"
+    
+    mitigation_strategy: |
+      1. Use deterministic test ordering
+      2. Add explicit delays where needed
+      3. Use test isolation (cleanup between tests)
+      4. Set reasonable timeouts (not too short)
+      5. Avoid shared state between tests
+      
+    mitigation_actions:
+      - action: "Add cleanup helper to reset registry between tests"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Use serial test execution for concurrent tests"
+        owner: "dev-rust"
+        due: "Phase 3, Day 2"
+        status: "PENDING"
+      - action: "Add 100ms buffer to all timeout tests"
+        owner: "dev-rust"
+        due: "Phase 3, Day 2"
+        status: "PENDING"
+        
+    contingency_plan: |
+      If tests prove flaky:
+      1. Increase timeout values
+      2. Add retry logic for known flaky tests
+      3. Isolate concurrent tests to separate file
+      4. Use `--test-threads=1` for problematic tests
+      
+    references:
+      - "crates/paper_plane_adapter/src/lib.rs:258-311"
+      - "docs/paper-plane-testing-plan.md (Test Batches)"
+
+  - id: "R5"
+    type: "COVERAGE_GAP"
+    status: "MITIGATED"
+    title: "May not reach 60% coverage target"
+    description: |
+      Current coverage: ~52%
+      Target coverage: 60%
+      Gap: 8 percentage points
+      
+      Analysis of coverage gaps:
+      1. Error handling branches (missing match arms)
+      2. Request parsing edge cases
+      3. Response serialization paths
+      4. Client lifecycle edge cases
+      
+      With 33 new tests, estimated coverage increase:
+      - Each test typically covers 0.5-2% of new code
+      - Best case: 33 tests × 2% = 66% increase → 118% (capped at ~80%)
+      - Realistic case: 33 tests × 0.5% = 16.5% increase → ~68%
+      - Conservative case: 33 tests × 0.3% = 10% increase → ~62%
+      
+      Risk factors:
+      - Tests may overlap coverage
+      - Some code paths may be unreachable without real managers
+      - Serialization code may have hard-to-reach branches
+      
+      However, this risk is mitigated by:
+      1. Focus on uncovered error paths
+      2. Include edge case tests
+      3. Use coverage tool to identify gaps
+    impact: "LOW"
+    probability: "LOW"
+    impact_score: 3
+    probability_score: 4
+    risk_score: 12
+    category: "quality"
+    
+    mitigation_strategy: |
+      1. Run coverage after each batch to identify gaps
+      2. Add targeted tests for uncovered branches
+      3. Focus error path tests on high-value errors
+      4. Accept 55% as minimum (still above current 52%)
+      
+    mitigation_actions:
+      - action: "Run coverage after Batch 1 to assess progress"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+      - action: "Add 5 error path tests if coverage < 55% after Batch 2"
+        owner: "dev-rust"
+        due: "Phase 3, Day 2"
+        status: "PENDING"
+      - action: "Install cargo-llvm-cov for measurement"
+        owner: "dev-rust"
+        due: "Phase 3, Day 1"
+        status: "PENDING"
+        
+    contingency_plan: |
+      If 60% cannot be reached:
+      1. Document actual coverage achieved
+      2. List uncovered branches with rationale
+      3. Create follow-up task for remaining coverage
+      4. Verify that all critical paths are covered
+      
+      Minimum acceptable: 55%
+      Stretch goal: 65%
+      
+    references:
+      - "reference/success-criteria-paper-plane.yaml (coverage section)"
+      - "CLAUDE.md (Test Coverage Status)"
+
+---
+
+risk_matrix:
+  high_risks: []  # No high risks (score >= 40) in OPEN status
+  medium_risks:
+    - "R1"  # UNRESOLVED_API (score: 48) but mitigated by mock approach
+    - "R2"  # TIME_CONSTRAINT (score: 30)
+  low_risks:
+    - "R4"  # TEST_FLAKINESS (score: 25)
+    - "R3"  # MOCK_PARITY (score: 15, MITIGATED)
+    - "R5"  # COVERAGE_GAP (score: 12, MITIGATED)
+
+trend_analysis:
+  previous_sprint_risks: 0
+  new_risks_this_phase: 5
+  risks_mitigated: 2
+  risks_closed: 0
+  overall_risk_trend: "DECREASING"  # Most risks are mitigated or low impact
+
+metrics:
+  total_risk_score: 130
+  average_risk_score: 26.0
+  open_risk_score: 103  # R1 + R2 + R4
+  mitigated_risk_score: 27  # R3 + R5
+
+---
+
+summary: |
+  The paper_plane_adapter testing effort has 5 identified risks, with 3 open
+  and 2 mitigated. The highest open risk is R1 (UNRESOLVED_API) with a score
+  of 48, but this is mitigated by the mock-only testing approach decided in
+  Phase 1 clarifications.
+  
+  The most significant operational risk is R2 (TIME_CONSTRAINT), which may
+  require deferring Batch 3 tests to a follow-up task.
+  
+  Overall risk level is LOW for successful completion, with MEDIUM risk for
+  meeting all success criteria within the timeline.
+
+next_review: "Phase 2.5: Verification Gate"
+owner: "analyst"

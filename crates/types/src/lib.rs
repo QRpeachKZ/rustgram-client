@@ -26,8 +26,13 @@
 #![allow(mismatched_lifetime_syntaxes)]
 
 pub mod access;
+pub mod auth_requests;
+pub mod auth_responses;
+pub mod code_settings;
+pub mod email_verification;
 pub mod error;
 pub mod ids;
+pub mod mtproto_auth;
 pub mod peer;
 pub mod primitive;
 pub mod tl;
@@ -36,13 +41,23 @@ pub mod vector;
 
 // Re-export commonly used types at the crate root
 pub use access::{AccessHash, FileReference};
+pub use auth_requests::{LogOutRequest, SendCodeRequest, SignInRequest};
+pub use auth_responses::{Authorization, LoggedOut, SentCode, SentCodeType};
+pub use code_settings::CodeSettings;
+pub use mtproto_auth::{
+    ClientDhInnerData, DhGenOk, DhGenResponse, PQInnerDataDc, PQInnerDataTempDc, ReqDhParams,
+    ReqPqMulti, ResPq, ServerDhInnerData, ServerDhParamsOk, SetClientDhParams,
+};
+pub use email_verification::{
+    EmailVerification, EmailVerificationApple, EmailVerificationCode, EmailVerificationGoogle,
+};
 pub use error::{InvalidIdError, TypeError, TypeResult};
 pub use ids::{
     ChannelId, ChatId, DialogId, DialogType, MessageId, MessageType, SecretChatId, UserId,
 };
 pub use peer::{DialogPeer, InputPeer, NotifyPeer, Peer};
 pub use primitive::{
-    TlBool, TlBytes, TlDouble, TlInt, TlInt128, TlInt256, TlLong, TlString, TlTrue,
+    TlBool, TlBytes, TlDouble, TlInt, TlInt128, TlInt256, TlLong, TlString, TlTrue, UInt256,
 };
 pub use tl::{TlBoxed, TlConstructor, TlDeserialize, TlHelper, TlSerialize};
 pub use update::{

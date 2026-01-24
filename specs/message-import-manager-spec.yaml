@@ -1,0 +1,258 @@
+spec:
+  module: message_import_manager
+  version: 0.1.0
+  created: 2026-01-13T23:45:00Z
+  updated: 2026-01-13T23:45:00Z
+  language: rust
+  complexity: high
+  estimated_loc: 1650
+  is_state_machine: true
+
+plan:
+  - item: Verify all external dependencies via grep
+  - item: Implement error types and MessageFileType enum
+  - item: Implement stub types (InputFile, UploadedImportedMessagesInfo)
+  - item: Implement MessageImportManager core structure
+  - item: Implement file type detection API
+  - item: Implement import confirmation text API
+  - item: Implement message import workflow with state machine
+  - item: Implement file upload tracking for imported messages
+  - item: Write comprehensive tests (185+ target)
+  - item: Review and verify module compliance
+
+success_criteria:
+  code_quality:
+    max_clippy_warnings: 0
+    production_unwrap_calls: 0
+    max_cyclomatic_complexity: 15
+  
+  test_coverage:
+    min_tests: 185
+    min_line_coverage: 80
+  
+  documentation:
+    public_api_docs_percent: 100
+    examples_required: true
+  
+  tdlib_alignment:
+    api_compatibility: strict
+
+dependency_matrix:
+  # Verified dependencies
+  - type: DialogId
+    source: rustgram-types
+    constructor: from_user(), from_chat(), from_channel(), from_secret_chat()
+    location: crates/types/src/ids.rs:658-806
+    verified: true
+    methods:
+      - is_valid()
+      - get_type()
+      - to_encoded()
+      - from_encoded()
+  
+  - type: FileUploadId
+    source: rustgram-file-upload-id
+    constructor: new(file_id: FileId, internal_upload_id: i64)
+    location: crates/file_upload_id/src/lib.rs:44-84
+    verified: true
+    methods:
+      - is_valid()
+      - file_id()
+      - internal_upload_id()
+  
+  - type: FileId
+    source: rustgram-file-id
+    constructor: new(id: i32, remote_id: i32)
+    location: crates/file_id/src/lib.rs:58-179
+    verified: true
+    methods:
+      - is_valid()
+      - is_empty()
+      - get()
+      - get_remote()
+  
+  # Stub implementations required
+  - type: InputFile
+    source: LOCAL STUB
+    constructor: new(id: i64, parts: Vec<u8>)
+    location: crates/message_import_manager/src/tl.rs
+    verified: false
+    note: TDLib uses td_api::inputFile, create local stub
+  
+  - type: UploadedImportedMessagesInfo
+    source: LOCAL STRUCT
+    constructor: new(dialog_id, attached_files, is_reupload)
+    location: crates/message_import_manager/src/types.rs
+    verified: false
+    note: Internal tracking struct for upload state
+
+risk_register:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    dependency: InputFile (TDLib API type)
+    mitigation: Create local stub in tl.rs module
+    impact: LOW
+    status: MITIGATED
+    outcome: Stub sufficient for current use case
+  
+  - id: R2
+    type: MISSING_DEPENDENCY
+    dependency: UploadedImportedMessagesInfo
+    mitigation: Implement as internal struct in types.rs
+    impact: LOW
+    status: MITIGATED
+    outcome: Internal tracking structure, not external dependency
+  
+  - id: R3
+    type: STATE_COMPLEXITY
+    dependency: Multi-stage import workflow (upload -> confirm -> import)
+    mitigation: Builder pattern, explicit state transitions, comprehensive tests
+    impact: MEDIUM
+    status: MITIGATED
+    outcome: State machine with clear validation
+  
+  - id: R4
+    type: THREAD_SAFETY
+    dependency: Concurrent file upload tracking
+    mitigation: Use tokio::sync::RwLock for upload tracking maps
+    impact: MEDIUM
+    status: MITIGATED
+    outcome: Async-safe concurrent access pattern
+  
+  - id: R5
+    type: SERIALIZATION
+    dependency: TDLib binary format compatibility
+    mitigation: Implement serde Serialize/Deserialize for all public types
+    impact: LOW
+    status: MITIGATED
+    outcome: Standard JSON serde sufficient
+
+reference:
+  tdlib_header: references/td/td/telegram/MessageImportManager.h
+  tdlib_impl: references/td/td/telegram/MessageImportManager.cpp
+
+api_methods:
+  # File type detection
+  - get_message_file_type(message_file_head: &[u8]) -> Result<MessageFileType>
+  
+  # Import confirmation
+  - get_message_import_confirmation_text(dialog_id: DialogId) -> Result<String>
+  
+  # Main import workflow
+  - import_messages(
+      dialog_id: DialogId,
+      message_file: InputFile,
+      attached_files: Vec<InputFile>
+    ) -> Result<()>
+  
+  - start_import_messages(
+      dialog_id: DialogId,
+      import_id: i64,
+      attached_file_upload_ids: Vec<FileUploadId>
+    ) -> Result<()>
+  
+  # Internal state management
+  - can_import_messages(dialog_id: DialogId) -> Result<()>
+  
+  - upload_imported_messages(
+      dialog_id: DialogId,
+      file_upload_id: FileUploadId,
+      attached_file_upload_ids: Vec<FileUploadId>,
+      is_reupload: bool
+    ) -> Result<()>
+  
+  - on_upload_imported_messages_complete(
+      file_upload_id: FileUploadId,
+      input_file: InputFile
+    ) -> Result<()>
+  
+  - on_upload_imported_messages_error(
+      file_upload_id: FileUploadId,
+      error: Error
+    )
+
+stub_types:
+  InputFile:
+    definition: |
+      /// Stub for TDLib InputFile.
+      /// TODO: Replace with full TL implementation when available.
+      #[derive(Debug, Clone, PartialEq, Eq)]
+      pub struct InputFile {
+          pub id: i64,
+          pub parts: Vec<u8>,
+      }
+    rationale: "TDLib td_api::inputFile not available in Rustgram yet. Simplified stub sufficient for tracking uploads."
+    
+  UploadedImportedMessagesInfo:
+    definition: |
+      /// Internal tracking for uploaded imported messages.
+      pub struct UploadedImportedMessagesInfo {
+          pub dialog_id: DialogId,
+          pub attached_file_upload_ids: Vec<FileUploadId>,
+          pub is_reupload: bool,
+      }
+    rationale: "Internal state tracking struct, matches TDLib MessageImportManager.h:77-90"
+
+test_plan:
+  unit_tests: 165
+  integration_tests: 0
+  doc_tests: 20
+  
+  breakdown:
+    - Error types: 25 tests
+    - MessageFileType enum: 20 tests
+    - InputFile stub: 20 tests
+    - UploadedImportedMessagesInfo: 25 tests
+    - MessageImportManager state machine: 50 tests
+    - Public API methods: 25 tests
+    - Doc examples: 20 tests
+
+tdlib_api_mapping:
+  get_message_file_type:
+    tdlib: "getMessageFileType"
+    tdlib_method: "messages.checkHistoryImport"
+    returns: "MessageFileType (Private/Group/Unknown)"
+  
+  get_message_import_confirmation_text:
+    tdlib: "getMessageImportConfirmationText"
+    tdlib_method: "messages.checkHistoryImportPeer"
+    returns: "String (confirmation text)"
+  
+  import_messages:
+    tdlib: "importMessages"
+    tdlib_method: "messages.initHistoryImport + messages.uploadImportedMedia"
+    returns: "Unit"
+  
+  start_import_messages:
+    tdlib: Internal workflow step
+    tdlib_method: "messages.uploadImportedMedia (attachments)"
+    returns: "Unit"
+
+implementation_notes:
+  state_machine:
+    states:
+      - Idle
+      - UploadingMainFile
+      - UploadingAttachments
+      - AwaitingConfirmation
+      - Importing
+      - Completed
+      - Failed
+    
+    transitions:
+      - Idle -> UploadingMainFile (on import_messages)
+      - UploadingMainFile -> UploadingAttachments (on main file complete)
+      - UploadingAttachments -> AwaitingConfirmation (on all uploads complete)
+      - AwaitingConfirmation -> Importing (on start_import_messages)
+      - Importing -> Completed (on success)
+      - Any -> Failed (on error)
+  
+  thread_safety:
+    - Use tokio::sync::RwLock for upload tracking maps
+    - Use Arc for shared state across async tasks
+    - Document all thread safety guarantees
+  
+  error_handling:
+    - All public methods return Result<T, Error>
+    - Distinguish between retryable and fatal errors
+    - Provide clear error messages for all failure modes

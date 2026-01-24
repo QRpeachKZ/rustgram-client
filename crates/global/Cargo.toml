@@ -1,0 +1,10 @@
+[package]
+name = "rustgram-global"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+rstest.workspace = true

@@ -1,0 +1,305 @@
+# Risk Register: Issue Tracker Integration
+
+**Epic**: rustgram-client-bd-integration
+**Phase**: 2 - Analysis + Spec
+**Last Updated**: 2026-01-20
+**Total Risks**: 12
+
+## Summary
+
+| Category | Count | Open | Mitigated | Blocker |
+|----------|-------|------|-----------|---------|
+| TECHNICAL | 5 | 3 | 2 | 0 |
+| INTEGRATION | 4 | 2 | 2 | 0 |
+| PERFORMANCE | 1 | 1 | 0 | 0 |
+| SECURITY | 1 | 0 | 1 | 0 |
+| SCOPE | 1 | 0 | 1 | 0 |
+
+---
+
+## TECHNICAL RISKS
+
+### T1: Beads Schema Incompatibility
+- **ID**: T1
+- **Category**: TECHNICAL
+- **Status**: OPEN
+- **Probability**: Medium
+- **Impact**: High
+- **Description**: Beads schema may change between versions, breaking database queries
+- **Detection**: Database query failures, column not found errors
+- **Mitigation Strategy**:
+  1. Add schema version check on startup
+  2. Pin to Beads v0.46.0 in documentation
+  3. Provide error message with version mismatch
+  4. Fallback to CLI when schema incompatible
+- **Owner**: Developer
+- **Due**: Phase 2.5
+
+### T2: SQLite Lock During bd sync
+- **ID**: T2
+- **Category**: TECHNICAL
+- **Status**: OPEN
+- **Probability**: High
+- **Impact**: Medium
+- **Description**: Beads daemon may lock SQLite during sync operations
+- **Detection**: SQLITE_BUSY errors, database locked errors
+- **Mitigation Strategy**:
+  1. Implement retry logic with exponential backoff
+  2. Detect locked state and fallback to CLI
+  3. Add timeout for database operations
+  4. Document limitation in README
+- **Owner**: Developer
+- **Due**: Phase 3
+
+### T3: rusqlite Version Conflict
+- **ID**: T3
+- **Category**: TECHNICAL
+- **Status**: MITIGATED
+- **Probability**: Low
+- **Impact**: Medium
+- **Description**: rusqlite 0.32 may not compile with workspace rust-version 1.75
+- **Detection**: Compilation errors
+- **Mitigation Strategy**:
+  1. Verified rusqlite 0.32 supports Rust 1.75
+  2. Use bundled SQLite feature for compatibility
+  3. Test compilation on target platform
+- **Owner**: Developer
+- **Due**: Phase 2.5 ✅
+
+### T4: Circular Dependency Detection
+- **ID**: T4
+- **Category**: TECHNICAL
+- **Status**: OPEN
+- **Probability**: Medium
+- **Impact**: High
+- **Description**: Adding circular dependencies breaks dependency resolution
+- **Detection**: Infinite loops in dependency traversal
+- **Mitigation Strategy**:
+  1. Implement cycle detection using DFS
+  2. Reject circular dependencies with clear error
+  3. Add unit tests for cycle detection
+  4. Document dependency rules
+- **Owner**: Developer
+- **Due**: Phase 4
+
+### T5: Type Safety vs JSON Flexibility
+- **ID**: T5
+- **Category**: TECHNICAL
+- **Status**: MITIGATED
+- **Probability**: Low
+- **Impact**: Low
+- **Description**: Beads stores arbitrary JSON in some fields, limiting type safety
+- **Detection**: Parse errors in JSON fields
+- **Mitigation Strategy**:
+  1. Use serde_json::Value for flexible fields
+  2. Document which fields are flexible
+  3. Provide typed accessors for known fields
+  4. Accept limited type safety for flexibility
+- **Owner**: Developer
+- **Due**: Phase 2 ✅
+
+---
+
+## INTEGRATION RISKS
+
+### I1: bd CLI Not in PATH
+- **ID**: I1
+- **Category**: INTEGRATION
+- **Status**: OPEN
+- **Probability**: Medium
+- **Impact**: Medium
+- **Description**: Fallback to CLI requires bd command available
+- **Detection**: Command not found errors
+- **Mitigation Strategy**:
+  1. Check for bd availability on startup
+  2. Log warning if CLI unavailable
+  3. Provide clear error message
+  4. Document CLI requirement
+- **Owner**: Developer
+- **Due**: Phase 5
+
+### I2: Actor Framework API Changes
+- **ID**: I2
+- **Category**: INTEGRATION
+- **Status**: MITIGATED
+- **Probability**: Low
+- **Impact**: Medium
+- **Description**: rustgram-actor crate API may change, breaking integration
+- **Detection**: Compilation errors in actor.rs
+- **Mitigation Strategy**:
+  1. Make actor integration optional feature
+  2. Use trait abstractions where possible
+  3. Document actor API requirements
+  4. Version actor dependency carefully
+- **Owner**: Developer
+- **Due**: Phase 5 ✅
+
+### I3: Beads Daemon Interference
+- **ID**: I3
+- **Category**: INTEGRATION
+- **Status**: OPEN
+- **Probability**: Low
+- **Impact**: High
+- **Description**: Direct database access may conflict with Beads daemon operations
+- **Detection**: Database corruption, inconsistent state
+- **Mitigation Strategy**:
+  1. Test with daemon running and stopped
+  2. Use transactions for consistency
+  3. Document daemon interaction
+  4. Consider disabling daemon for crate usage
+- **Owner**: Developer
+- **Due**: Phase 3
+
+### I4: JSONL Import/Export Not Supported
+- **ID**: I4
+- **Category**: INTEGRATION
+- **Status**: MITIGATED
+- **Probability**: Low
+- **Impact**: Low
+- **Description**: Initial implementation does not support JSONL import/export
+- **Detection**: User requests for JSONL support
+- **Mitigation Strategy**:
+  1. Document JSONL not supported in v1.0
+  2. Use CLI for JSONL operations
+  3. Add to future enhancements
+  4. Accept limitation for MVP
+- **Owner**: Developer
+- **Due**: Phase 7 ✅
+
+---
+
+## PERFORMANCE RISKS
+
+### P1: Large Database Query Performance
+- **ID**: P1
+- **Category**: PERFORMANCE
+- **Status**: OPEN
+- **Probability**: Medium
+- **Impact**: Medium
+- **Description**: Queries on large issue databases (1000+ issues) may be slow
+- **Detection**: Query timeouts, slow response times
+- **Mitigation Strategy**:
+  1. Add database indexes matching Beads schema
+  2. Use prepared statements for repeated queries
+  3. Implement pagination for list operations
+  4. Benchmark with 1000+ issues
+- **Owner**: Developer
+- **Due**: Phase 4
+
+---
+
+## SECURITY RISKS
+
+### S1: SQL Injection in User Input
+- **ID**: S1
+- **Category**: SECURITY
+- **Status**: MITIGATED
+- **Probability**: Low
+- **Impact**: Critical
+- **Description**: User-provided issue titles/descriptions could contain SQL injection
+- **Detection**: Security audit, manual review
+- **Mitigation Strategy**:
+  1. Use rusqlite prepared statements exclusively
+  2. NEVER concatenate SQL strings with user input
+  3. Add test cases for SQL injection attempts
+  4. Security review before merge
+- **Owner**: Developer
+- **Due**: Phase 3 ✅
+
+---
+
+## SCOPE RISKS
+
+### S1: Feature Creep Beyond CRUD
+- **ID**: S1
+- **Category**: SCOPE
+- **Status**: MITIGATED
+- **Probability**: Medium
+- **Impact**: Medium
+- **Description**: Temptation to add advanced features (search, analytics, webhooks)
+- **Detection**: Increasing scope, missed deadlines
+- **Mitigation Strategy**:
+  1. Define strict MVP scope (CRUD + dependencies + labels)
+  2. Create separate issues for enhancements
+  3. Reference success criteria
+  4. Phase advanced features for future
+- **Owner**: Developer
+- **Due**: Ongoing ✅
+
+---
+
+## Risk Metrics
+
+### Overall Risk Level
+
+| Metric | Value | Status |
+|--------|-------|--------|
+| Total Risks | 12 | Acceptable |
+| Open Risks | 6 | Manageable |
+| Blocker Risks | 0 | ✅ Pass |
+| High Impact | 5 | Monitor |
+| High Probability | 3 | Monitor |
+
+### Risk by Phase
+
+| Phase | Risk Count | Highest Priority |
+|-------|------------|------------------|
+| Phase 2.5 | 3 | T1, T3, S1 |
+| Phase 3 | 4 | T2, S1, I3, P1 |
+| Phase 4 | 1 | T4 |
+| Phase 5 | 2 | I1, I2 |
+
+### Risk Review Cadence
+
+- **Phase 2.5 Gate**: Review all OPEN risks
+- **Phase 3 Development**: Weekly risk check
+- **Phase 4 Testing**: Address all HIGH risks
+- **Phase 5 Review**: Final risk assessment
+
+---
+
+## Risk Response Templates
+
+### For OPEN Risks
+```yaml
+action:
+  - Document mitigation steps
+  - Assign owner and due date
+  - Track in development tasks
+```
+
+### For MITIGATED Risks
+```yaml
+action:
+  - Verify mitigation works
+  - Add test case
+  - Close risk
+```
+
+### For BLOCKER Risks
+```yaml
+action:
+  - STOP development
+  - Escalate to project lead
+  - Create remediation epic
+  - Do not proceed until resolved
+```
+
+---
+
+## Lessons Learned from Previous Epics
+
+From DialogManager Network Integration (rustgram-client-4gl):
+- Risk T2 (SQLite lock) was identified but not fully mitigated
+- Added retry logic late in development
+- **Apply**: Implement retry logic from Phase 2
+
+From API Compatibility Audit (rustgram-client-1q4):
+- Schema version check prevented compatibility issues
+- **Apply**: Add Beads version check to startup
+
+---
+
+**Risk Register Status**: Active
+**Next Review**: Phase 2.5 Verification Gate
+**Owner**: Developer

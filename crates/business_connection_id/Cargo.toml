@@ -1,0 +1,14 @@
+[package]
+name = "rustgram-business-connection-id"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Business connection identifier for Telegram MTProto client"
+repository = "https://github.com/yourusername/rustgram-client"
+keywords = ["telegram", "mtproto", "business", "connections"]
+categories = ["data-structures"]
+
+[dependencies]
+
+[dev-dependencies]

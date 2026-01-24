@@ -1,0 +1,40 @@
+[package]
+name = "rustgram-media-area"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Media area types for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "stories", "media"]
+categories = ["data-structures"]
+
+[dependencies]
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[lib]
+name = "media_area"
+path = "src/lib.rs"
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

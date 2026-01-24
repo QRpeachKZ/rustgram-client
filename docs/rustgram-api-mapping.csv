@@ -1,0 +1,52 @@
+tdlib_function,rustgram_manager,rustgram_method,gap_type,gap_weight,signature_diff,async_model_diff,behavior_diff,notes
+check_authentication_code,auth_manager,check_code,SIGNATURE,1x,Parameter order diff,None,Same - OK,Code param position differs
+check_authentication_password,auth_manager,check_password,SIGNATURE,1x,Parameter naming,None,Same - OK,None
+resend_authentication_code,auth_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+recover_authentication_password,auth_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+request_authentication_password_recovery,auth_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+register_user,auth_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+request_qr_code_authentication,auth_manager,request_qr_code_authentication,SIGNATURE,1x,Returns () vs AuthorizationState,None,Different return type,None
+set_authentication_phone_number,auth_manager,set_phone_number,ASYNC_MODEL,2x,Method naming,Result type vs State,Same - OK,None
+log_out,auth_manager,log_out,SIGNATURE,1x,None,None,Same - OK,None
+delete_account,auth_manager,delete_account,SIGNATURE,1x,Reason param vs String,Error type,Same - OK,None
+create_private_chat,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+open_chat,dialog_manager,on_dialog_opened,BEHAVIOR,3x,Mut vs async,Void vs Result,Side effect tracking,None
+close_chat,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+join_chat,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+leave_chat,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_message,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_chat_history,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+delete_messages,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+view_messages,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+send_message,messages_manager,send_text,ARCHITECTURE,5x,Text only vs full content,Error types,Partial - text only,Only supports text
+edit_message_text,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+send_chat_action,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+toggle_chat_is_pinned,dialog_manager,pin_dialog/unpin_dialog,ARCHITECTURE,5x,Two methods vs one,void vs Result,Same behavior - OK,Split into two methods
+toggle_chat_is_marked_as_unread,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+set_chat_notification_settings,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+set_chat_draft_message,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+set_message_sender_block_list,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+download_file,download_manager,start_download,ARCHITECTURE,5x,Different API,error types,Progress tracking vs file,Only starts download
+cancel_download_file,download_manager,remove_download,ARCHITECTURE,5x,Cancel vs remove,error types,Semantic difference,None
+search_chats,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+search_chats_on_server,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+search_contacts,user_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+search_public_chats,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+add_recently_found_chat,dialog_manager,add_recently_found,SIGNATURE,1x,None,None,Same - OK,None
+clear_recently_found_chats,dialog_manager,remove_recently_found,ARCHITECTURE,5x,Clear all vs remove one,Param types,Different semantics,None
+load_chats,dialog_manager,load_dialogs,SIGNATURE,1x,Chat vs dialog,Error types,Same - OK,Named differently
+add_chat_to_list,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_storage_statistics,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+optimize_storage,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+delete_chat_folder,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_contacts,user_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_countries,user_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_me,user_manager,get_me,SIGNATURE,1x,Return type,None,Same - OK,Returns User not Result
+get_basic_group_full_info,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_supergroup_full_info,dialog_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+get_chat_sponsored_messages,messages_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+parse_markdown,formatted_text,validate_entities,ARCHITECTURE,5x,Validate vs parse,None,Different behavior,Validation only
+get_markdown_text,formatted_text,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+set_option,option_manager,None,MISSING,4x,N/A,N/A,N/A,Not implemented in rustgram
+set_tdlib_parameters,auth_manager,None,MISSING,4x,N/A,N/A,N/A,Config done in AuthManager::new
+set_log_verbosity_level,None,None,MISSING,4x,N/A,N/A,N/A,Not implemented - use env logger

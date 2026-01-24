@@ -1,0 +1,34 @@
+[package]
+name = "rustgram-message-query-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-message-full-id = { path = "../message_full-id" }
+rustgram-message-search-filter = { path = "../message_search-filter" }
+rustgram-message-viewer = { path = "../message-viewer" }
+rustgram-business-connection-id = { path = "../business_connection-id" }
+rustgram-forum-topic-id = { path = "../forum_topic-id" }
+rustgram-saved-messages-manager = { path = "../saved_messages-manager" }
+rustgram-affected-history = { path = "../affected-history" }
+rustgram-file-upload-id = { path = "../file_upload-id" }
+rustgram-dialog-list-id = { path = "../dialog_list-id" }
+rustgram-message-topic = { path = "../message-topic" }
+rustgram-formatted-text = { path = "../formatted-text" }
+rustgram-file-location = { path = "../file_location" }
+rustgram-message-thread-info = { path = "../message_thread-info" }
+rustgram-message-extended-media = { path = "../message_extended-media" }
+rustgram-file-id = { path = "../file_id" }
+
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }

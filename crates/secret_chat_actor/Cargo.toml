@@ -1,0 +1,33 @@
+[package]
+name = "rustgram-secret-chat-actor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Secret chat actor for rustgram-client"
+keywords = ["telegram", "mtproto", "secret-chat", "actor"]
+categories = ["async", "cryptography"]
+
+[features]
+default = []
+
+[dependencies]
+rustgram-actor = { workspace = true }
+rustgram-promise = { workspace = true }
+rustgram-types = { workspace = true }
+rustgram-secret-chat-layer = { workspace = true }
+rustgram-secret-chat-db = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

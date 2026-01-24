@@ -1,0 +1,22 @@
+[package]
+name = "rustgram-draft-message"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Local crates - placeholder types
+rustgram-types = { path = "../types" }
+rustgram-input-message-text = { path = "../input_message-text" }
+rustgram-formatted-text = { path = "../formatted-text" }
+
+[dev-dependencies]
+bincode = "1.3"

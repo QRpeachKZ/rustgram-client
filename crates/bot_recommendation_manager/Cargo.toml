@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-bot-recommendation-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-bot-command = { path = "../bot-command" }
+rustgram-bot-command-scope = { path = "../bot_command-scope" }
+rustgram-bot-menu-button = { path = "../bot_menu-button" }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+serde = ["dep:serde"]
+default = []

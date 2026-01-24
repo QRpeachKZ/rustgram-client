@@ -1,0 +1,22 @@
+[package]
+name = "rustgram-business-chat-link"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Business chat link types for Telegram"
+
+[lib]
+name = "rustgram_business_chat_link"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-formatted-text = { path = "../formatted-text" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

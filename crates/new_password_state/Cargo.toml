@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-new-password-state"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "New password state for Telegram 2FA"
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

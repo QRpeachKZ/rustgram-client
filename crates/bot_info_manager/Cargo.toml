@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-bot-info-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Bot info manager for Telegram MTProto client"
+rust-version.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-dialog-participant = { path = "../dialog-participant, package = "rustgram-dialog-participant" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-file-source-id = { path = "../file_source-id" }
+rustgram-file-upload-id = { path = "../file_upload-id" }
+rustgram-types = { path = "../types" }
+rustgram-story-content = { path = "../story-content, package = "rustgram-story-content" }
+rustgram-requested-dialog-type = { path = "../requested_dialog-type, package = "rustgram-requested-dialog-type" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+rstest = "0.23"

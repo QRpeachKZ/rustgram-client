@@ -1,0 +1,25 @@
+[package]
+name = "rustgram_messages_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_messages_manager"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-message-types = { path = "../message-types" }
+rustgram-message-content-type = { path = "../message_content-type" }
+rustgram-draft-message = { path = "../draft-message" }
+rustgram-ordered-messages = { path = "../ordered-messages" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -435,6 +435,33 @@ impl DcOptions {
     pub fn is_empty(&self) -> bool {
         self.dc_options.is_empty()
     }
+
+    /// Retains only the elements specified by the predicate.
+    ///
+    /// This is useful for filtering DC options, e.g., removing options
+    /// for a specific DC ID before adding a new one.
+    ///
+    /// # Arguments
+    ///
+    /// * `predicate` - A closure that returns `true` for items to keep
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_net::{DcId, DcOptions};
+    ///
+    /// let mut options = DcOptions::new();
+    /// // ... add options ...
+    ///
+    /// // Remove all DC 2 options
+    /// options.retain(|opt| opt.dc_id != DcId::internal(2));
+    /// ```
+    pub fn retain<F>(&mut self, predicate: F)
+    where
+        F: FnMut(&DcOption) -> bool,
+    {
+        self.dc_options.retain(predicate);
+    }
 }
 
 /// Statistics for DC options, used for connection selection.

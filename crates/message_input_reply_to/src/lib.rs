@@ -2,6 +2,11 @@
 //
 // Licensed under the Apache License, Version 2.0;
 
+//! Message input reply-to types for specifying which message or story to reply to.
+//!
+//! This module provides types for specifying what a new message is replying to,
+//! which can be either a regular message or a story.
+
 #![warn(missing_docs)]
 #![warn(clippy::all)]
 #![deny(clippy::unwrap_used)]
@@ -11,21 +16,25 @@ use rustgram_types::{DialogId, MessageId};
 use serde::{Deserialize, Serialize};
 use std::fmt;
 
+/// Unique identifier for a story.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct StoryId(i32);
 
 impl StoryId {
+    /// Creates a new story ID.
     #[must_use]
     pub const fn new(id: i32) -> Self {
         Self(id)
     }
 
+    /// Returns the inner story ID value.
     #[must_use]
     pub const fn get(&self) -> i32 {
         self.0
     }
 }
 
+/// Full identifier for a story including the dialog it belongs to.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 pub struct StoryFullId {
     dialog_id: DialogId,
@@ -33,6 +42,7 @@ pub struct StoryFullId {
 }
 
 impl StoryFullId {
+    /// Creates a new story full ID.
     #[must_use]
     pub const fn new(dialog_id: DialogId, story_id: StoryId) -> Self {
         Self {
@@ -41,29 +51,36 @@ impl StoryFullId {
         }
     }
 
+    /// Returns `true` if this story ID is valid (non-zero).
     #[must_use]
     pub fn is_valid(&self) -> bool {
         self.story_id.get() != 0
     }
 }
 
+/// Text quote from a message being replied to.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 pub struct MessageQuote {
     text: String,
 }
 
 impl MessageQuote {
+    /// Creates a new empty message quote.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Returns `true` if this quote is empty.
     #[must_use]
     pub fn is_empty(&self) -> bool {
         self.text.is_empty()
     }
 }
 
+/// Specifies what a message input is replying to.
+///
+/// This can be either a message (with optional quote) or a story.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MessageInputReplyTo {
     message_id: MessageId,
@@ -74,11 +91,13 @@ pub struct MessageInputReplyTo {
 }
 
 impl MessageInputReplyTo {
+    /// Creates a new empty reply-to specification.
     #[must_use]
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates a reply-to specification for a message.
     #[must_use]
     pub fn message(
         message_id: MessageId,
@@ -95,6 +114,7 @@ impl MessageInputReplyTo {
         }
     }
 
+    /// Creates a reply-to specification for a story.
     #[must_use]
     pub fn story(story_full_id: StoryFullId) -> Self {
         Self {
@@ -106,16 +126,19 @@ impl MessageInputReplyTo {
         }
     }
 
+    /// Returns `true` if this reply-to specification is empty (no target).
     #[must_use]
     pub fn is_empty(&self) -> bool {
         !self.message_id.is_valid() && !self.story_full_id.is_valid()
     }
 
+    /// Returns the message ID being replied to.
     #[must_use]
     pub const fn get_message_id(&self) -> MessageId {
         self.message_id
     }
 
+    /// Returns the dialog ID containing the message being replied to.
     #[must_use]
     pub const fn get_dialog_id(&self) -> DialogId {
         self.dialog_id

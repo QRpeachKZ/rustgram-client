@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-star-gift-collection-id"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Star gift collection identifier for Telegram MTProto client"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]

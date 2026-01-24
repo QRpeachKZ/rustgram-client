@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-message-id"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Message identifier for Telegram MTProto client"
+repository = "https://github.com/yourusername/rustgram-client"
+keywords = ["telegram", "mtproto", "messages", "identifier"]
+categories = ["data-structures"]
+
+[dependencies]
+rustgram-server-message-id = { path = "../server_message-id" }
+rustgram-scheduled-server-message-id = { path = "../scheduled_server_message-id" }
+serde = { version = "1.0", optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[dev-dependencies]

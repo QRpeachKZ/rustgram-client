@@ -6,6 +6,7 @@
 
 use bytes::Bytes;
 use rustgram_net::prelude::*;
+use rustgram_net::{ServicePacket, PacketInfo, QueryLifecycle, QueryState, SessionConnectionConfig, SessionConnection, SessionState, SessionStatistics};
 use std::str::FromStr;
 
 #[test]
@@ -453,4 +454,358 @@ fn test_session_stats() {
     assert_eq!(stats.queries_sent, 10);
     assert_eq!(stats.queries_received, 8);
     assert_eq!(stats.failures, 2);
+}
+
+// ===== Session Message Processing Tests =====
+
+#[test]
+fn test_session_connection_state() {
+    let config = SessionConnectionConfig::new(DcId::internal(2));
+    let auth_data = std::sync::Arc::new(AuthDataShared::new(DcId::internal(2)));
+    let conn = SessionConnection::new(config, auth_data);
+
+    assert_eq!(conn.state(), SessionState::Empty);
+    assert!(!conn.is_ready());
+    assert_eq!(conn.dc_id(), DcId::internal(2));
+}
+
+#[test]
+fn test_session_connection_config() {
+    let config = SessionConnectionConfig::new(DcId::internal(4))
+        .with_pfs(true)
+        .with_main(true)
+        .with_cdn(false);
+
+    assert_eq!(config.dc_id, DcId::internal(4));
+    assert!(config.use_pfs);
+    assert!(config.is_main);
+    assert!(!config.is_cdn);
+}
+
+#[test]
+fn test_query_lifecycle_create_and_mark_sent() {
+    let lifecycle = QueryLifecycle::new();
+
+    // Create a query
+    let (query_id, _receiver) = lifecycle.create_query(
+        std::time::Duration::from_secs(10),
+        3
+    );
+
+    assert_eq!(query_id, 1); // First query
+    assert_eq!(lifecycle.active_count(), 1);
+    assert_eq!(lifecycle.get_state(query_id), Some(QueryState::Pending));
+
+    // Mark as sent
+    let message_id = 12345;
+    assert!(lifecycle.mark_sent(query_id, message_id).is_ok());
+
+    assert_eq!(lifecycle.get_state(query_id), Some(QueryState::InFlight));
+    assert_eq!(lifecycle.find_by_message_id(message_id), Some(query_id));
+}
+
+#[test]
+fn test_query_lifecycle_complete_with_response() {
+    let lifecycle = QueryLifecycle::new();
+
+    // Create a query
+    let (query_id, mut receiver) = lifecycle.create_query(
+        std::time::Duration::from_secs(10),
+        3
+    );
+
+    // Mark as sent
+    let message_id = 67890;
+    assert!(lifecycle.mark_sent(query_id, message_id).is_ok());
+
+    // Complete with response
+    let response = Bytes::from_static(b"test response data");
+    assert!(lifecycle.mark_completed(message_id, response.clone()).is_ok());
+
+    // Query should be removed
+    assert_eq!(lifecycle.active_count(), 0);
+    assert_eq!(lifecycle.find_by_message_id(message_id), None);
+
+    // Check we received the response
+    match receiver.try_recv() {
+        Ok(Ok(result)) => assert_eq!(result, response),
+        _ => panic!("Expected Ok response"),
+    }
+
+    // Check statistics
+    let stats = lifecycle.statistics();
+    assert_eq!(stats.total_queries, 1);
+    assert_eq!(stats.successful_queries, 1);
+}
+
+#[test]
+fn test_query_lifecycle_retry_on_failure() {
+    let lifecycle = QueryLifecycle::new();
+
+    // Create a query with max_retries = 3 (allow 2 retries)
+    let (query_id, mut receiver) = lifecycle.create_query(
+        std::time::Duration::from_secs(10),
+        3
+    );
+
+    let message_id = 11111;
+    assert!(lifecycle.mark_sent(query_id, message_id).is_ok());
+
+    // First failure - should retry
+    assert!(lifecycle.mark_failed(query_id, "Error 1".to_string()).is_ok());
+    assert_eq!(lifecycle.get_state(query_id), Some(QueryState::Pending));
+    assert_eq!(lifecycle.active_count(), 1);
+
+    // Second failure - should retry again
+    let message_id2 = 22222;
+    assert!(lifecycle.mark_sent(query_id, message_id2).is_ok());
+    assert!(lifecycle.mark_failed(query_id, "Error 2".to_string()).is_ok());
+    assert_eq!(lifecycle.get_state(query_id), Some(QueryState::Pending));
+
+    // Third failure - should not retry (exceeded max)
+    assert!(lifecycle.mark_failed(query_id, "Error 3".to_string()).is_ok());
+    assert_eq!(lifecycle.get_state(query_id), None);
+    assert_eq!(lifecycle.active_count(), 0);
+
+    // Should receive error
+    match receiver.try_recv() {
+        Ok(Err(_)) => {} // Expected error
+        _ => panic!("Expected error after max retries"),
+    }
+
+    let stats = lifecycle.statistics();
+    // Each failure is counted in failed_queries, so we have 3 total failures
+    assert_eq!(stats.failed_queries, 3);
+    // Two of those failures resulted in retries
+    assert_eq!(stats.retried_queries, 2);
+}
+
+#[test]
+fn test_query_lifecycle_cancel() {
+    let lifecycle = QueryLifecycle::new();
+
+    let (query_id, mut receiver) = lifecycle.create_query(
+        std::time::Duration::from_secs(10),
+        0 // No retries
+    );
+
+    assert!(lifecycle.mark_canceled(query_id).is_ok());
+
+    assert_eq!(lifecycle.active_count(), 0);
+
+    match receiver.try_recv() {
+        Ok(Err(e)) => assert!(e.contains("canceled"), "Expected cancellation error, got: {}", e),
+        _ => panic!("Expected cancellation error"),
+    }
+}
+
+#[test]
+fn test_query_lifecycle_statistics() {
+    let lifecycle = QueryLifecycle::new();
+
+    // Create multiple queries
+    let (id1, _) = lifecycle.create_query(std::time::Duration::from_secs(10), 1);
+    let (id2, _) = lifecycle.create_query(std::time::Duration::from_secs(10), 1);
+    let (id3, _) = lifecycle.create_query(std::time::Duration::from_secs(10), 1);
+
+    // Complete one successfully
+    assert!(lifecycle.mark_sent(id1, 1000).is_ok());
+    assert!(lifecycle.mark_completed(1000, Bytes::new()).is_ok());
+
+    // Fail one
+    assert!(lifecycle.mark_sent(id2, 2000).is_ok());
+    assert!(lifecycle.mark_failed(id2, "Failed".to_string()).is_ok());
+
+    // Cancel one
+    assert!(lifecycle.mark_canceled(id3).is_ok());
+
+    let stats = lifecycle.statistics();
+    assert_eq!(stats.total_queries, 3);
+    assert_eq!(stats.successful_queries, 1);
+    assert_eq!(stats.failed_queries, 1);
+    assert_eq!(stats.timed_out_queries, 0);
+}
+
+#[test]
+fn test_query_lifecycle_clear() {
+    let lifecycle = QueryLifecycle::new();
+
+    // Create some queries
+    let (id1, _) = lifecycle.create_query(std::time::Duration::from_secs(10), 1);
+    let (id2, _) = lifecycle.create_query(std::time::Duration::from_secs(10), 1);
+
+    assert!(lifecycle.mark_sent(id1, 1000).is_ok());
+    assert!(lifecycle.mark_sent(id2, 2000).is_ok());
+
+    assert_eq!(lifecycle.active_count(), 2);
+
+    // Clear all
+    lifecycle.clear();
+
+    assert_eq!(lifecycle.active_count(), 0);
+}
+
+#[test]
+fn test_service_packet_pong() {
+    // Test decoding a pong packet
+    let ping_id: u64 = 0x123456789ABCDEF0;
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&0x2b0f7de3u32.to_le_bytes()); // PONG_CONSTRUCTOR
+    data.extend_from_slice(&ping_id.to_le_bytes());
+
+    match ServicePacket::decode(&data) {
+        Ok(ServicePacket::Pong(id)) => assert_eq!(id, ping_id),
+        _ => panic!("Expected Pong packet"),
+    }
+}
+
+#[test]
+fn test_service_packet_ack() {
+    let msg_ids: Vec<u64> = vec![1, 2, 3];
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&0x62d6b459u32.to_le_bytes()); // MSGS_ACK_CONSTRUCTOR
+    data.extend_from_slice(&(msg_ids.len() as u32).to_le_bytes());
+    for msg_id in msg_ids.iter() {
+        data.extend_from_slice(&(*msg_id).to_le_bytes());
+    }
+
+    match ServicePacket::decode(&data) {
+        Ok(ServicePacket::Ack { msg_ids: ids }) => assert_eq!(ids, msg_ids),
+        _ => panic!("Expected Ack packet"),
+    }
+}
+
+#[test]
+fn test_service_packet_new_session() {
+    let mut data = Vec::new();
+    data.extend_from_slice(&0x9ec20908u32.to_le_bytes()); // NEW_SESSION_CREATED_CONSTRUCTOR
+    data.extend_from_slice(&1u64.to_le_bytes()); // first_msg_id
+    data.extend_from_slice(&2u64.to_le_bytes()); // server_salt
+    data.extend_from_slice(&3u64.to_le_bytes()); // session_id
+
+    match ServicePacket::decode(&data) {
+        Ok(ServicePacket::NewSessionCreated {
+            first_msg_id,
+            server_salt,
+            session_id,
+        }) => {
+            assert_eq!(first_msg_id, 1);
+            assert_eq!(server_salt, 2);
+            assert_eq!(session_id, 3);
+        }
+        _ => panic!("Expected NewSessionCreated packet"),
+    }
+}
+
+#[test]
+fn test_service_packet_bad_msg_notification() {
+    let mut data = Vec::new();
+    data.extend_from_slice(&0xa7eff811u32.to_le_bytes()); // BAD_MSG_NOTIFICATION_CONSTRUCTOR
+    data.extend_from_slice(&0x123456789ABCDEF0u64.to_le_bytes()); // bad_msg_id
+    data.extend_from_slice(&1i32.to_le_bytes()); // bad_msg_seqno
+    data.extend_from_slice(&2i32.to_le_bytes()); // error_code
+
+    match ServicePacket::decode(&data) {
+        Ok(ServicePacket::BadMsgNotification {
+            bad_msg_id,
+            bad_msg_seqno,
+            error_code,
+            ..
+        }) => {
+            assert_eq!(bad_msg_id, 0x123456789ABCDEF0);
+            assert_eq!(bad_msg_seqno, 1);
+            assert_eq!(error_code, 2);
+        }
+        _ => panic!("Expected BadMsgNotification packet"),
+    }
+}
+
+#[test]
+fn test_service_packet_container() {
+    // Create inner message
+    let mut inner_msg = Vec::new();
+    inner_msg.extend_from_slice(&0x12345678u32.to_le_bytes());
+
+    let mut data = Vec::new();
+    data.extend_from_slice(&0x73f1f8dcu32.to_le_bytes()); // MSG_CONTAINER_CONSTRUCTOR
+    data.extend_from_slice(&1u32.to_le_bytes()); // count
+    data.extend_from_slice(&1u64.to_le_bytes()); // msg_id
+    data.extend_from_slice(&1i32.to_le_bytes()); // seqno
+    data.extend_from_slice(&(inner_msg.len() as u32).to_le_bytes()); // bytes
+    data.extend_from_slice(&inner_msg);
+
+    match ServicePacket::decode(&data) {
+        Ok(ServicePacket::MessageContainer { messages }) => {
+            assert_eq!(messages.len(), 1);
+            assert_eq!(messages[0].msg_id, 1);
+            assert_eq!(messages[0].seqno, 1);
+        }
+        _ => panic!("Expected MessageContainer packet"),
+    }
+}
+
+#[test]
+fn test_packet_info_builder() {
+    let msg_id = MessageId::from_u64(0x62000000_00000000);
+
+    let info = PacketInfo::new()
+        .with_salt(12345)
+        .with_session_id(67890)
+        .with_message_id(msg_id)
+        .with_seq_no(42)
+        .with_version(2);
+
+    assert_eq!(info.salt, 12345);
+    assert_eq!(info.session_id, 67890);
+    assert_eq!(info.message_id, msg_id);
+    assert_eq!(info.seq_no, 42);
+    assert_eq!(info.version, 2);
+    assert!(info.is_common());
+    assert!(!info.is_ack());
+}
+
+#[test]
+fn test_packet_info_end_to_end() {
+    let info = PacketInfo::end_to_end();
+    assert!(info.is_end_to_end());
+    assert!(!info.is_common());
+}
+
+#[test]
+fn test_packet_info_ack_flag() {
+    let mut info = PacketInfo::new();
+    assert!(!info.is_ack());
+
+    info.message_ack = 1 << 31;
+    assert!(info.is_ack());
+}
+
+#[test]
+fn test_session_statistics_default() {
+    let stats = SessionStatistics::default();
+    assert_eq!(stats.packets_sent, 0);
+    assert_eq!(stats.packets_received, 0);
+    assert_eq!(stats.bytes_sent, 0);
+    assert_eq!(stats.bytes_received, 0);
+    assert_eq!(stats.successful_queries, 0);
+    assert_eq!(stats.failed_queries, 0);
+}
+
+#[test]
+fn test_session_statistics_update() {
+    let mut stats = SessionStatistics::default();
+
+    stats.packets_sent = 100;
+    stats.packets_received = 95;
+    stats.bytes_sent = 10000;
+    stats.bytes_received = 9500;
+    stats.successful_queries = 90;
+    stats.failed_queries = 5;
+
+    assert_eq!(stats.packets_sent, 100);
+    assert_eq!(stats.packets_received, 95);
+    assert_eq!(stats.successful_queries, 90);
+    assert_eq!(stats.failed_queries, 5);
 }

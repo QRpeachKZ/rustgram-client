@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_message_input_reply_to"
+name = "rustgram-message-input-reply-to"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

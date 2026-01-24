@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-business-greeting-message"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Business greeting message handling for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "business", "greeting-message", "auto-reply"]
+categories = ["data-structures"]
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_business_greeting_message"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

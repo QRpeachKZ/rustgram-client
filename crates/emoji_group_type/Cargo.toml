@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_emoji_group_type"
+name = "rustgram-emoji-group-type"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

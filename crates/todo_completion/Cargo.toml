@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_todo_completion"
+name = "rustgram-todo-completion"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

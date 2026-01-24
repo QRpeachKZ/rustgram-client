@@ -1,0 +1,16 @@
+[package]
+name = "rustgram-file-gc-parameters"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+authors = ["rustgram-client contributors"]
+repository = "https://github.com/yourusername/rustgram-client"
+description = "File garbage collection parameters for rustgram-client"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-file-type = { path = "../file_type" }
+
+[dev-dependencies]
+serde_json = "1.0"

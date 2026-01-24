@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_reaction_list_type"
+name = "rustgram-reaction-list-type"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_input_group_call_id"
+name = "rustgram-input-group-call-id"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

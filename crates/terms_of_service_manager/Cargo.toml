@@ -1,0 +1,46 @@
+[package]
+name = "rustgram_terms_of_service_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Terms of service manager for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "terms", "manager"]
+categories = ["data-structures"]
+
+[dependencies]
+# Terms of service type
+rustgram-terms-of-service = { path = "../terms_of-service" }
+
+# Async runtime
+tokio = { workspace = true, features = ["sync", "rt", "time"] }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+tokio = { workspace = true, features = ["test-util"] }
+
+[features]
+default = []
+serde = ["dep:serde", "rustgram-terms-of-service/serde"]
+
+[lib]
+name = "rustgram_terms_of_service_manager"
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

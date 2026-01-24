@@ -9,13 +9,15 @@
 //!
 //! ## Modules
 //!
-//! - [`crypto`] - Cryptography primitives (AES-IGE, KDF, SHA1/SHA256)
+//! - [`crypto`] - Cryptography primitives (AES-IGE, KDF, SHA1/SHA256, RSA, HMAC)
 //! - [`packet`] - MTProto packet types (MessageId, PacketInfo, MtprotoQuery)
 //! - [`auth`] - Authentication data handling
 //! - [`connection`] - Connection management
 //! - [`dc`] - Data Center types and options
 //! - [`proxy`] - Proxy types (SOCKS5, HTTP, MTProto)
 //! - [`query`] - Query dispatching and lifecycle
+//! - [`pool`] - Connection pooling for multiple DCs
+//! - [`failover`] - Multi-DC failover for high availability
 //! - [`stats`] - Network statistics management
 
 #![warn(missing_docs)]
@@ -24,14 +26,19 @@
 #![deny(clippy::unwrap_used)]
 
 pub mod auth;
+pub mod circuit_breaker;
 pub mod connection;
 pub mod crypto;
 pub mod dc;
 pub mod dc_auth;
 pub mod dispatch;
+pub mod failover;
+pub mod handshake;
+pub mod health_check;
 pub mod mtproto_header;
 pub mod net_actor;
 pub mod packet;
+pub mod pool;
 pub mod proxy;
 pub mod query;
 pub mod query_creator;
@@ -40,6 +47,7 @@ pub mod rsa_key_shared;
 pub mod session;
 pub mod session_multi_proxy;
 pub mod stats;
+pub mod test_config;
 pub mod transport;
 
 // Re-export existing types
@@ -56,7 +64,9 @@ pub use stats::{NetStatsManager, NetType, NetworkStats, NetworkStatsEntry};
 // Re-export crypto types
 pub use crypto::compute_auth_key_id;
 pub use crypto::{aes_ige_decrypt, aes_ige_encrypt, AesIge};
-pub use crypto::{kdf, kdf2, sha1, sha256, tmp_kdf, KdfOutput};
+pub use crypto::{decrypt_signature, RsaError, RsaPrivateKeyWrapper, RsaPublicKeyWrapper, RsaResult};
+pub use crypto::{hmac_sha256, hmac_sha512, pbkdf2_hmac_sha256, pbkdf2_hmac_sha512};
+pub use crypto::{kdf, kdf2, pq_factorize, pq_factorize_big, sha1, sha256, tmp_kdf, KdfOutput};
 pub use crypto::{AuthKeyError, AuthKeyHelper, CryptoAuthKey, DefaultAuthKeyHelper};
 
 // Re-export packet types
@@ -102,12 +112,20 @@ pub use dc_auth::{
     StoredAuthKey, TempAuthKeyWatchdog,
 };
 
+// Re-export handshake types
+pub use handshake::{
+    HandshakeAction, HandshakeError, HandshakeMode, HandshakeState, MtprotoHandshake,
+};
+
 // Re-export session multiproxy types
 pub use session_multi_proxy::SessionProxy as SessionProxyTrait;
 pub use session_multi_proxy::{
     SessionInfo, SessionMultiProxy, SessionMultiProxyConfig, SessionMultiProxyFactory,
     SessionProxyError, SessionStats, SessionType,
 };
+
+// Re-export test config types
+pub use test_config::{get_dc_options, get_rsa_keys, is_test_dc, set_test_mode};
 
 // Re-export MTProto header types
 pub use mtproto_header::{
@@ -125,19 +143,36 @@ pub use query_verifier::{
 // Re-export net actor types
 pub use net_actor::{ActorError, ActorQueryCallback, ActorResult, NetActor, TestActor};
 
+// Re-export connection pool types
+pub use pool::{ConnectionPool, ConnectionPurpose, PooledConnection, PoolConfig, PoolError};
+
+// Re-export circuit breaker types
+pub use circuit_breaker::{CircuitBreaker, CircuitBreakerConfig, CircuitState};
+
+// Re-export health check types
+pub use health_check::{HealthChecker, HealthCheckConfig, HealthStatus};
+
+// Re-export failover types
+pub use failover::{DcHealth, FailoverError, FailoverManager, FailoverPolicy, RequestType};
+
 /// Network module error types
 pub mod error {
     pub use super::connection::ConnectionError;
     pub use super::crypto::CryptoError;
     pub use super::dc::DcError;
     pub use super::dc_auth::DcAuthError;
+    pub use super::failover::FailoverError;
+    pub use super::handshake::HandshakeError;
     pub use super::mtproto_header::MtprotoHeaderError;
     pub use super::net_actor::ActorError;
+    pub use super::pool::PoolError;
     pub use super::proxy::ProxyError;
+    pub use super::query::RetryError;
     pub use super::query_creator::NetQueryStats;
     pub use super::query_verifier::VerificationError;
     pub use super::rsa_key_shared::RsaKeyError;
     pub use super::session_multi_proxy::SessionProxyError;
+    pub use super::query::TimeoutError;
 }
 
 /// Prelude for common imports

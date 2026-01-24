@@ -34,6 +34,7 @@ pub enum QueryState {
 }
 
 /// Query entry in the lifecycle manager.
+#[derive(Debug)]
 struct QueryEntry {
     /// Query ID
     query_id: u64,
@@ -66,6 +67,7 @@ struct QueryEntry {
 /// Query lifecycle manager.
 ///
 /// Manages the lifecycle of queries from creation to completion.
+#[derive(Debug)]
 pub struct QueryLifecycle {
     /// Next query ID
     next_query_id: AtomicU64,

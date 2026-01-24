@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-td-json-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "JSON client interface types for Telegram MTProto"
+
+[dependencies]
+# Serialization
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

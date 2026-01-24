@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-channel-participant-filter"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Channel participant filter for Telegram MTProto client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

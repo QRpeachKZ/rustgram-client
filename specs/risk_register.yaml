@@ -1,0 +1,441 @@
+# UserManager Network Integration - Risk Register
+
+## Metadata
+- **Epic:** rustgram-client-lhr
+- **Created:** 2026-01-18
+- **Last Updated:** 2026-01-18
+- **Version:** 1.0
+
+## Risk Categories
+1. **BLOCKER** - Cannot proceed, must resolve immediately
+2. **UNRESOLVED_API** - API ambiguity or missing functionality
+3. **COMPLEXITY_RISK** - Implementation complexity concerns
+4. **TESTING_RISK** - Testing challenges
+5. **SCHEDULE_RISK** - Timeline concerns
+
+---
+
+## R1: TL Schema Compatibility (BLOCKER)
+**ID:** R1
+**Category:** BLOCKER
+**Status:** OPEN
+**Probability:** HIGH
+**Impact:** CRITICAL
+**Description:**
+TL schema definitions in the new crates must match TDLib's binary format exactly. Any mismatch will cause protocol failures and silent data corruption.
+
+**Mitigation:**
+- Reference TDLib source: references/td/td/generate/scheme/telegram_api.tl
+- Add property-based tests using proptest
+- Validate against real Telegram server responses
+- Create binary compatibility tests with known-good TDLib outputs
+
+**Owner:** Developer
+**Due Date:** Phase 1 (TL Serialization Framework)
+**Contingency:**
+If schema mismatch discovered, pause Phase 2-6 until TL types are corrected. May require TDLib protocol dumps for validation.
+
+---
+
+## R2: Missing Type Dependencies (UNRESOLVED_API)
+**ID:** R2
+**Category:** UNRESOLVED_API
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** HIGH
+**Description:**
+Several types referenced by UserFull may not exist in the codebase:
+- AccessHash (re-exported from rustgram-types)
+- InputPeer (for InputUserFromMessage variant)
+- PeerSettings (for UserFull)
+- BotInfo (for UserFull.bot_info field)
+- FolderId (for UserFull.folder_id field)
+
+**Dependencies:**
+| Type | Needed For | Status | Action |
+|------|------------|--------|--------|
+| AccessHash | InputUser | ⚠ UNVERIFIED | Check types/src/access.rs |
+| InputPeer | InputUserFromMessage | ✗ MISSING | Create stub or verify |
+| PeerSettings | UserFull | ✗ MISSING | Create stub or verify |
+| BotInfo | UserFull | ✗ MISSING | Create stub or verify |
+| FolderId | UserFull | ✗ MISSING | Create stub or verify |
+
+**Mitigation:**
+- Phase 0: Verify AccessHash exists in rustgram-types
+- Create minimal stub types for missing dependencies
+- Document stub limitations with TODO comments
+- Track stub types for future implementation
+
+**Owner:** Analyst (verification), Developer (implementation)
+**Due Date:** Phase 1 start
+**Contingency:**
+If types don't exist, create stub types with minimal fields. Mark as STUB status in documentation.
+
+---
+
+## R3: Access Hash Availability (UNRESOLVED_API)
+**ID:** R3
+**Category:** UNRESOLVED_API
+**Status:** OPEN
+**Probability:** HIGH
+**Impact:** HIGH
+**Description:**
+InputUser requires access_hash for each user_id. Missing access_hash prevents querying users from server. Need to determine:
+1. Where do access hashes come from initially?
+2. How are they stored and updated?
+3. What error to return if access_hash is missing?
+
+**Analysis Required:**
+- Check TDLib UserManager for access_hash lifecycle
+- Determine if access_hash comes from:
+  - User object updates (via updates, messages, etc.)
+  - Previous user queries
+  - Initial contact import
+- Define NetworkError::InvalidAccessHash behavior
+
+**Mitigation:**
+- Store access_hash in UserManager alongside User data
+- Update access_hash from incoming User objects
+- Return NetworkError::InvalidAccessHash with clear message
+- Document access_hash requirements in API docs
+
+**Owner:** Analyst
+**Due Date:** Phase 1 completion
+**Contingency:**
+If access_hash unavailable, implement "user discovery" fallback: use InputUserEmpty or InputUserSelf for known cases.
+
+---
+
+## R4: NetQuery Integration Complexity (COMPLEXITY_RISK)
+**ID:** R4
+**Category:** COMPLEXITY_RISK
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** MEDIUM
+**Description:**
+Integrating with NetQuery system requires understanding:
+- Query lifecycle (Query → Dispatch → Session → Response)
+- Async callback patterns
+- DC selection logic
+- Auth key requirements
+- Flood control behavior
+
+**Complexity Factors:**
+- NetQuery uses Arc<NetQueryInner> with atomic state
+- Callbacks are async trait objects
+- DC migration may trigger Resend error (code 202)
+- Rate limiting causes FloodWaitError
+
+**Mitigation:**
+- Study NetQuery implementation in crates/net/src/query.rs
+- Study NetQueryDispatcher in crates/net/src/dispatch/
+- Create integration tests with mocked dispatcher
+- Document query lifecycle in code comments
+- Handle all QueryError variants explicitly
+
+**Owner:** Developer
+**Due Date:** Phase 4 (Network Client Integration)
+**Contingency:**
+If NetQuery integration proves too complex, consider creating simplified query wrapper that hides complexity.
+
+---
+
+## R5: Cache Invalidation Logic (COMPLEXITY_RISK)
+**ID:** R5
+**Category:** COMPLEXITY_RISK
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** MEDIUM
+**Description:**
+Determining when to invalidate cached users is non-trivial:
+- User info can change via updates
+- User can be deleted
+- User photos can change
+- User status (online/offline) changes frequently
+- Some updates only affect UserFull, not User
+
+**Invalidation Scenarios:**
+| Update Type | Invalidate User? | Invalidate UserFull? |
+|-------------|------------------|---------------------|
+| userName | YES | NO |
+| UserPhoto | YES | NO |
+| UserStatus | YES | NO |
+| UserFullInfo | NO | YES |
+| UserDeleted | YES | YES |
+
+**Mitigation:**
+- Implement cache versioning (timestamp or sequence number)
+- Provide explicit cache_invalidate(user_id) method
+- Consider caching User and UserFull separately
+- Document cache invalidation policy
+- Add integration tests for invalidation scenarios
+
+**Owner:** Developer
+**Due Date:** Phase 6 (Caching Layer)
+**Contingency:**
+If invalidation logic too complex, use shorter TTL (e.g., 5 minutes) instead of explicit invalidation.
+
+---
+
+## R6: Concurrent Access Safety (TESTING_RISK)
+**ID:** R6
+**Category:** TESTING_RISK
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** HIGH
+**Description:**
+UserManager will be accessed concurrently from multiple async tasks:
+- Cache reads/writes
+- Access hash lookups
+- Network queries
+- User updates
+
+**Races Possible:**
+- Cache eviction during read
+- Access hash update during query construction
+- Multiple simultaneous fetches for same user
+- Network callback while cache is being updated
+
+**Mitigation:**
+- Use Arc<Mutex<LruCache>> for cache (serialization)
+- Use Arc<RwLock<HashMap>> for access hashes (concurrent reads)
+- Use query deduplication (in-flight map)
+- Test with loom for concurrency bugs
+- Add stress tests with high concurrency
+
+**Owner:** Developer
+**Due Date:** Phase 5 (User Fetching Methods)
+**Contingency:**
+If concurrency issues discovered, reduce parallelism or add more granular locking.
+
+---
+
+## R7: Network Test Coverage (TESTING_RISK)
+**ID:** R7
+**Category:** TESTING_RISK
+**Status:** OPEN
+**Probability:** HIGH
+**Impact:** MEDIUM
+**Description:**
+Testing network code requires mocking:
+- NetQueryDispatcher
+- Network responses
+- Error conditions
+- Timeout scenarios
+
+**Testing Challenges:**
+- Unit tests can't test real network behavior
+- Integration tests require Telegram test server
+- Error conditions hard to reproduce
+- Race conditions in async code
+
+**Mitigation:**
+- Create MockNetQueryDispatcher for testing
+- Use tokio-test for async test utilities
+- Parameterize tests with success/failure scenarios
+- Add contract tests: verify TL serialization matches TDLib
+- Manual testing with real Telegram account (dev only)
+
+**Owner:** Developer
+**Due Date:** Phase 4 (Network Client Integration)
+**Contingency:**
+If mocking too complex, use feature flags to skip network tests in CI, run manually.
+
+---
+
+## R8: TL Serialization Test Gaps (TESTING_RISK)
+**ID:** R8
+**Category:** TESTING_RISK
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** HIGH
+**Description:**
+TL serialization must be binary-compatible with TDLib. Standard unit tests may not catch:
+- Endianness issues
+- Padding errors
+- Constructor ID mismatches
+- Field ordering mistakes
+
+**Testing Gaps:**
+- No reference TDLib outputs to compare against
+- Property-based tests may not catch all edge cases
+- Round-trip tests don't validate binary format
+
+**Mitigation:**
+- Use proptest for property-based testing
+- Create golden test vectors from TDLib
+- Add fuzzing for deserialization (libFuzzer)
+- Validate constructor IDs explicitly
+- Add integration tests with real Telegram responses
+
+**Owner:** Developer
+**Due Date:** Phase 1 (TL Serialization Framework)
+**Contingency:**
+If binary incompatibility discovered, add Phase 1.5: "TL Validation with TDLib outputs"
+
+---
+
+## R9: Timeline Estimation Accuracy (SCHEDULE_RISK)
+**ID:** R9
+**Category:** SCHEDULE_RISK
+**Status:** OPEN
+**Probability:** MEDIUM
+**Impact:** MEDIUM
+**Description:**
+7-phase plan estimated at 27-37 days total. Risks to timeline:
+- TL serialization may be more complex than estimated
+- NetQuery integration learning curve
+- Uncovered edge cases in error handling
+- Test writing takes longer than expected
+
+**Phase Breakdown:**
+| Phase | Estimate | Risk Factor | Adjusted |
+|-------|----------|-------------|----------|
+| Phase 1 | 5-7 days | +50% (TL complexity) | 8-11 days |
+| Phase 2 | 2-3 days | +20% | 3-4 days |
+| Phase 3 | 3-4 days | +30% | 4-6 days |
+| Phase 4 | 5-7 days | +50% (NetQuery learning) | 8-11 days |
+| Phase 5 | 5-7 days | +40% | 7-10 days |
+| Phase 6 | 3-4 days | +30% | 4-6 days |
+| Phase 7 | 4-5 days | +20% | 5-6 days |
+| **Total** | **27-37 days** | **+40% avg** | **39-54 days** |
+
+**Mitigation:**
+- Add buffer to timeline (use adjusted estimates)
+- Track velocity and re-estimate after Phase 1
+- Have scope reduction plan (drop UserFull if needed)
+- Prioritize get_users over get_full_user
+
+**Owner:** Project Manager
+**Due Date:** Continuous monitoring
+**Contingency:**
+If timeline slips, reduce scope:
+- P0: get_users only (no UserFull)
+- P1: get_users + basic UserFull (stub optional fields)
+- P2: Full implementation as specified
+
+---
+
+## R10: TDLib Protocol Changes (BLOCKER)
+**ID:** R10
+**Category:** BLOCKER
+**Status:** LOW (unlikely but high impact)
+**Probability:** LOW
+**Impact:** CRITICAL
+**Description:**
+Telegram may change MTProto protocol or TL schema between now and implementation completion. This would break binary compatibility.
+
+**Change Indicators:**
+- New TDLib release with schema changes
+- Deprecation warnings in telegram_api.tl
+- Changes to User or UserFull definitions
+
+**Mitigation:**
+- Pin TDLib version in references (commit hash)
+- Monitor TDLib commits for schema changes
+- Version TL types (e.g., UserV1, UserV2)
+- Add deprecation warnings if protocol changes
+
+**Owner:** Analyst (monitoring), Developer (implementation)
+**Due Date:** Continuous monitoring
+**Contingency:**
+If protocol changes, update TL definitions and add migration layer. May require significant rework.
+
+---
+
+## Risk Summary
+
+### By Category
+| Category | Count | Open | Mitigated |
+|----------|-------|------|-----------|
+| BLOCKER | 2 | 2 | 0 |
+| UNRESOLVED_API | 2 | 2 | 0 |
+| COMPLEXITY_RISK | 2 | 2 | 0 |
+| TESTING_RISK | 3 | 3 | 0 |
+| SCHEDULE_RISK | 1 | 1 | 0 |
+| **TOTAL** | **10** | **10** | **0** |
+
+### By Priority
+| Priority | Count | Risk IDs |
+|----------|-------|----------|
+| CRITICAL | 3 | R1, R2, R10 |
+| HIGH | 4 | R3, R6, R8, R9 |
+| MEDIUM | 3 | R4, R5, R7 |
+
+### Top 5 Risks Requiring Immediate Action
+1. **R1 (TL Schema)** - Must validate in Phase 1
+2. **R2 (Missing Types)** - Must verify before Phase 1
+3. **R3 (Access Hash)** - Must analyze before Phase 5
+4. **R6 (Concurrency)** - Must test in Phase 5
+5. **R8 (TL Testing)** - Must address in Phase 1
+
+---
+
+## Risk Review Process
+
+### Frequency
+- **Daily:** Review BLOCKER risks
+- **Weekly:** Review all OPEN risks
+- **Phase Gates:** Full risk assessment
+
+### Triggers for Review
+- Risk status changes (OPEN → MITIGATED)
+- New risks discovered
+- Timeline deviation > 20%
+- Test failures reveal new issues
+
+### Escalation Path
+1. **Owner** handles risk mitigation
+2. **Phase Lead** reviews blocked risks
+3. **Project Manager** escalates CRITICAL risks
+4. **Tech Lead** makes final call on BLOCKER risks
+
+---
+
+## Action Items
+
+### Immediate (Before Phase 1)
+- [ ] Verify AccessHash exists in rustgram-types (R2)
+- [ ] Check for InputPeer, PeerSettings, BotInfo, FolderId (R2)
+- [ ] Pin TDLib version in references (R10)
+- [ ] Create TL validation test plan (R1, R8)
+
+### Phase 1 (TL Serialization)
+- [ ] Implement proptest for TL types (R8)
+- [ ] Create golden test vectors (R1)
+- [ ] Document access_hash lifecycle (R3)
+
+### Phase 4 (Network Integration)
+- [ ] Create MockNetQueryDispatcher (R7)
+- [ ] Study NetQuery lifecycle thoroughly (R4)
+- [ ] Add loom concurrency tests (R6)
+
+### Continuous
+- [ ] Monitor TDLib commits (R10)
+- [ ] Track timeline velocity (R9)
+- [ ] Update risk register weekly
+
+---
+
+## Success Criteria for Risk Mitigation
+
+### Phase 1 Complete
+- R1: TL serialization validated against TDLib
+- R2: All type dependencies verified or stubbed
+- R8: Test coverage > 80% for TL code
+
+### Phase 4 Complete
+- R4: NetQuery integration tested with real dispatcher
+- R7: Mock-based network tests passing
+- R6: Concurrency tests passing (loom)
+
+### Phase 7 Complete
+- R9: Timeline within 20% of estimate
+- R5: Cache invalidation logic tested
+- R3: Access hash flow documented and tested
+
+### All Risks Mitigated
+- 0 BLOCKER risks remaining
+- All UNRESOLVED_API resolved
+- TESTING_RISK mitigated with > 70% coverage
+- COMPLEXITY_RISK mitigated with clear documentation

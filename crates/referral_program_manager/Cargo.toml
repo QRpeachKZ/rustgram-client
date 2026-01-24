@@ -1,0 +1,33 @@
+[package]
+name = "rustgram-referral-program-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Referral program manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-referral-program-info = { path = "../referral_program-info" }
+rustgram-referral-program-parameters = { path = "../referral_program-parameters" }
+rustgram-referral-program-sort-order = { path = "../referral_program_sort-order, package = "rustgram-referral-program-sort-order" }
+rustgram-types = { path = "../types" }
+rustgram-star-amount = { path = "../star-amount" }
+chrono = "0.4"
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+default = ["serde"]
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

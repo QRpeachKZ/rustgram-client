@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-requested-dialog-type"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT OR Apache-2.0"
+authors = ["rustgram-client contributors"]
+repository = "https://github.com/your-org/rustgram-client"
+
+description = "Requested dialog type for Telegram bot keyboard buttons"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = []
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-notification-manager"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Notification manager for Telegram MTProto client"
+keywords = ["telegram", "notification", "mtproto"]
+categories = ["api-bindings"]
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-call-id = { path = "../call-id" }
+rustgram-notification-id = { path = "../notification-id" }
+rustgram-notification-group-id = { path = "../notification_group-id" }
+rustgram-notification-group-type = { path = "../notification_group-type" }
+rustgram-notification-type = { path = "../notification-type" }
+rustgram-notification = { path = "../notification" }
+rustgram-notification-object-id = { path = "../notification_object-id" }
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+
+[features]
+default = []
+serde = []

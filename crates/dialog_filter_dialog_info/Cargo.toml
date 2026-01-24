@@ -1,0 +1,15 @@
+[package]
+name = "rustgram-dialog-filter-dialog-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-folder-id = { path = "../folder-id, package = "rustgram-folder-id" }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }

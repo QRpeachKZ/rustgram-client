@@ -1,5 +1,5 @@
 [package]
-name = "rustgram-secret_input_media"
+name = "rustgram-secret-input-media"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

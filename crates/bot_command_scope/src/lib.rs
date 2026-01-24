@@ -153,7 +153,7 @@ pub const CRATE_NAME: &str = "rustgram-bot-command-scope";
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rustgram_types::{ChatId, ChannelId};
+    use rustgram_types::{ChannelId, ChatId};
 
     #[test]
     fn test_version() {

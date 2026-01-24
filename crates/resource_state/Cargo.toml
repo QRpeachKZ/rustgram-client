@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-resource-state"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

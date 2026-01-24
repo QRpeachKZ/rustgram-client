@@ -1,0 +1,373 @@
+# UserType Module Specification
+# Version: 1.0.0
+# Date: 2026-01-17
+# Epic: rustgram-client-bz7
+
+metadata:
+  module: "user_type"
+  crate_name: "rustgram-user-type"
+  complexity: "simple"
+  type: "data_enum"
+  estimated_effort: "4-6 hours"
+  test_target: ">= 35 tests"
+  tdlib_reference:
+    file: "references/td/td/generate/scheme/td_api.tl"
+    lines: "658-681"
+
+# TL Schema Reference from td_api.tl (lines 658-681)
+# userTypeRegular = UserType;
+# userTypeDeleted = UserType;
+# userTypeBot can_be_edited:Bool can_join_groups:Bool can_read_all_group_messages:Bool 
+#           has_main_web_app:Bool has_topics:Bool is_inline:Bool 
+#           inline_query_placeholder:string need_location:Bool can_connect_to_business:Bool 
+#           can_be_added_to_attachment_menu:Bool active_user_count:int32 = UserType;
+# userTypeUnknown = UserType;
+
+enum_definition:
+  name: "UserType"
+  repr: "enum"
+  derives:
+    - "Debug"
+    - "Clone"
+    - "Copy"
+    - "PartialEq"
+    - "Eq"
+    - "Hash"
+    - "Default"
+    - "Serialize"
+    - "Deserialize"
+  attributes:
+    - "non_exhaustive"  # Allow adding future variants
+
+variants:
+  - name: "Regular"
+    description: "A regular user"
+    tl_constructor: "userTypeRegular"
+    td_api_type: "userTypeRegular"
+    fields: []
+    is_default: true
+    methods:
+      - "is_regular() -> bool"
+      - "is_bot() -> bool (returns false)"
+      - "is_deleted() -> bool (returns false)"
+
+  - name: "Deleted"
+    description: |
+      A deleted user or deleted bot. No information available besides the user identifier.
+      It is not possible to perform any active actions on this type of user.
+    tl_constructor: "userTypeDeleted"
+    td_api_type: "userTypeDeleted"
+    fields: []
+    is_default: false
+    methods:
+      - "is_regular() -> bool (returns false)"
+      - "is_bot() -> bool (returns false)"
+      - "is_deleted() -> bool"
+
+  - name: "Bot"
+    description: |
+      A bot (see https://core.telegram.org/bots). Contains 11 fields describing
+      bot capabilities and configuration.
+    tl_constructor: "userTypeBot"
+    td_api_type: "userTypeBot"
+    is_default: false
+    fields:
+      - name: "can_be_edited"
+        type: "bool"
+        description: "True, if the bot is owned by the current user and can be edited"
+      
+      - name: "can_join_groups"
+        type: "bool"
+        description: "True, if the bot can be invited to basic group and supergroup chats"
+      
+      - name: "can_read_all_group_messages"
+        type: "bool"
+        description: |
+          True, if the bot can read all messages in basic group or supergroup chats 
+          and not just those addressed to the bot. In private and channel chats a 
+          bot can always read all messages.
+      
+      - name: "has_main_web_app"
+        type: "bool"
+        description: "True, if the bot has the main Web App"
+      
+      - name: "has_topics"
+        type: "bool"
+        description: "True, if the bot has topics"
+      
+      - name: "is_inline"
+        type: "bool"
+        description: "True, if the bot supports inline queries"
+      
+      - name: "inline_query_placeholder"
+        type: "String"
+        description: "Placeholder for inline queries (displayed on the application input field)"
+      
+      - name: "need_location"
+        type: "bool"
+        description: "True, if the location of the user is expected to be sent with every inline query to this bot"
+      
+      - name: "can_connect_to_business"
+        type: "bool"
+        description: "True, if the bot supports connection to Telegram Business accounts"
+      
+      - name: "can_be_added_to_attachment_menu"
+        type: "bool"
+        description: "True, if the bot can be added to attachment or side menu"
+      
+      - name: "active_user_count"
+        type: "i32"
+        description: "The number of recently active users of the bot"
+    
+    methods:
+      - "is_regular() -> bool (returns false)"
+      - "is_bot() -> bool"
+      - "is_deleted() -> bool (returns false)"
+      - "can_be_edited() -> bool (returns false for non-Bot variants)"
+      - "can_join_groups() -> bool"
+      - "can_read_all_group_messages() -> bool"
+      - "has_main_web_app() -> bool"
+      - "has_topics() -> bool"
+      - "is_inline() -> bool"
+      - "inline_query_placeholder() -> &str"
+      - "need_location() -> bool"
+      - "can_connect_to_business() -> bool"
+      - "can_be_added_to_attachment_menu() -> bool"
+      - "active_user_count() -> i32"
+
+  - name: "Unknown"
+    description: |
+      No information on the user besides the user identifier is available, yet this 
+      user has not been deleted. This object is extremely rare and must be handled 
+      like a deleted user. It is not possible to perform any actions on users of this type.
+    tl_constructor: "userTypeUnknown"
+    td_api_type: "userTypeUnknown"
+    fields: []
+    is_default: false
+    methods:
+      - "is_regular() -> bool (returns false)"
+      - "is_bot() -> bool (returns false)"
+      - "is_deleted() -> bool (returns false - handled like deleted but distinct)"
+
+# Type conversion methods
+type_conversions:
+  from_td_api_name:
+    description: "Convert from TDLib API type name string"
+    parameters:
+      - name: "type_name"
+        type: "&str"
+    return_type: "Option<Self>"
+    validation: |
+      Returns matching variant for known type names:
+      - "userTypeRegular" -> Regular
+      - "userTypeDeleted" -> Deleted
+      - "userTypeBot" -> Bot (but Bot requires data, so this is tricky)
+      - "userTypeUnknown" -> Unknown
+      - Unknown strings -> None
+    note: |
+      For Bot variant, from_td_api_name() should return None since Bot requires
+      11 fields of data. Bot must be constructed directly with all fields.
+
+  to_td_api_name:
+    description: "Convert UserType to TDLib API type name string"
+    return_type: "&'static str"
+    mapping:
+      Regular: "userTypeRegular"
+      Deleted: "userTypeDeleted"
+      Bot: "userTypeBot"
+      Unknown: "userTypeUnknown"
+
+  from_i32:
+    description: "Convert from i32 discriminant value"
+    parameters:
+      - name: "value"
+        type: "i32"
+    return_type: "Option<Self>"
+    validation: |
+      Returns None for all values since:
+      1. Regular/Deleted/Unknown have no data, can use discriminants
+      2. Bot requires 11 fields, cannot be constructed from i32 alone
+    note: "This method is limited - primarily useful for simple variants"
+
+  to_i32:
+    description: "Convert UserType to i32 discriminant value"
+    return_type: "i32"
+    mapping:
+      Regular: 0
+      Deleted: 1
+      Bot: 2
+      Unknown: 3
+
+# Helper methods
+helper_methods:
+  - name: "display_name"
+    return_type: "&'static str"
+    description: "Human-readable name for the user type"
+    mapping:
+      Regular: "Regular"
+      Deleted: "Deleted"
+      Bot: "Bot"
+      Unknown: "Unknown"
+
+# Constants
+constants:
+  - name: "MAX_VALUE"
+    type: "i32"
+    value: "3"
+    description: "Maximum discriminant value for UserType"
+
+# Display implementation
+display:
+  trait: "std::fmt::Display"
+  format: |
+    Regular: "Regular"
+    Deleted: "Deleted"
+    Bot: "Bot"
+    Unknown: "Unknown"
+
+# Serde support
+serde_support:
+  enabled: true
+  feature_name: "serde"
+  derive_attributes:
+    - "Serialize"
+    - "Deserialize"
+  note: "Bot variant will serialize all 11 fields"
+
+# Test requirements
+test_requirements:
+  minimum_tests: 35
+  coverage_target: "100%"
+  test_categories:
+    - name: "enum_construction"
+      tests:
+        - "test_regular_variant"
+        - "test_deleted_variant"
+        - "test_bot_variant_with_all_fields"
+        - "test_unknown_variant"
+
+    - name: "default_behavior"
+      tests:
+        - "test_default_is_regular"
+        - "test_copy_trait"
+        - "test_clone_trait"
+
+    - name: "conversion_methods"
+      tests:
+        - "test_from_td_api_name_regular"
+        - "test_from_td_api_name_deleted"
+        - "test_from_td_api_name_unknown"
+        - "test_from_td_api_name_invalid"
+        - "test_from_td_api_name_bot_returns_none"
+        - "test_to_td_api_name_all_variants"
+        - "test_to_i32_discriminants"
+        - "test_from_i32_simple_variants"
+        - "test_from_i32_invalid"
+
+    - name: "convenience_methods"
+      tests:
+        - "test_is_bot"
+        - "test_is_deleted"
+        - "test_is_regular"
+        - "test_bot_field_accessors"
+        - "test_non_bot_field_defaults"
+
+    - name: "display_trait"
+      tests:
+        - "test_display_regular"
+        - "test_display_deleted"
+        - "test_display_bot"
+        - "test_display_unknown"
+
+    - name: "serialization"
+      tests:
+        - "test_serialize_regular"
+        - "test_serialize_bot"
+        - "test_deserialize_roundtrip"
+
+    - name: "equality_and_hashing"
+      tests:
+        - "test_partial_eq"
+        - "test_hash_consistency"
+
+    - name: "edge_cases"
+      tests:
+        - "test_bot_with_all_false_flags"
+        - "test_bot_with_all_true_flags"
+        - "test_bot_empty_placeholder"
+
+# Quality requirements
+quality_requirements:
+  clippy:
+    - "no warnings"
+    - "deny unwrap_used"
+    - "deny expect_used"
+  
+  rustfmt:
+    - "100% compliant"
+
+  documentation:
+    - "All public items documented"
+    - "All examples tested"
+    - "Module-level documentation with TDLib reference"
+
+# Dependencies
+dependencies:
+  internal: []
+  external:
+    - name: "serde"
+      version: "1.0"
+      features: ["derive"]
+      optional: false
+
+  dev_dependencies:
+    - name: "serde_json"
+      version: "1.0"
+
+# Success criteria
+success_criteria:
+  compilation:
+    - "Crate compiles without errors"
+    - "Zero clippy warnings"
+  
+  testing:
+    - ">= 35 tests passing"
+    - "All 4 variants tested"
+    - "All Bot field getters tested"
+  
+  api_completeness:
+    - "All 4 enum variants exist"
+    - "Conversion methods implemented"
+    - "Trait implementations complete (Debug, Clone, Copy, PartialEq, Eq, Hash, Default, Display, Serialize, Deserialize)"
+  
+  documentation:
+    - "No missing_docs warnings"
+    - "Module doc explains UserType purpose"
+  
+  tl_schema_compliance:
+    - "Bot field count exactly 11"
+    - "TL schema name mapping correct"
+
+# Implementation notes
+implementation_notes:
+  bot_variant_ergonomics:
+    - "Direct constructor: UserType::Bot { field1, field2, ... }"
+    - "Consider builder pattern in future if ergonomics become problematic"
+    - "For MVP, direct constructor is acceptable"
+  
+  field_defaults_for_non_bot:
+    - "is_bot() returns false for Regular/Deleted/Unknown"
+    - "is_deleted() returns false for Regular/Bot/Unknown"
+    - "Bot field getters return sensible defaults (false/empty string/0) for non-Bot variants"
+  
+  copy_trait:
+    - "UserType can derive Copy because all field types are Copy (bool, i32, String)"
+    - "Note: String is not Copy, so Bot variant makes UserType NOT Copy-able"
+    - "Correction: Remove Copy from derives, or Box<String> to make it Copy"
+    - "Decision: Remove Copy derive - String in Bot variant prevents Copy"
+
+# Correction to enum_definition
+corrected_derives:
+  remove:
+    - "Copy"
+  reason: "String field in Bot variant prevents Copy trait"

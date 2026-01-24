@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-sticker-format"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Sticker format enumeration for Telegram MTProto client"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+rustgram-sticker-type = { path = "../sticker-type" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]

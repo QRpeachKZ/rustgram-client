@@ -1,5 +1,5 @@
 [package]
-name = "rustgram-search_posts_flood"
+name = "rustgram-search-posts-flood"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

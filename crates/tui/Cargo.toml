@@ -1,0 +1,49 @@
+[package]
+name = "rustgram-tui"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+description = "Terminal User Interface for rustgram-client Telegram client"
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+# TUI framework
+ratatui = "0.30"
+crossterm = "0.29"
+
+# Async utilities
+async-channel = "2.0"
+futures = "0.3"
+chrono = "0.4"
+
+# Internal dependencies (optional, for real integration)
+rustgram-types = { path = "../types", optional = true }
+rustgram-dialog-manager = { path = "../dialog_manager", optional = true }
+rustgram-messages-manager = { path = "../messages_manager", optional = true }
+
+[features]
+default = ["mock"]
+mock = []
+integration = [
+    "rustgram-types",
+    "rustgram-dialog-manager",
+    "rustgram-messages-manager",
+]
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_message_copy_options"
+name = "rustgram-message-copy-options"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -12,8 +12,8 @@ name = "rustgram_message_copy_options"
 path = "src/lib.rs"
 
 [dependencies]
-rustgram_formatted_text = { path = "../formatted_text" }
-rustgram_message_input_reply_to = { path = "../message_input_reply_to" }
+rustgram-formatted-text = { path = "../formatted-text" }
+rustgram-message-input-reply-to = { path = "../message_input_reply-to" }
 rustgram-types = { path = "../types" }
 serde = { workspace = true }
 

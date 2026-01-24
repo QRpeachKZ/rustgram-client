@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-notification-group-key"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+
+license = "MIT OR Apache-2.0"
+authors = ["rustgram-client contributors"]
+description = "Notification group key type for Telegram MTProto client"
+repository = "https://github.com/your-org/rustgram-client"
+
+[dependencies]
+rustgram-notification-group-id = { path = "../notification_group-id" }
+rustgram-dialog-id = { path = "../dialog-id" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "rustgram-notification-group-id/serde"]

@@ -1,0 +1,827 @@
+// Copyright (c) 2024 rustgram-client contributors
+//
+// Licensed under MIT OR Apache-2.0
+
+//! Authentication response types for Telegram MTProto.
+//!
+//! This module provides TL response types for authentication operations.
+//!
+//! # TL Schema
+//!
+/// ```text
+/// auth.authorization#cd050a96 flags:# tmp_sessions:flags.0?int user:flags.1?User = auth.Authorization;
+/// auth.authorizationSignUpRequired#35154f1d flags:# terms_of_service:flags.0?help.termsOfService = auth.Authorization;
+/// auth.sentCode#5e002502 flags:# phone_registered:flags.1?true type:auth.SentCodeType next_type:flags.2?auth.SentCodeType timeout:flags.5?int = auth.SentCode;
+/// auth.loggedOut#3e72ba19 = Bool;
+/// ```
+
+// Note: TL schema lines above are for reference only
+
+use crate::error::{TypeError, TypeResult};
+use crate::tl::{TlBoxed, TlConstructor, TlDeserialize, TlSerialize, TlHelper};
+use crate::tl::Bytes as TlBytes;
+use bytes::BytesMut;
+use serde::{Deserialize, Serialize};
+
+/// Authorization response.
+///
+/// Polymorphic type representing the result of authentication.
+///
+/// # TL Schema
+///
+/// ```text
+/// auth.authorization#cd050a96 flags:# tmp_sessions:flags.0?int user:flags.1?User = auth.Authorization;
+/// auth.authorizationSignUpRequired#35154f1d flags:# terms_of_service:flags.0?help.termsOfService = auth.Authorization;
+/// ```
+///
+/// # Example
+///
+/// ```
+/// use rustgram_types::Authorization;
+///
+/// // Create successful authorization
+/// let auth = Authorization::Success {
+///     tmp_sessions: Some(5),
+///     user_id: Some(123456),
+/// };
+///
+/// // Create sign-up required
+/// let auth = Authorization::SignUpRequired {
+///     terms_of_service: Some("terms".to_string()),
+/// };
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum Authorization {
+    /// Successful authorization
+    Success {
+        /// Temporary sessions count (flag 0)
+        tmp_sessions: Option<i32>,
+
+        /// User ID (flag 1) - simplified as i32 for now
+        user_id: Option<i64>,
+    },
+
+    /// Sign-up required
+    SignUpRequired {
+        /// Terms of service (flag 0)
+        terms_of_service: Option<String>,
+    },
+}
+
+impl Authorization {
+    /// Creates a successful authorization.
+    ///
+    /// # Arguments
+    ///
+    /// * `tmp_sessions` - Optional temporary sessions count
+    /// * `user_id` - Optional user ID
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_types::Authorization;
+    ///
+    /// let auth = Authorization::success(Some(5), Some(123456));
+    /// assert!(auth.is_success());
+    /// ```
+    pub fn success(tmp_sessions: Option<i32>, user_id: Option<i64>) -> Self {
+        Self::Success {
+            tmp_sessions,
+            user_id,
+        }
+    }
+
+    /// Creates a sign-up required authorization.
+    ///
+    /// # Arguments
+    ///
+    /// * `terms_of_service` - Optional terms of service
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_types::Authorization;
+    ///
+    /// let auth = Authorization::sign_up_required(Some("terms".to_string()));
+    /// assert!(auth.is_sign_up_required());
+    /// ```
+    pub fn sign_up_required(terms_of_service: Option<String>) -> Self {
+        Self::SignUpRequired {
+            terms_of_service,
+        }
+    }
+
+    /// Checks if this is a successful authorization.
+    #[inline]
+    pub const fn is_success(&self) -> bool {
+        matches!(self, Self::Success { .. })
+    }
+
+    /// Checks if sign-up is required.
+    #[inline]
+    pub const fn is_sign_up_required(&self) -> bool {
+        matches!(self, Self::SignUpRequired { .. })
+    }
+
+    /// Returns the user ID if available.
+    #[inline]
+    pub fn user_id(&self) -> Option<i64> {
+        match self {
+            Self::Success { user_id, .. } => *user_id,
+            _ => None,
+        }
+    }
+
+    /// Returns the terms of service if available.
+    #[inline]
+    pub fn terms_of_service(&self) -> Option<&str> {
+        match self {
+            Self::SignUpRequired { terms_of_service } => terms_of_service.as_deref(),
+            _ => None,
+        }
+    }
+}
+
+impl TlSerialize for Authorization {
+    /// Serializes Authorization to TL format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TypeError` if serialization fails.
+    fn serialize_tl(&self, buf: &mut BytesMut) -> TypeResult<()> {
+        match self {
+            Self::Success {
+                tmp_sessions,
+                user_id,
+            } => {
+                let mut flags = 0u32;
+                if tmp_sessions.is_some() {
+                    flags |= 0x1;
+                }
+                if user_id.is_some() {
+                    flags |= 0x2;
+                }
+
+                TlHelper::write_constructor_id(buf, 0xcd050a96);
+                TlHelper::write_i32(buf, flags as i32);
+
+                if let Some(sessions) = tmp_sessions {
+                    TlHelper::write_i32(buf, *sessions);
+                }
+
+                if let Some(uid) = user_id {
+                    // Simplified: just write user ID as i64
+                    // In full implementation, would serialize User type
+                    TlHelper::write_constructor_id(buf, 0x12345678); // User constructor placeholder
+                    TlHelper::write_i64(buf, *uid);
+                }
+            }
+            Self::SignUpRequired { terms_of_service } => {
+                let mut flags = 0u32;
+                if terms_of_service.is_some() {
+                    flags |= 0x1;
+                }
+
+                TlHelper::write_constructor_id(buf, 0x35154f1d);
+                TlHelper::write_i32(buf, flags as i32);
+
+                if let Some(terms) = terms_of_service {
+                    TlHelper::write_string(buf, terms);
+                }
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl TlConstructor for Authorization {
+    /// Returns the constructor ID for this authorization type.
+    fn constructor_id(&self) -> u32 {
+        match self {
+            Self::Success { .. } => 0xcd050a96,
+            Self::SignUpRequired { .. } => 0x35154f1d,
+        }
+    }
+}
+
+impl TlDeserialize for Authorization {
+    /// Deserializes Authorization from TL format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TypeError` if:
+    /// - Unknown constructor ID
+    /// - Invalid data format
+    fn deserialize_tl(buf: &mut TlBytes) -> TypeResult<Self> {
+        let constructor_id = TlHelper::read_constructor_id(buf)?;
+
+        match constructor_id {
+            0xcd050a96 => {
+                // auth.authorization
+                let flags = TlHelper::read_i32(buf)? as u32;
+
+                let tmp_sessions = if flags & 0x1 != 0 {
+                    Some(TlHelper::read_i32(buf)?)
+                } else {
+                    None
+                };
+
+                // Note: We're simplifying User type to just read user_id
+                // In a full implementation, we would deserialize the User type
+                let user_id = if flags & 0x2 != 0 {
+                    // Read user constructor and extract ID
+                    let _user_constructor = TlHelper::read_constructor_id(buf)?;
+                    Some(TlHelper::read_i64(buf)?)
+                } else {
+                    None
+                };
+
+                Ok(Self::Success {
+                    tmp_sessions,
+                    user_id,
+                })
+            }
+            0x35154f1d => {
+                // auth.authorizationSignUpRequired
+                let flags = TlHelper::read_i32(buf)? as u32;
+
+                let terms_of_service = if flags & 0x1 != 0 {
+                    // Note: We're simplifying termsOfService to string
+                    // In a full implementation, we would deserialize help.termsOfService
+                    Some(TlHelper::read_string(buf)?)
+                } else {
+                    None
+                };
+
+                Ok(Self::SignUpRequired {
+                    terms_of_service,
+                })
+            }
+            _ => Err(TypeError::DeserializationError(format!(
+                "Unknown Authorization constructor: 0x{:08x}",
+                constructor_id
+            ))),
+        }
+    }
+}
+
+impl TlBoxed for Authorization {
+    /// Returns the type name for this authorization.
+    fn type_name(&self) -> &'static str {
+        match self {
+            Self::Success { .. } => "Authorization",
+            Self::SignUpRequired { .. } => "AuthorizationSignUpRequired",
+        }
+    }
+
+    /// Creates an Authorization from a constructor ID and buffer.
+    fn from_constructor_id(_id: u32, buf: &mut TlBytes) -> TypeResult<Self>
+    where
+        Self: Sized,
+    {
+        Self::deserialize_tl(buf)
+    }
+}
+
+/// Sent code type.
+///
+/// Simplified version of auth.SentCodeType for testing.
+/// In production, this should match the full TL schema.
+///
+/// # Example
+///
+/// ```
+/// use rustgram_types::SentCodeType;
+///
+/// let code_type = SentCodeType::Sms { length: 5 };
+/// assert!(code_type.is_sms());
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub enum SentCodeType {
+    /// SMS code
+    Sms {
+        /// Length of the code
+        length: i32,
+    },
+
+    /// Call code
+    Call {
+        /// Length of the code
+        length: i32,
+    },
+
+    /// Flash call
+    FlashCall,
+
+    /// Email code
+    EmailCode {
+        /// Email pattern
+        email_pattern: String,
+        /// Length of the code
+        length: i32,
+    },
+
+    /// Unknown code type
+    Unknown {
+        /// Type name
+        type_name: String,
+    },
+}
+
+impl SentCodeType {
+    /// Checks if this is an SMS code.
+    #[inline]
+    pub const fn is_sms(&self) -> bool {
+        matches!(self, Self::Sms { .. })
+    }
+
+    /// Checks if this is a call code.
+    #[inline]
+    pub const fn is_call(&self) -> bool {
+        matches!(self, Self::Call { .. })
+    }
+
+    /// Checks if this is a flash call.
+    #[inline]
+    pub const fn is_flash_call(&self) -> bool {
+        matches!(self, Self::FlashCall)
+    }
+
+    /// Checks if this is an email code.
+    #[inline]
+    pub const fn is_email(&self) -> bool {
+        matches!(self, Self::EmailCode { .. })
+    }
+
+    /// Returns the code length if available.
+    #[inline]
+    pub const fn length(&self) -> Option<i32> {
+        match self {
+            Self::Sms { length } | Self::Call { length } | Self::EmailCode { length, .. } => {
+                Some(*length)
+            }
+            _ => None,
+        }
+    }
+}
+
+impl TlDeserialize for SentCodeType {
+    /// Deserializes SentCodeType from TL format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TypeError` if deserialization fails.
+    fn deserialize_tl(buf: &mut TlBytes) -> TypeResult<Self> {
+        let constructor_id = TlHelper::read_constructor_id(buf)?;
+
+        match constructor_id {
+            0x5765063f => {
+                // auth.sentCodeTypeSms
+                let length = TlHelper::read_i32(buf)?;
+                Ok(Self::Sms { length })
+            }
+            0x7a992916 => {
+                // auth.sentCodeTypeCall
+                let length = TlHelper::read_i32(buf)?;
+                Ok(Self::Call { length })
+            }
+            0xab03c6d0 => {
+                // auth.sentCodeTypeFlashCall
+                Ok(Self::FlashCall)
+            }
+            0x81296321 => {
+                // auth.sentCodeTypeEmailCode
+                let email_pattern = TlHelper::read_string(buf)?;
+                let length = TlHelper::read_i32(buf)?;
+                Ok(Self::EmailCode {
+                    email_pattern,
+                    length,
+                })
+            }
+            _ => {
+                // Unknown type - skip remaining bytes and return Unknown
+                // This is a simplified approach
+                Ok(Self::Unknown {
+                    type_name: format!("0x{:08x}", constructor_id),
+                })
+            }
+        }
+    }
+}
+
+/// Sent code response.
+///
+/// Corresponds to `auth.sentCode#5e002502`.
+///
+/// # TL Schema
+///
+/// ```text
+/// auth.sentCode#5e002502 flags:# phone_registered:flags.1?true type:auth.SentCodeType
+/// next_type:flags.2?auth.SentCodeType timeout:flags.5?int = auth.SentCode;
+/// ```
+///
+/// # Example
+///
+/// ```
+/// use rustgram_types::{SentCode, SentCodeType};
+///
+/// let response = SentCode {
+///     flags: 0x02,
+///     phone_registered: true,
+///     code_type: SentCodeType::Sms { length: 5 },
+///     next_type: None,
+///     timeout: 60,
+/// };
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct SentCode {
+    /// Flags bitmask
+    pub flags: u32,
+
+    /// Whether the phone is registered (flag 1)
+    pub phone_registered: bool,
+
+    /// Type of code that was sent
+    pub code_type: SentCodeType,
+
+    /// Next code type (flag 2)
+    pub next_type: Option<SentCodeType>,
+
+    /// Timeout in seconds (flag 5)
+    pub timeout: i32,
+}
+
+impl SentCode {
+    /// Creates a new SentCode response.
+    ///
+    /// # Arguments
+    ///
+    /// * `phone_registered` - Whether the phone is registered
+    /// * `code_type` - Type of code sent
+    /// * `next_type` - Optional next code type
+    /// * `timeout` - Timeout in seconds
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_types::{SentCode, SentCodeType};
+    ///
+    /// let response = SentCode::new(
+    ///     true,
+    ///     SentCodeType::Sms { length: 5 },
+    ///     None,
+    ///     60,
+    /// );
+    /// ```
+    pub fn new(
+        phone_registered: bool,
+        code_type: SentCodeType,
+        next_type: Option<SentCodeType>,
+        timeout: i32,
+    ) -> Self {
+        let mut flags = 0;
+        if phone_registered {
+            flags |= 0x2;
+        }
+        if next_type.is_some() {
+            flags |= 0x4;
+        }
+        if timeout > 0 {
+            flags |= 0x20;
+        }
+
+        Self {
+            flags,
+            phone_registered,
+            code_type,
+            next_type,
+            timeout,
+        }
+    }
+
+    /// Checks if the phone is registered.
+    #[inline]
+    pub const fn is_phone_registered(&self) -> bool {
+        self.phone_registered
+    }
+
+    /// Returns the timeout.
+    #[inline]
+    pub const fn timeout(&self) -> i32 {
+        self.timeout
+    }
+
+    /// Returns the code type.
+    #[inline]
+    pub fn code_type(&self) -> &SentCodeType {
+        &self.code_type
+    }
+
+    /// Returns the next code type.
+    #[inline]
+    pub fn next_type(&self) -> Option<&SentCodeType> {
+        self.next_type.as_ref()
+    }
+}
+
+impl TlDeserialize for SentCode {
+    /// Deserializes SentCode from TL format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TypeError` if deserialization fails.
+    fn deserialize_tl(buf: &mut TlBytes) -> TypeResult<Self> {
+        let flags = TlHelper::read_i32(buf)? as u32;
+        let phone_registered = (flags & 0x2) != 0;
+        let code_type = SentCodeType::deserialize_tl(buf)?;
+
+        let next_type = if flags & 0x4 != 0 {
+            Some(SentCodeType::deserialize_tl(buf)?)
+        } else {
+            None
+        };
+
+        let timeout = if flags & 0x20 != 0 {
+            TlHelper::read_i32(buf)?
+        } else {
+            60 // Default timeout
+        };
+
+        Ok(Self {
+            flags,
+            phone_registered,
+            code_type,
+            next_type,
+            timeout,
+        })
+    }
+}
+
+/// Logged out response.
+///
+/// Corresponds to `auth.loggedOut#3e72ba19`.
+///
+/// # TL Schema
+///
+/// ```text
+/// auth.loggedOut#3e72ba19 = Bool;
+/// ```
+///
+/// # Example
+///
+/// ```
+/// use rustgram_types::LoggedOut;
+///
+/// let logged_out = LoggedOut::new(true);
+/// assert!(logged_out.success());
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
+pub struct LoggedOut {
+    /// Whether logout was successful
+    pub success: bool,
+}
+
+impl LoggedOut {
+    /// Creates a new LoggedOut response.
+    ///
+    /// # Arguments
+    ///
+    /// * `success` - Whether logout was successful
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use rustgram_types::LoggedOut;
+    ///
+    /// let logged_out = LoggedOut::new(true);
+    /// assert!(logged_out.success());
+    /// ```
+    #[inline]
+    pub const fn new(success: bool) -> Self {
+        Self { success }
+    }
+
+    /// Checks if logout was successful.
+    #[inline]
+    pub const fn success(&self) -> bool {
+        self.success
+    }
+}
+
+impl TlDeserialize for LoggedOut {
+    /// Deserializes LoggedOut from TL format.
+    ///
+    /// # Errors
+    ///
+    /// Returns `TypeError` if deserialization fails.
+    fn deserialize_tl(buf: &mut TlBytes) -> TypeResult<Self> {
+        // This is actually a Bool type in TL
+        let constructor_id = TlHelper::read_constructor_id(buf)?;
+
+        let success = match constructor_id {
+            0x997275b5 => true,  // boolTrue
+            0xbc799737 => false, // boolFalse
+            _ => {
+                return Err(TypeError::DeserializationError(format!(
+                    "Invalid Bool constructor: 0x{:08x}",
+                    constructor_id
+                )))
+            }
+        };
+
+        Ok(Self { success })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_authorization_success() {
+        let auth = Authorization::success(Some(5), Some(123456));
+        assert!(auth.is_success());
+        assert!(!auth.is_sign_up_required());
+        assert_eq!(auth.user_id(), Some(123456));
+    }
+
+    #[test]
+    fn test_authorization_sign_up_required() {
+        let auth = Authorization::sign_up_required(Some("terms".to_string()));
+        assert!(!auth.is_success());
+        assert!(auth.is_sign_up_required());
+        assert_eq!(auth.terms_of_service(), Some("terms"));
+    }
+
+    #[test]
+    fn test_authorization_constructor_id() {
+        let auth_success = Authorization::success(None, None);
+        assert_eq!(auth_success.constructor_id(), 0xcd050a96);
+
+        let auth_signup = Authorization::sign_up_required(None);
+        assert_eq!(auth_signup.constructor_id(), 0x35154f1d);
+    }
+
+    #[test]
+    fn test_sent_code_type_sms() {
+        let code_type = SentCodeType::Sms { length: 5 };
+        assert!(code_type.is_sms());
+        assert!(!code_type.is_call());
+        assert_eq!(code_type.length(), Some(5));
+    }
+
+    #[test]
+    fn test_sent_code_type_call() {
+        let code_type = SentCodeType::Call { length: 6 };
+        assert!(code_type.is_call());
+        assert!(!code_type.is_sms());
+        assert_eq!(code_type.length(), Some(6));
+    }
+
+    #[test]
+    fn test_sent_code_type_flash_call() {
+        let code_type = SentCodeType::FlashCall;
+        assert!(code_type.is_flash_call());
+        assert_eq!(code_type.length(), None);
+    }
+
+    #[test]
+    fn test_sent_code_type_email() {
+        let code_type = SentCodeType::EmailCode {
+            email_pattern: "e***@example.com".to_string(),
+            length: 6,
+        };
+        assert!(code_type.is_email());
+        assert_eq!(code_type.length(), Some(6));
+    }
+
+    #[test]
+    fn test_sent_code_new() {
+        let code = SentCode::new(
+            true,
+            SentCodeType::Sms { length: 5 },
+            None,
+            60,
+        );
+
+        assert!(code.is_phone_registered());
+        assert!(code.code_type().is_sms());
+        assert_eq!(code.timeout(), 60);
+        assert!(code.next_type().is_none());
+    }
+
+    #[test]
+    fn test_sent_code_with_next_type() {
+        let code = SentCode::new(
+            true,
+            SentCodeType::Sms { length: 5 },
+            Some(SentCodeType::Call { length: 6 }),
+            60,
+        );
+
+        assert!(code.next_type().is_some());
+        assert!(code.next_type().unwrap().is_call());
+    }
+
+    #[test]
+    fn test_logged_out_new() {
+        let logged_out = LoggedOut::new(true);
+        assert!(logged_out.success());
+    }
+
+    #[test]
+    fn test_logged_out_false() {
+        let logged_out = LoggedOut::new(false);
+        assert!(!logged_out.success());
+    }
+
+    #[test]
+    fn test_authorization_clone() {
+        let auth1 = Authorization::success(Some(5), Some(123456));
+        let auth2 = auth1.clone();
+        assert_eq!(auth1, auth2);
+    }
+
+    #[test]
+    fn test_sent_code_clone() {
+        let code1 = SentCode::new(
+            true,
+            SentCodeType::Sms { length: 5 },
+            None,
+            60,
+        );
+        let code2 = code1.clone();
+        assert_eq!(code1, code2);
+    }
+
+    #[test]
+    fn test_authorization_equality() {
+        let auth1 = Authorization::success(Some(5), Some(123456));
+        let auth2 = Authorization::success(Some(5), Some(123456));
+        assert_eq!(auth1, auth2);
+
+        let auth3 = Authorization::success(Some(3), Some(123456));
+        assert_ne!(auth1, auth3);
+    }
+
+    #[test]
+    fn test_sent_code_flags() {
+        let code = SentCode::new(
+            true,
+            SentCodeType::Sms { length: 5 },
+            Some(SentCodeType::Call { length: 6 }),
+            60,
+        );
+
+        // Flags should include: phone_registered (0x2) | next_type (0x4) | timeout (0x20)
+        assert_eq!(code.flags, 0x26);
+    }
+
+    #[test]
+    fn test_sent_code_type_unknown() {
+        let code_type = SentCodeType::Unknown {
+            type_name: "0x12345678".to_string(),
+        };
+        assert!(!code_type.is_sms());
+        assert!(!code_type.is_call());
+        assert_eq!(code_type.length(), None);
+    }
+
+    #[test]
+    fn test_authorization_type_name() {
+        let auth_success = Authorization::success(None, None);
+        assert_eq!(auth_success.type_name(), "Authorization");
+
+        let auth_signup = Authorization::sign_up_required(None);
+        assert_eq!(auth_signup.type_name(), "AuthorizationSignUpRequired");
+    }
+
+    #[test]
+    fn test_sent_code_no_timeout() {
+        let code = SentCode::new(
+            true,
+            SentCodeType::Sms { length: 5 },
+            None,
+            0,
+        );
+
+        // Should not have timeout flag
+        assert_eq!(code.flags & 0x20, 0);
+        assert_eq!(code.timeout(), 0);
+    }
+
+    #[test]
+    fn test_authorization_from_constructor_id() {
+        // Test the interface exists
+        let auth = Authorization::success(Some(5), Some(123456));
+        assert_eq!(auth.constructor_id(), 0xcd050a96);
+    }
+
+    #[test]
+    fn test_logged_out_constructor() {
+        // Test the LoggedOut type
+        let logged_out = LoggedOut::new(true);
+        assert!(logged_out.success());
+    }
+}

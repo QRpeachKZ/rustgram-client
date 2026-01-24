@@ -1,0 +1,29 @@
+[package]
+name = "rustgram-business-connection-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-business-connection-id = { path = "../business_connection-id" }
+rustgram-message-input-reply-to = { path = "../message_input_reply-to" }
+rustgram-message-types = { path = "../message-types" }
+rustgram-reply-markup = { path = "../reply-markup" }
+rustgram-net = { path = "../net" }
+rustgram-file-upload-id = { path = "../file_upload-id" }
+rustgram-star-amount = { path = "../star-amount" }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+serde = ["dep:serde"]
+default = []

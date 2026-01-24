@@ -66,6 +66,7 @@ pub enum PingType {
 ///
 /// Manages ping/pong messages for connection health monitoring.
 /// Based on TDLib's PingManager from `td/telegram/net/Ping.cpp`.
+#[derive(Debug)]
 pub struct PingManager {
     /// Configuration
     config: PingConfig,

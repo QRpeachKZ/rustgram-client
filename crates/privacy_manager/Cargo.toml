@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-privacy-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Privacy manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-user-privacy-setting = { path = "../user_privacy-setting" }
+rustgram-user-privacy-setting-rule = { path = "../user_privacy_setting-rule" }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+
+[package.metadata.docs.rs]
+all-features = true
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

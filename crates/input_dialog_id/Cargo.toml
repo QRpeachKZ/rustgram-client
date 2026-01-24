@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-input-dialog-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+
+[dev-dependencies]
+rstest.workspace = true

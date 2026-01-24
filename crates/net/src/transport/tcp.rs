@@ -49,6 +49,9 @@ pub struct TcpTransport {
 
     /// Write options
     pub write_options: WriteOptions,
+
+    /// Transport mode for packet framing
+    pub transport_mode: crate::transport::TransportMode,
 }
 
 impl TcpTransport {
@@ -61,6 +64,7 @@ impl TcpTransport {
             reader: Arc::new(crate::transport::read::DefaultTransportReader::new()),
             writer: Arc::new(crate::transport::write::DefaultTransportWriter::new()),
             write_options: WriteOptions::default(),
+            transport_mode: crate::transport::TransportMode::default(),
         }
     }
 
@@ -77,6 +81,7 @@ impl TcpTransport {
             reader,
             writer,
             write_options: WriteOptions::default(),
+            transport_mode: crate::transport::TransportMode::default(),
         }
     }
 
@@ -104,7 +109,7 @@ impl TcpTransport {
     pub async fn connect(&mut self) -> Result<(), ConnectionError> {
         self.state = ConnectionState::Connecting;
 
-        let stream = timeout(DEFAULT_CONNECT_TIMEOUT, TcpStream::connect(self.addr))
+        let mut stream = timeout(DEFAULT_CONNECT_TIMEOUT, TcpStream::connect(self.addr))
             .await
             .map_err(|_| ConnectionError::Timeout(DEFAULT_CONNECT_TIMEOUT))?
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
@@ -113,6 +118,24 @@ impl TcpTransport {
         stream
             .set_nodelay(true)
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+        // Send transport magic number if needed (for Intermediate mode)
+        let magic = crate::transport::get_transport_magic(self.transport_mode);
+        if !magic.is_empty() {
+            stream
+                .write_all(&magic)
+                .await
+                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+            stream
+                .flush()
+                .await
+                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+            tracing::info!(
+                "Sent transport magic: {:02x?} (mode: {:?})",
+                magic,
+                self.transport_mode
+            );
+        }
 
         self.stream = Some(stream);
         self.state = ConnectionState::Ready;
@@ -133,19 +156,22 @@ impl TcpTransport {
             .as_mut()
             .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;
 
-        // Encode packet using transport
+        // 1. Encode packet using transport (adds NoCryptoHeader, CryptoHeader, etc.)
         let mut packet_info = PacketInfo::new()
             .with_no_crypto(auth_key.is_none())
             .with_packet_type(self.write_options.packet_type);
 
-        let packet = self
+        let mtp_packet = self
             .writer
             .write(data, auth_key, &mut packet_info)
             .map_err(|e| ConnectionError::Ssl(e.to_string()))?;
 
-        // Write to stream
+        // 2. Add transport-level framing (length prefix)
+        let framed = crate::transport::frame_packet(self.transport_mode, &mtp_packet);
+
+        // 3. Write to stream
         stream
-            .write_all(&packet)
+            .write_all(&framed)
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
@@ -154,7 +180,12 @@ impl TcpTransport {
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
-        tracing::trace!("TCP transport wrote {} bytes", packet.len());
+        tracing::info!(
+            "TCP transport wrote {} bytes (framed from {} bytes MTProto packet)\nSent data (hex): {:02x?}",
+            framed.len(),
+            mtp_packet.len(),
+            framed
+        );
 
         Ok(())
     }
@@ -169,26 +200,48 @@ impl TcpTransport {
             .as_mut()
             .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;
 
-        // Read packet header first (at least 4 bytes for length)
-        let mut header = [0u8; 4];
-        timeout(DEFAULT_READ_TIMEOUT, stream.read_exact(&mut header))
-            .await
-            .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
-            .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+        tracing::info!("TCP transport starting to read packet (mode: {:?})", self.transport_mode);
 
-        // Determine packet length
-        let length = if header[0] < 0x7f {
-            // Abridged mode: 1-byte length
-            header[0] as usize
-        } else {
-            // Intermediate/Full mode: 4-byte length
-            let mut rest = [0u8; 3];
-            timeout(DEFAULT_READ_TIMEOUT, stream.read_exact(&mut rest))
-                .await
-                .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
-                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+        // Read packet length based on transport mode
+        let length = match self.transport_mode {
+            crate::transport::TransportMode::Abridged => {
+                // Abridged mode: 1-byte length (encoded with << 1, need to >> 1 to decode)
+                let mut len_byte = [0u8; 1];
+                timeout(DEFAULT_READ_TIMEOUT, stream.read_exact(&mut len_byte))
+                    .await
+                    .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
+                    .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
-            u32::from_le_bytes([header[1], header[2], header[3], rest[2]]) as usize
+                if len_byte[0] >= 0xFE {
+                    return Err(ConnectionError::Failed(format!(
+                        "Invalid abridged length byte: {} (must be < 0xFE)",
+                        len_byte[0]
+                    )));
+                }
+                // Decode: length = len_byte >> 1
+                let len = (len_byte[0] >> 1) as usize;
+                tracing::info!("TCP transport read abridged length byte: {}, decoded length: {}", len_byte[0], len);
+                len
+            }
+            crate::transport::TransportMode::Intermediate => {
+                // Intermediate mode: 4-byte little-endian length
+                let mut len_bytes = [0u8; 4];
+                timeout(DEFAULT_READ_TIMEOUT, stream.read_exact(&mut len_bytes))
+                    .await
+                    .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
+                    .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+                let len = u32::from_le_bytes(len_bytes) as usize;
+                tracing::info!("TCP transport read intermediate length: {} ({:02x?}", len, len_bytes);
+                len
+            }
+            crate::transport::TransportMode::NoCrypto | crate::transport::TransportMode::Full => {
+                // These modes don't use transport framing - read as is
+                // For now, return error as this shouldn't happen during handshake
+                return Err(ConnectionError::Failed(
+                    "NoCrypto/Full modes not supported for TCP transport".into()
+                ));
+            }
         };
 
         if length > MAX_PACKET_SIZE {
@@ -205,6 +258,12 @@ impl TcpTransport {
             .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
+        tracing::info!(
+            "TCP transport read {} bytes from server (mode: {:?})",
+            buffer.len(),
+            self.transport_mode
+        );
+
         // Decode packet using transport
         let mut packet_info = PacketInfo::new()
             .with_no_crypto(auth_key.is_none())
@@ -215,7 +274,7 @@ impl TcpTransport {
             .read(&buffer, auth_key, &mut packet_info)
             .map_err(|e| ConnectionError::Failed(e.to_string()))?;
 
-        tracing::trace!("TCP transport read packet: {:?}", result);
+        tracing::info!("TCP transport read packet result: {:?}", result);
 
         Ok(result)
     }
@@ -247,12 +306,14 @@ impl TcpTransport {
                 reader: self.reader.clone_box(),
                 stream: read,
                 addr: self.addr,
+                transport_mode: self.transport_mode,
             },
             TcpWriteHalf {
                 writer: self.writer.clone_box(),
                 stream: write,
                 addr: self.addr,
                 write_options: self.write_options,
+                transport_mode: self.transport_mode,
             },
         ))
     }
@@ -300,6 +361,8 @@ pub struct TcpReadHalf {
     pub stream: ReadHalf<TcpStream>,
     /// Remote address
     pub addr: SocketAddr,
+    /// Transport mode for packet framing
+    pub transport_mode: crate::transport::TransportMode,
 }
 
 impl TcpReadHalf {
@@ -314,20 +377,46 @@ impl TcpReadHalf {
         auth_key: Option<&[u8; 256]>,
         packet_type: crate::packet::PacketType,
     ) -> Result<ReadResult, ConnectionError> {
-        // Read packet length
-        let mut length_buf = [0u8; 4];
-        timeout(
-            DEFAULT_READ_TIMEOUT,
-            self.stream.read_exact(&mut length_buf),
-        )
-        .await
-        .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
-        .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+        // Read packet length based on transport mode
+        let length = match self.transport_mode {
+            crate::transport::TransportMode::Abridged => {
+                // Abridged mode: 1-byte length (encoded with << 1, need to >> 1 to decode)
+                let mut len_byte = [0u8; 1];
+                timeout(
+                    DEFAULT_READ_TIMEOUT,
+                    self.stream.read_exact(&mut len_byte),
+                )
+                .await
+                .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
+                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
-        let length = if length_buf[0] < 0x7f {
-            length_buf[0] as usize
-        } else {
-            u32::from_le_bytes(length_buf) as usize & 0x7FFFFF
+                if len_byte[0] >= 0xFE {
+                    return Err(ConnectionError::Failed(format!(
+                        "Invalid abridged length byte: {} (must be < 0xFE)",
+                        len_byte[0]
+                    )));
+                }
+                // Decode: length = len_byte >> 1
+                (len_byte[0] >> 1) as usize
+            }
+            crate::transport::TransportMode::Intermediate => {
+                // Intermediate mode: 4-byte little-endian length
+                let mut len_bytes = [0u8; 4];
+                timeout(
+                    DEFAULT_READ_TIMEOUT,
+                    self.stream.read_exact(&mut len_bytes),
+                )
+                .await
+                .map_err(|_| ConnectionError::Timeout(DEFAULT_READ_TIMEOUT))?
+                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+                u32::from_le_bytes(len_bytes) as usize
+            }
+            crate::transport::TransportMode::NoCrypto | crate::transport::TransportMode::Full => {
+                return Err(ConnectionError::Failed(
+                    "NoCrypto/Full modes not supported".into()
+                ));
+            }
         };
 
         if length > MAX_PACKET_SIZE {
@@ -362,6 +451,8 @@ pub struct TcpWriteHalf {
     pub addr: SocketAddr,
     /// Write options
     pub write_options: WriteOptions,
+    /// Transport mode for packet framing
+    pub transport_mode: crate::transport::TransportMode,
 }
 
 impl TcpWriteHalf {
@@ -381,17 +472,22 @@ impl TcpWriteHalf {
         data: &[u8],
         auth_key: Option<&[u8; 256]>,
     ) -> Result<(), ConnectionError> {
+        // 1. Encode packet using transport (adds NoCryptoHeader, CryptoHeader, etc.)
         let mut packet_info = PacketInfo::new()
             .with_no_crypto(auth_key.is_none())
             .with_packet_type(self.write_options.packet_type);
 
-        let packet = self
+        let mtp_packet = self
             .writer
             .write(data, auth_key, &mut packet_info)
             .map_err(|e| ConnectionError::Ssl(e.to_string()))?;
 
+        // 2. Add transport-level framing (length prefix)
+        let framed = crate::transport::frame_packet(self.transport_mode, &mtp_packet);
+
+        // 3. Write to stream
         self.stream
-            .write_all(&packet)
+            .write_all(&framed)
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
@@ -399,6 +495,12 @@ impl TcpWriteHalf {
             .flush()
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+        tracing::trace!(
+            "TcpWriteHalf wrote {} bytes (framed from {} bytes MTProto packet)",
+            framed.len(),
+            mtp_packet.len()
+        );
 
         Ok(())
     }

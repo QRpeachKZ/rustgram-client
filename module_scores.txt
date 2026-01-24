@@ -1,0 +1,9 @@
+TDLib Module Complexity Scores
+========================================
+
+logevent               13
+  ~885 lines of code, 13 Telegram API calls, 8 async/state patterns
+
+net                   255
+  ~9058 lines of code, 151 Telegram API calls, 304 async/state patterns
+

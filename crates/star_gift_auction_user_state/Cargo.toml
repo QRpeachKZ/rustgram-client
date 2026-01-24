@@ -1,0 +1,15 @@
+[package]
+name = "rustgram-star-gift-auction-user-state"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Star gift auction user state for Telegram MTProto client"
+repository = "https://github.com/yourusername/rustgram-client"
+keywords = ["telegram", "mtproto", "stars", "auction", "gifts"]
+categories = ["data-structures"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]

@@ -24,7 +24,10 @@
 mod aes_ige;
 mod crypto_auth_key;
 mod hash;
+mod hmac;
 mod kdf;
+mod prime;
+mod rsa;
 
 pub use aes_ige::{aes_ige_decrypt, aes_ige_encrypt, AesIge, CryptoError};
 pub use crypto_auth_key::{
@@ -32,7 +35,10 @@ pub use crypto_auth_key::{
     CryptoAuthKeyHelper, DefaultAuthKeyHelper,
 };
 pub use hash::{sha1, sha256};
+pub use hmac::{hmac_sha256, hmac_sha512, pbkdf2_hmac_sha256, pbkdf2_hmac_sha512, HmacError};
 pub use kdf::{kdf, kdf2, tmp_kdf, KdfOutput};
+pub use prime::{pq_factorize, pq_factorize_big, CryptoError as PrimeCryptoError, FactorizeResult};
+pub use rsa::{decrypt_signature, RsaError, RsaPrivateKeyWrapper, RsaPublicKeyWrapper, RsaResult};
 
 /// Prelude for crypto module imports.
 pub mod prelude {

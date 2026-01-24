@@ -9,6 +9,7 @@
 
 use parking_lot::Mutex;
 use std::fmt;
+use std::sync::atomic::{AtomicI32, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
@@ -151,6 +152,12 @@ pub struct AuthDataShared {
 
     /// Listeners
     listeners: Arc<Mutex<Vec<Box<dyn AuthKeyListener>>>>,
+
+    /// Session ID
+    session_id: AtomicU64,
+
+    /// Sequence number counter
+    seq_no: AtomicI32,
 }
 
 impl fmt::Debug for AuthDataShared {
@@ -168,6 +175,9 @@ impl fmt::Debug for AuthDataShared {
 impl AuthDataShared {
     /// Creates new shared auth data.
     pub fn new(dc_id: DcId) -> Self {
+        // Generate random session ID
+        let session_id = rand::random::<u64>();
+
         Self {
             dc_id,
             auth_key: Arc::new(Mutex::new(None)),
@@ -175,6 +185,8 @@ impl AuthDataShared {
             server_time_difference: Arc::new(Mutex::new(0.0)),
             auth_key_state: Arc::new(Mutex::new(AuthKeyState::Empty)),
             listeners: Arc::new(Mutex::new(Vec::new())),
+            session_id: AtomicU64::new(session_id),
+            seq_no: AtomicI32::new(0),
         }
     }
 
@@ -240,6 +252,69 @@ impl AuthDataShared {
         *self.auth_key.lock() = None;
         *self.auth_key_state.lock() = AuthKeyState::Empty;
     }
+
+    /// Sets the server salt.
+    pub fn set_server_salt(&self, salt: u64) {
+        // Convert u64 to ServerSalt with current timestamp
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+        let server_salt = ServerSalt::new(salt as i64, now);
+        self.future_salts.lock().push(server_salt);
+    }
+
+    /// Gets the current server salt.
+    pub fn get_server_salt(&self) -> Option<u64> {
+        let now = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_secs() as i64;
+
+        self.future_salts
+            .lock()
+            .iter()
+            .find(|s| s.is_valid(now))
+            .map(|s| s.salt as u64)
+    }
+
+    /// Returns the server salt for packet serialization.
+    ///
+    /// Returns a default salt if none is set.
+    pub fn server_salt(&self) -> u64 {
+        self.get_server_salt().unwrap_or(0)
+    }
+
+    /// Returns the session ID.
+    pub fn session_id(&self) -> u64 {
+        self.session_id.load(Ordering::Relaxed)
+    }
+
+    /// Generates and returns the next sequence number.
+    ///
+    /// # Arguments
+    ///
+    /// * `needs_ack` - Whether this message needs acknowledgment (content-related)
+    ///
+    /// # Returns
+    ///
+    /// The next sequence number to use.
+    pub fn next_seq_no(&self, needs_ack: bool) -> i32 {
+        if needs_ack {
+            // Content-related messages increment by 2
+            self.seq_no.fetch_add(2, Ordering::Relaxed)
+        } else {
+            // Service messages use current value
+            self.seq_no.load(Ordering::Relaxed)
+        }
+    }
+
+    /// Gets the auth key data as a reference.
+    ///
+    /// Returns None if no auth key is set.
+    pub fn get_auth_key_data(&self) -> Option<Vec<u8>> {
+        self.auth_key.lock().as_ref().map(|k| k.key.clone())
+    }
 }
 
 impl Clone for AuthDataShared {
@@ -251,6 +326,8 @@ impl Clone for AuthDataShared {
             server_time_difference: self.server_time_difference.clone(),
             auth_key_state: self.auth_key_state.clone(),
             listeners: Arc::new(Mutex::new(Vec::new())),
+            session_id: AtomicU64::new(self.session_id.load(Ordering::Relaxed)),
+            seq_no: AtomicI32::new(self.seq_no.load(Ordering::Relaxed)),
         }
     }
 }

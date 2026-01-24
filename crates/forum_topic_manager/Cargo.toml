@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-forum-topic-manager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-forum-topic-id = { path = "../forum_topic-id" }
+rustgram-forum-topic-info = { path = "../forum_topic-info" }
+rustgram-forum-topic-icon = { path = "../forum_topic-icon" }
+rustgram-forum-topic = { path = "../forum-topic" }
+rustgram-forum-topic-edited-data = { path = "../forum_topic_edited-data" }
+rustgram-dialog-notification-settings = { path = "../dialog-notification-settings" }
+rustgram-draft-message = { path = "../draft-message" }
+rustgram-types = { path = "../types" }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+rstest = "0.23"
+serde_json = "1.0"

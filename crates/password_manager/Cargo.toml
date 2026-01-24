@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-password-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace dependencies
+serde = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+sha2 = { workspace = true }
+
+# Local crates
+rustgram-email-verification = { path = "../email-verification" }
+rustgram-new-password-state = { path = "../new_password-state" }
+rustgram-temp-password-state = { path = "../temp_password-state" }
+rustgram-passkey = { path = "../passkey" }
+
+[dev-dependencies]
+# Workspace dev dependencies
+serde_json = { workspace = true }

@@ -1,0 +1,27 @@
+# Copyright (c) 2024 rustgram-client contributors
+#
+# Licensed under MIT OR Apache-2.0
+
+[package]
+name = "rustgram-web-pages-manager"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Web pages manager for Telegram client"
+repository = "https://github.com/rustgram/rustgram-client"
+
+[dependencies]
+rustgram-web-page-id = { path = "../web_page-id" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-user-id = { path = "../user-id" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+tokio = { version = "1.40", features = ["sync"], optional = true }
+
+[features]
+default = ["tokio", "serde"]
+async = ["tokio"]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+tokio = { version = "1.40", features = ["rt", "macros", "sync"] }

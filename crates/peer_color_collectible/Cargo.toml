@@ -1,0 +1,12 @@
+[package]
+name = "rustgram-peer-color-collectible"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rustgram-custom-emoji-id = { path = "../custom_emoji-id" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde", "rustgram-custom-emoji-id/serde"]

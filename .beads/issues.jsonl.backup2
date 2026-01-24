@@ -1,0 +1,23 @@
+{
+  "id": "rustgram-client-ma0.6",
+  "title": "Phase 6: Integration Testing",
+  "description": "Test connection to Telegram servers, verify auth flow, message send/receive. Test manager coordination via actor messaging. COMPLETED: Integration testing audit completed. See docs/integration-testing-audit-report.md for full findings. Summary: Core infrastructure exists but actor framework is stub-only. No real server connection tests. Recommendations: Complete actor framework, add mock server, increase coverage.",
+  "status": "completed",
+  "priority": 1,
+  "issue_type": "task",
+  "created_at": "2026-01-17T14:24:30.37605+07:00",
+  "created_by": "alfa",
+  "updated_at": "2026-01-17T15:30:00+07:00",
+  "closed_at": "2026-01-17T15:30:00+07:00",
+  "close_reason": "Completed - Integration testing audit complete with report generated",
+  "labels": ["audit:rustgram", "phase:6", "step:integration", "status:completed"],
+  "dependencies": [
+    {
+      "issue_id": "rustgram-client-ma0.6",
+      "depends_on_id": "rustgram-client-ma0",
+      "type": "parent-child",
+      "created_at": "2026-01-17T14:24:30.376736+07:00",
+      "created_by": "alfa"
+    }
+  ]
+}

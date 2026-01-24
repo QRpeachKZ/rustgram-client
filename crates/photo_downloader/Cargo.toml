@@ -1,0 +1,34 @@
+[package]
+name = "rustgram-photo-downloader"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Profile photo downloader for Telegram MTProto client"
+
+[dependencies]
+# Async runtime
+tokio = { workspace = true }
+async-trait = { workspace = true }
+
+# Type system
+rustgram-types = { path = "../types" }
+
+# Network layer
+rustgram-net = { path = "../net" }
+
+# Caching
+lru = "0.12"
+parking_lot = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Serialization
+bytes = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "test-util"] }

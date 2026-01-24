@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-sticker-set-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-sticker-set-id = { path = "../sticker_set-id" }
+rustgram-sticker-set-type = { path = "../sticker_set-type" }
+serde = { version = "1.0", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }

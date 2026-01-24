@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-td"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "TDlib main instance stub for rustgram-client"
+keywords = ["telegram", "mtproto", "tdlib"]
+categories = ["api-bindings"]
+
+[features]
+default = []
+
+[dependencies]
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

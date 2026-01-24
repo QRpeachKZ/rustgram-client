@@ -1,0 +1,732 @@
+# Technical Specification: AttachMenuManager
+# Generated from TDLib AttachMenuManager.h/cpp
+# Module: rustgram-attach-menu-manager
+# Complexity: HIGH (Manager type with caching, network queries, file management)
+
+module:
+  name: attach_menu_manager
+  rust_name: rustgram-attach-menu-manager
+  version: 1.0.0
+  tdlib_source:
+    - references/td/td/telegram/AttachMenuManager.h
+    - references/td/td/telegram/AttachMenuManager.cpp
+
+overview: |
+  The AttachMenuManager manages Telegram attachment menu bots, which are bots that
+  can be invoked from the attachment menu in chats. This manager handles:
+  
+  - Caching of attach menu bot data (icons, colors, metadata)
+  - Network queries for fetching/updating attach menu bots
+  - File source tracking for bot icons
+  - Bot addition/removal from attachment menu
+  - Database persistence with versioning
+  
+  This is a HIGH complexity manager module with stateful caching and network operations.
+
+tdlib_correspondence:
+  class: AttachMenuManager
+  header: td/telegram/AttachMenuManager.h
+  implementation: td/telegram/AttachMenuManager.cpp
+
+# Type definitions
+types:
+  AttachMenuBotColor:
+    description: Color pair for attach menu bot theming (light/dark modes)
+    fields:
+      light_color:
+        type: i32
+        default: -1
+        description: RGB color value for light theme (-1 if not set)
+      dark_color:
+        type: i32
+        default: -1
+        description: RGB color value for dark theme (-1 if not set)
+    methods:
+      - is_empty() -> bool
+      - store(StorerT)
+      - parse(ParserT)
+    traits: [Clone, Debug, PartialEq, Eq]
+    serialization: binary (tdlib store/parse)
+
+  AttachMenuBot:
+    description: |
+      Complete data for an attachment menu bot including all platform-specific icons,
+      colors, and capability flags.
+      
+      CACHE_VERSION = 3 (current cache format version)
+    fields:
+      # Basic bot info
+      is_added:
+        type: bool
+        default: false
+        description: Whether bot is added to user's attachment menu
+      user_id:
+        type: UserId
+        description: Bot user identifier
+      name:
+        type: String
+        description: Short name displayed in attachment menu
+      
+      # Capability flags
+      supports_self_dialog:
+        type: bool
+        default: false
+        description: Bot supports being invoked in Saved Messages
+      supports_user_dialogs:
+        type: bool
+        default: false
+        description: Bot supports private chats with users
+      supports_bot_dialogs:
+        type: bool
+        default: false
+        description: Bot supports private chats with other bots
+      supports_group_dialogs:
+        type: bool
+        default: false
+        description: Bot supports group chats
+      supports_broadcast_dialogs:
+        type: bool
+        default: false
+        description: Bot supports channels/broadcasts
+      
+      # Display flags
+      request_write_access:
+        type: bool
+        default: false
+        description: Bot requests permission to send messages
+      show_in_attach_menu:
+        type: bool
+        default: false
+        description: Bot should be shown in attachment menu
+      show_in_side_menu:
+        type: bool
+        default: false
+        description: Bot should be shown in side menu
+      side_menu_disclaimer_needed:
+        type: bool
+        default: false
+        description: Side menu requires disclaimer display
+      
+      # Colors
+      name_color:
+        type: AttachMenuBotColor
+        description: Color for bot name display (light/dark)
+      icon_color:
+        type: AttachMenuBotColor
+        description: Color for bot icon display (light/dark)
+      
+      # Icons (platform-specific)
+      default_icon_file_id:
+        type: FileId
+        description: Default icon (fallback for all platforms)
+      ios_static_icon_file_id:
+        type: FileId
+        description: iOS static icon
+      ios_animated_icon_file_id:
+        type: FileId
+        description: iOS animated icon
+      android_icon_file_id:
+        type: FileId
+        description: Android animated icon
+      macos_icon_file_id:
+        type: FileId
+        description: macOS animated icon
+      android_side_menu_icon_file_id:
+        type: FileId
+        description: Android side menu icon
+      ios_side_menu_icon_file_id:
+        type: FileId
+        description: iOS side menu icon
+      macos_side_menu_icon_file_id:
+        type: FileId
+        description: macOS side menu icon
+      placeholder_file_id:
+        type: FileId
+        description: Placeholder icon while loading
+      
+      # Cache versioning
+      cache_version:
+        type: u32
+        default: 0
+        description: Cache format version (must equal CACHE_VERSION = 3)
+    
+    constants:
+      CACHE_VERSION: 3
+    
+    methods:
+      - is_empty() -> bool
+      - is_valid() -> bool
+      - store(StorerT)
+      - parse(ParserT)
+    
+    traits: [Clone, Debug, PartialEq, Eq]
+    serialization: binary (tdlib store/parse with flags)
+
+  AttachMenuBotsLogEvent:
+    description: Log event for database persistence
+    fields:
+      hash:
+        type: i64
+        description: Hash for change detection
+      attach_menu_bots:
+        type: Vec<AttachMenuBot>
+        description: List of attach menu bots
+    methods:
+      - store(StorerT)
+      - parse(ParserT)
+    serialization: binary
+
+# Public API
+public_api:
+  manager:
+    description: Main manager class for attachment menu bots
+    type: struct
+    
+    constructor:
+      - new(td: Arc<Td>, parent: ActorShared) -> Self
+    
+    lifecycle:
+      - name: init
+        signature: init(&mut self)
+        description: Initialize manager, load from database, trigger initial reload
+      - name: tear_down
+        signature: tear_down(&mut self)
+        description: Cleanup on actor destruction
+    
+    queries:
+      - name: reload_attach_menu_bots
+        signature: reload_attach_menu_bots(&self, promise: Promise<Unit>)
+        description: |
+          Reload all attachment menu bots from server.
+          Uses hash for diffing. Queues concurrent requests.
+          Returns via promise when complete.
+        network: messages_getAttachMenuBots
+        tl_type: AttachMenuBots
+      
+      - name: get_attach_menu_bot
+        signature: get_attach_menu_bot(&self, user_id: UserId, promise: Promise<AttachmentMenuBot>)
+        description: |
+          Get a specific attachment menu bot data.
+          Validates bot can be added to attachment menu.
+          Returns attachmentMenuBot object via promise.
+        network: messages_getAttachMenuBot
+        tl_type: attachMenuBotsBot
+        validation:
+          - User must be accessible
+          - Bot must have can_be_added_to_attach_menu flag
+      
+      - name: reload_attach_menu_bot
+        signature: reload_attach_menu_bot(&self, user_id: UserId, promise: Promise<Unit>)
+        description: |
+          Reload a specific attachment menu bot from server.
+          Updates cache and sends update if changed.
+        network: messages_getAttachMenuBot
+      
+      - name: toggle_bot_is_added_to_attach_menu
+        signature: toggle_bot_is_added_to_attach_menu(&self, user_id: UserId, is_added: bool, allow_write_access: bool, promise: Promise<Unit>)
+        description: |
+          Add or remove bot from attachment menu.
+          If removing, removes from cache immediately.
+          Triggers reload after server confirmation.
+        network: messages_toggleBotInAttachMenu
+        validation:
+          - If adding: bot must have can_be_added_to_attach_menu flag
+    
+    file_management:
+      - name: get_attach_menu_bot_file_source_id
+        signature: get_attach_menu_bot_file_source_id(&self, user_id: UserId) -> FileSourceId
+        description: |
+          Get file source ID for tracking bot icon downloads.
+          Creates new source ID if not exists.
+          Returns invalid FileSourceId if user_id invalid or not active.
+    
+    state:
+      - name: get_current_state
+        signature: get_current_state(&self, updates: &mut Vec<Update>)
+        description: Append current state to updates vector for TDLib API
+      - name: is_active
+        signature: is_active(&self) -> bool
+        description: Check if manager is active (authorized, not bot, not closing)
+      - name: is_inited
+        signature: is_inited(&self) -> bool
+        description: Check if manager has been initialized
+    
+    utilities:
+      - name: get_attach_menu_bots_database_key
+        signature: get_attach_menu_bots_database_key() -> String
+        description: Static method returning database key ("attach_bots")
+        static: true
+
+# Network queries
+network_queries:
+  GetAttachMenuBotsQuery:
+    description: Fetches all attachment menu bots
+    method: messages.getAttachMenuBots
+    tl_constructor: messages_getAttachMenuBots
+    tl_response: AttachMenuBots
+    params:
+      - name: hash
+        type: i64
+        description: Hash for diffing (0 for initial load)
+    response_types:
+      - attachMenuBotsNotModified  # No changes
+      - attachMenuBots              # Full bot list
+    
+    error_handling:
+      - On error: Schedule retry with random timeout (60-120s)
+      - Always: Set all pending promises
+    
+    result_processing:
+      - Parse users from response
+      - Convert TL attachMenuBot objects to AttachMenuBot
+      - Register file sources for all icons
+      - Detect changes and send updates
+      - Save to database
+      - Set timeout for next reload (3600-4800s)
+
+  GetAttachMenuBotQuery:
+    description: Fetches a single attachment menu bot
+    method: messages.getAttachMenuBot
+    tl_constructor: messages_getAttachMenuBot
+    tl_response: attachMenuBotsBot
+    params:
+      - name: input_user
+        type: InputUser
+        description: Target bot user
+    
+    result_processing:
+      - Parse users from response
+      - Convert TL attachMenuBot to AttachMenuBot
+      - If bot.is_added: Update cache if changed
+      - Return attachmentMenuBot object to promise
+
+  ToggleBotInAttachMenuQuery:
+    description: Adds/removes bot from attachment menu
+    method: messages.toggleBotInAttachMenu
+    tl_constructor: messages_toggleBotInAttachMenu
+    tl_response: Bool
+    params:
+      - name: input_user
+        type: InputUser
+      - name: is_added
+        type: bool
+      - name: allow_write_access
+        type: bool
+        description: Combined flags (unused in TDLib: always false)
+      - name: request_write_access
+        type: bool
+        description: Combined with is_added
+    
+    error_handling:
+      - On error: Trigger attach_menu_bots reload
+      - On success: Trigger attach_menu_bots reload
+
+# TL stubs needed
+tl_stubs:
+  attachMenuBotIconColor:
+    constructor: attachMenuBotIconColor#4576f3f0
+    fields:
+      - name: String
+      - color: i32
+    variants:
+      - light_icon
+      - light_text
+      - dark_icon
+      - dark_text
+
+  attachMenuBotIcon:
+    constructor: attachMenuBotIcon#b2a7386b
+    fields:
+      - flags: #
+      - name: String
+      - icon: Document
+      - colors: flags.0?Vector<AttachMenuBotIconColor>
+    icon_names:
+      - default_static
+      - ios_static
+      - ios_animated
+      - android_animated
+      - macos_animated
+      - placeholder_static
+      - ios_side_menu_static
+      - android_side_menu_static
+      - macos_side_menu_static
+
+  attachMenuBot:
+    constructor: attachMenuBot#d90d8dfe
+    fields:
+      - flags: #
+      - inactive: flags.0?true
+      - has_settings: flags.1?true  # Unused in TDLib
+      - request_write_access: flags.2?true
+      - show_in_attach_menu: flags.3?true
+      - show_in_side_menu: flags.4?true
+      - side_menu_disclaimer_needed: flags.5?true
+      - bot_id: long
+      - short_name: String
+      - peer_types: flags.3?Vector<AttachMenuPeerType>
+      - icons: Vector<AttachMenuBotIcon>
+
+  attachMenuBotsNotModified:
+    constructor: attachMenuBotsNotModified#f1d88a5c
+
+  attachMenuBots:
+    constructor: attachMenuBots#3c4301c0
+    fields:
+      - hash: long
+      - bots: Vector<AttachMenuBot>
+      - users: Vector<User>
+
+  attachMenuBotsBot:
+    constructor: attachMenuBotsBot#93bf667f
+    fields:
+      - bot: AttachMenuBot
+      - users: Vector<User>
+
+  AttachMenuPeerType:
+    variants:
+      - attachMenuPeerTypeSameBotPM    # Saved Messages
+      - attachMenuPeerTypeBotPM        # Bot PMs
+      - attachMenuPeerTypePM           # User PMs
+      - attachMenuPeerTypeChat         # Groups
+      - attachMenuPeerTypeBroadcast    # Channels
+
+# Dependencies
+dependencies:
+  external:
+    - module: rustgram-types
+      types:
+        - name: UserId
+          location: crates/types/src/ids.rs
+          constructor: new(i64) -> Result<UserId>
+          methods:
+            - is_valid() -> bool
+            - get() -> i64
+          verified: true
+    
+    - module: rustgram-file-id
+      types:
+        - name: FileId
+          location: crates/file_id/src/lib.rs
+          constructor: new(i32, i32) -> FileId
+          methods:
+            - is_valid() -> bool
+            - is_empty() -> bool
+            - get() -> i32
+          verified: true
+    
+    - module: rustgram-file-source-id
+      types:
+        - name: FileSourceId
+          location: crates/file_source_id/src/lib.rs
+          constructor: new(i32) -> FileSourceId
+          methods:
+            - is_valid() -> bool
+            - get() -> i32
+          verified: true
+
+  internal:
+    - UserManager (for user data and bot capabilities)
+    - FileManager (for icon file management)
+    - DocumentsManager (for parsing icon documents)
+    - FileReferenceManager (for file source creation)
+    - AuthManager (for authorization check)
+    - TdDb (for database persistence)
+
+# Error handling
+error_handling:
+  get_attach_menu_bot:
+    errors:
+      - code: 400
+        message: "Can't reload attachment menu bots"
+        condition: !is_active()
+      - code: 400
+        message: "The bot can't be added to attachment menu"
+        condition: !bot_data.can_be_added_to_attach_menu
+      - code: 500
+        message: "Receive invalid response"
+        condition: TL parsing failure
+      - code: 500
+        message: "Receive wrong bot"
+        condition: user_id mismatch
+
+  toggle_bot_is_added_to_attach_menu:
+    errors:
+      - code: 400
+        message: "Can't reload attachment menu bot"
+        condition: !is_active()
+      - code: 400
+        message: "The bot can't be added to attachment menu"
+        condition: Bot missing can_be_added_to_attach_menu flag
+
+  get_attach_menu_bot:
+    errors:
+      - code: 400
+        message: "Have no information about user {user_id}"
+        condition: User not accessible
+      - code: 500
+        message: "Have no icon for {user_id}"
+        condition: Default icon missing
+      - code: 500
+        message: "Receive invalid response"
+        condition: TL parsing failure
+
+# Caching strategy
+caching:
+  database_key: "attach_bots"
+  format: Binary log event (tdlib store/parse)
+  version: 3 (CACHE_VERSION constant)
+  
+  cache_validation:
+    - Check all user_ids are valid
+    - Check all default_icon_file_ids are valid
+    - Resolve user dependencies
+    - Check cache_version == CACHE_VERSION
+    - If outdated: Set hash to 0 to force reload
+  
+  file_source_tracking:
+    - Each bot gets unique FileSourceId
+    - All 9 icon FileIds registered to this source
+    - Source created on-demand via FileReferenceManager
+
+  reload_timing:
+    initial:
+      - On init: Immediate reload with hash=0
+      - On timeout: Random 60-120s after error
+    success:
+      - Schedule next reload: Random 3600-4800s (1-1.3 hours)
+    hash_based:
+      - If attachMenuBotsNotModified: No update, keep existing cache
+      - If hash unchanged: No update notification
+
+# Icon parsing logic
+icon_processing:
+  icon_name_mapping:
+    default_static: default_icon_file_id
+    ios_static: ios_static_icon_file_id
+    ios_animated: ios_animated_icon_file_id
+    android_animated: android_icon_file_id + color processing
+    macos_animated: macos_icon_file_id
+    android_side_menu_static: android_side_menu_icon_file_id
+    ios_side_menu_static: ios_side_menu_icon_file_id
+    macos_side_menu_static: macos_side_menu_icon_file_id
+    placeholder_static: placeholder_file_id
+  
+  color_extraction:
+    icon: android_animated
+    color_names:
+      - light_icon -> icon_color.light_color
+      - light_text -> name_color.light_color
+      - dark_icon -> icon_color.dark_color
+      - dark_text -> name_color.dark_color
+    validation:
+      - Alpha must be 0 or 0xFF
+      - RGB must be 0x000000 - 0xFFFFFF
+      - Both light and dark colors required for validity
+  
+  document_type_validation:
+    - *_static icons: Must be Document::Type::General
+    - *_animated icons: Must be Document::Type::Sticker
+
+# State machine
+state_machine:
+  states:
+    UNINITIALIZED:
+      description: Manager created but not initialized
+      transitions:
+        - to: INITIALIZED
+          trigger: init() called
+          action: Load from DB, register file sources, send initial update
+    
+    INITIALIZED:
+      description: Manager initialized and active
+      behavior:
+        - Accept all queries
+        - Periodic reloads scheduled
+      transitions:
+        - to: INACTIVE
+          trigger: Authorization lost or closing
+    
+    INACTIVE:
+      description: Manager not active (not authorized or closing)
+      behavior:
+        - Reject all queries with error
+        - No network operations
+  
+  events:
+    on_init:
+      - Check if active (authorized, not bot)
+      - Load from database if use_chat_info_database
+      - Validate cache version and dependencies
+      - Register file sources for all cached icons
+      - Send updateAttachmentMenuBots
+      - Trigger initial reload
+    
+    on_reload_success:
+      - Update hash
+      - Replace attach_menu_bots if changed
+      - Send update if changed
+      - Save to database
+      - Schedule next reload (3600-4800s)
+      - Resolve all pending promises
+    
+    on_reload_error:
+      - Schedule retry (60-120s)
+      - Resolve all pending promises with error
+    
+    on_bot_updated:
+      - If bot.is_added and in cache:
+        - Update if changed
+        - Send update if changed
+        - Save to database
+      - If bot.is_added and not in cache:
+        - Insert at beginning
+        - Send update
+        - Save to database
+
+# TDLib API mapping
+tdlib_api:
+  updates:
+    - name: updateAttachmentMenuBots
+      constructor: td_api::updateAttachmentMenuBots
+      trigger: Attach menu bot list changes
+      data: Vec<attachmentMenuBot>
+  
+  objects:
+    attachmentMenuBot:
+      tdlib: td_api::attachmentMenuBot
+      fields:
+        - user_id: int53
+        - supports_self_dialog: bool
+        - supports_user_dialogs: bool
+        - supports_bot_dialogs: bool
+        - supports_group_dialogs: bool
+        - supports_broadcast_dialogs: bool
+        - request_write_access: bool
+        - is_added: bool
+        - show_in_attach_menu: bool
+        - show_in_side_menu: bool
+        - side_menu_disclaimer_needed: bool
+        - name: string
+        - name_color: attachmentMenuBotColor
+        - default_icon: file
+        - ios_static_icon: file
+        - ios_animated_icon: file
+        - ios_side_menu_icon: file
+        - android_icon: file
+        - android_side_menu_icon: file
+        - macos_icon: file
+        - macos_side_menu_icon: file
+        - icon_color: attachmentMenuBotColor
+        - placeholder: file
+    
+    attachmentMenuBotColor:
+      tdlib: td_api::attachmentMenuBotColor
+      fields:
+        - light_color: int32
+        - dark_color: int32
+      nullable: true (if both colors are -1)
+
+# Implementation notes
+implementation_notes:
+  serialization:
+    - AttachMenuBot: Uses flag-based binary serialization
+    - 23 boolean flags control optional field presence
+    - FileId fields stored only if valid
+    - Color fields stored only if both values != -1
+    - Cache version stored only if != 0
+  
+  peer_type_defaults:
+    - Old cache (no support flags): Defaults to supporting self, user, and bot dialogs
+    - New cache: Uses explicit support flags
+  
+  icon_validation:
+    - Default icon is mandatory (validation fails if missing)
+    - Side menu icons are optional
+    - Invalid icon names are logged and skipped
+  
+  color_validation:
+    - Only android_animated icon should have colors
+    - Missing or invalid colors result in color reset to default
+    - Invalid alpha channel is logged but accepted
+  
+  concurrent_queries:
+    - reload_attach_menu_bots: Queues multiple concurrent requests
+    - get_attach_menu_bot: Executes immediately (no queuing)
+    - toggle_bot_is_added_to_attach_menu: Executes immediately
+
+# Estimates
+estimates:
+  loc:
+    target: 1200-1500
+    breakdown:
+      types: 300-400
+      manager_impl: 500-700
+      network_queries: 150-200
+      tests: 250-400
+  
+  tests:
+    target: 50-70
+    breakdown:
+      unit_tests: 30-40
+      integration_tests: 10-15
+      doc_tests: 10-15
+  
+  complexity: HIGH
+  reasons:
+    - 9 different icon types per bot
+    - Complex binary serialization with 23 flags
+    - File source tracking and management
+    - Network query handling with retries
+    - Database persistence with versioning
+    - State machine with multiple transitions
+    - Concurrent query queuing
+
+# Risks
+risks:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    description: UserManager, FileManager, DocumentsManager not implemented
+    mitigation: Create stub interfaces for required methods
+    impact: HIGH
+    outcome: TBD
+  
+  - id: R2
+    type: COMPLEX_SERIALIZATION
+    description: 23-flag serialization is error-prone
+    mitigation: Add comprehensive serialization tests
+    impact: MEDIUM
+    outcome: TBD
+  
+  - id: R3
+    type: FILE_SOURCE_TRACKING
+    description: FileSourceId creation requires FileReferenceManager
+    mitigation: Stub FileSourceId generation
+    impact: MEDIUM
+    outcome: TBD
+  
+  - id: R4
+    type: TL_TYPE_MISMATCH
+    description: TL Document type not available
+    mitigation: Create simplified Document stub
+    impact: LOW
+    outcome: TBD
+
+# Success criteria
+success_criteria:
+  code_quality:
+    - clippy_warnings: 0
+    - production_unwrap: 0
+    - public_api_docs: 100%
+  
+  test_coverage:
+    - total_tests: >=50
+    - test_pass_rate: 100%
+    - doc_tests: >=10
+  
+  functionality:
+    - All public methods implemented
+    - TL stubs created for all attachMenu* types
+    - Binary serialization working
+    - Cache version validation
+    - File source tracking (stub or real)

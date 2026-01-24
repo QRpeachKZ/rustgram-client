@@ -1,0 +1,128 @@
+spec:
+  module: saved_messages_manager
+  version: 0.1.0
+  created: 2026-01-13T13:30:00Z
+  updated: 2026-01-13T13:35:00Z
+  language: rust
+  complexity: medium
+  estimated_loc: 120
+  is_state_machine: false
+
+plan:
+  - item: Comprehend and Analyze TDLib Implementation
+  - item: Implement Core Types and Manager Structure
+  - item: Implement Topic Lifecycle and Event Handlers
+  - item: Implement Pin Management and History Operations
+  - item: Write Comprehensive Tests and Documentation
+  - item: Review and Verify Module Compliance
+
+success_criteria:
+  code_quality:
+    max_clippy_warnings: 0
+    production_unwrap_calls: 0
+    max_cyclomatic_complexity: 15
+  
+  test_coverage:
+    min_tests: 40
+    min_line_coverage: 80
+  
+  documentation:
+    public_api_docs_percent: 100
+    examples_required: true
+  
+  tdlib_alignment:
+    api_compatibility: strict
+
+dependency_matrix:
+  - type: DialogId
+    source: rustgram-types
+    constructor: from_user(), from_chat(), from_channel()
+    location: types/src/ids.rs:658-667
+    verified: true
+  
+  - type: MessageId
+    source: rustgram-types
+    constructor: new(), from_server_id()
+    location: types/src/ids.rs:355-393
+    verified: true
+  
+  - type: DraftMessage
+    source: NEW CRATE REQUIRED
+    constructor: TBD
+    location: crates/draft_message/src/lib.rs
+    verified: false
+  
+  - type: OrderedMessages
+    source: NEW CRATE REQUIRED
+    constructor: TBD
+    location: crates/ordered_messages/src/lib.rs
+    verified: false
+  
+  - type: MessagesInfo
+    source: NEW CRATE REQUIRED
+    constructor: TBD
+    location: crates/messages_info/src/lib.rs
+    verified: false
+
+risk_register:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    dependency: DraftMessage
+    mitigation: Create crates/draft_message module
+    impact: HIGH
+    status: BLOCKER
+  
+  - id: R2
+    type: MISSING_DEPENDENCY
+    dependency: OrderedMessages
+    mitigation: Create crates/ordered_messages module
+    impact: HIGH
+    status: BLOCKER
+  
+  - id: R3
+    type: MISSING_DEPENDENCY
+    dependency: MessagesInfo
+    mitigation: Create crates/messages_info module
+    impact: HIGH
+    status: BLOCKER
+  
+  - id: R4
+    type: STATE_COMPLEXITY
+    dependency: Topic state machine
+    mitigation: Builder pattern, state validation
+    impact: MEDIUM
+    status: MITIGATED
+  
+  - id: R5
+    type: SERIALIZATION
+    dependency: TL format compatibility
+    mitigation: Implement TlSerialize traits
+    impact: MEDIUM
+    status: MITIGATED
+  
+  - id: R6
+    type: THREAD_SAFETY
+    dependency: Concurrent access
+    mitigation: Use tokio::sync::Mutex
+    impact: MEDIUM
+    status: MITIGATED
+
+reference:
+  tdlib_header: references/td/td/telegram/SavedMessagesManager.h
+  tdlib_impl: references/td/td/telegram/SavedMessagesManager.cpp
+  topic_id_header: references/td/td/telegram/SavedMessagesTopicId.h
+
+api_methods:
+  - have_topic()
+  - get_topic_id()
+  - get_topic_ids()
+  - on_topic_message_added()
+  - on_topic_message_updated()
+  - on_topic_message_deleted()
+  - load_saved_messages_topics()
+  - load_monoforum_topics()
+  - get_saved_messages_topic_history()
+  - delete_saved_messages_topic_history()
+  - toggle_saved_messages_topic_is_pinned()
+  - set_pinned_saved_messages_topics()
+  - set_monoforum_topic_is_marked_as_unread()

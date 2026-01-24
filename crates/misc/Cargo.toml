@@ -1,0 +1,33 @@
+[package]
+name = "rustgram-misc"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Miscellaneous utility functions for Telegram MTProto client"
+
+[dependencies]
+# Error handling
+thiserror = { workspace = true }
+
+# Cryptography
+md5 = { workspace = true }
+
+# Re-use clean-input-string from venue crate
+rustgram-venue = { path = "../venue" }
+
+# Error types from types crate
+rustgram-types = { path = "../types" }
+
+# Logging
+tracing = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

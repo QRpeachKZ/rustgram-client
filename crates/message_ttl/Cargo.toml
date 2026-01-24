@@ -1,5 +1,5 @@
 [package]
-name = "rustgram-message_ttl"
+name = "rustgram-message-ttl"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

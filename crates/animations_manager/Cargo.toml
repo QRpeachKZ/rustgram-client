@@ -1,0 +1,39 @@
+[package]
+name = "rustgram-animations-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Animations manager for Telegram client"
+
+[dependencies]
+# Type system
+rustgram-types = { path = "../types" }
+rustgram-file-id = { path = "../file_id" }
+rustgram-file-source-id = { path = "../file_source-id" }
+rustgram-photo-size = { path = "../photo-size" }
+rustgram-animation-size = { path = "../animation-size" }
+rustgram-dimensions = { path = "../dimensions" }
+rustgram-secret-input-media = { path = "../secret_input-media" }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Concurrent collections
+dashmap = "6.1"
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+proptest = { workspace = true }

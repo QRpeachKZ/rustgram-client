@@ -1,0 +1,375 @@
+# Risk Register: paper_plane_adapter
+## TDLib Compatibility Adapter Implementation
+
+```yaml
+risks:
+  - id: "R1"
+    type: "UNRESOLVED_API"
+    status: "MITIGATED"
+    title: "tdlib API pattern differs from initial spec"
+    description: |
+      Initial spec assumed send/receive pattern similar to TDLib C FFI.
+      Analysis revealed tdlib Rust crate uses async functions pattern.
+    impact: "Medium"
+    probability: "Low"
+    mitigation: |
+      Phase 1 analysis confirmed tdlib Rust crate uses:
+      - tdlib::functions::* async functions
+      - Direct client.handle() calls
+      - NOT send/receive pattern
+      
+      Adapter will implement JSON-RPC over send/receive to match
+      paper-plane's expected TDLib API surface.
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: []
+    
+  - id: "R2"
+    type: "AUTH_STATE_MISMATCH"
+    status: "OPEN"
+    title: "TDLib auth states may not map 1:1 to rustgram"
+    description: |
+      TDLib authorizationState enum:
+      - authorizationStateWaitPhoneNumber
+      - authorizationStateWaitCode
+      - authorizationStateWaitPassword
+      - authorizationStateWaitRegistration
+      - authorizationStateReady
+      
+      rustgram AuthManager State enum may differ.
+    impact: "High"
+    probability: "Medium"
+    mitigation: |
+      Create state translation layer in src/state.rs:
+      - Map TDLib JSON states to rustgram State enum
+      - Handle unknown states with fallback
+      - Document state transitions in code
+      
+      Implementation strategy:
+      1. Audit rustgram AuthManager states
+      2. Create translation table (TDLib -> rustgram)
+      3. Add unit tests for each state transition
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: ["auth_manager state audit"]
+    
+  - id: "R3"
+    type: "UPDATE_THREADING"
+    status: "OPEN"
+    title: "glib main loop vs tokio runtime threading"
+    description: |
+      paper-plane uses glib main loop (GTK GUI).
+      rustgram uses tokio async runtime.
+      
+      Updates generated in tokio context must be consumed
+      in glib main loop without blocking.
+    impact: "Medium"
+    probability: "Medium"
+    mitigation: |
+      Use async-channel for thread-safe update delivery:
+      
+      ```rust
+      // In tokio context
+      let (tx, rx) = async_channel::bounded::<Update>(100);
+      
+      // Subscribe to ClientActor updates
+      let mut rx_actor = actor.subscribe_updates();
+      tokio::spawn(async move {
+          while let Some(update) = rx_actor.recv().await {
+              let _ = tx.send(update).await;
+          }
+      });
+      
+      // In glib main loop (polling)
+      if let Ok(update) = rx.try_recv() {
+          // Handle update
+      }
+      ```
+      
+      Channel capacity: 100-1000 (tunable based on testing)
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: ["async_channel prototyping"]
+    
+  - id: "R4"
+    type: "JSON_SERIALIZATION"
+    status: "OPEN"
+    title: "TL types may not serialize to JSON like TDLib"
+    description: |
+      TDLib JSON format has specific structure:
+      ```json
+      {
+        "@type": "message",
+        "id": 12345,
+        "content": {
+          "@type": "messageText",
+          "text": {
+            "@type": "formattedText",
+            "text": "Hello"
+          }
+        }
+      }
+      ```
+      
+      rustgram TL types may serialize differently.
+    impact: "Medium"
+    probability: "Medium"
+    mitigation: |
+      Add JSON transformation layer in request_mapper:
+      
+      1. Define TDLib-compatible JSON structs
+      2. Convert rustgram types -> TDLib JSON format
+      3. Handle @type, @extra fields
+      
+      Example:
+      ```rust
+      #[derive(Serialize)]
+      struct TdMessage {
+          #[serde(rename = "@type")]
+          td_type: String,  // "message"
+          id: i32,
+          content: TdMessageContent,
+      }
+      
+      impl From<rustgram_types::Message> for TdMessage {
+          fn from(msg: rustgram_types::Message) -> Self {
+              TdMessage {
+                  td_type: "message".to_string(),
+                  id: msg.id.get(),
+                  content: msg.content.into(),
+              }
+          }
+      }
+      ```
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: ["TDLib JSON schema definition"]
+    
+  - id: "R5"
+    type: "CLIENT_ID_MISMATCH"
+    status: "OPEN"
+    title: "TDLib uses i32 for ClientId"
+    description: |
+      TDLib C API: int32_t client_id = td_create_client_id();
+      TDLib Rust crate: ClientId(i32)
+      
+      rustgram ClientActor uses Arc<...> handles, not integer IDs.
+    impact: "Low"
+    probability: "Low"
+    mitigation: |
+      Create ClientId wrapper type with bidirectional conversion:
+      
+      ```rust
+      #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+      pub struct ClientId(i32);
+      
+      impl ClientId {
+          fn new() -> Self {
+              use std::sync::atomic::{AtomicI32, Ordering};
+              static NEXT_ID: AtomicI32 = AtomicI32::new(1);
+              Self(NEXT_ID.fetch_add(1, Ordering::Relaxed))
+          }
+          
+          fn get(&self) -> i32 {
+              self.0
+          }
+      }
+      
+      // ClientRegistry maps ClientId -> Arc<ClientActor>
+      type ClientRegistry = HashMap<ClientId, Arc<ClientActor>>;
+      ```
+      
+      Zero runtime overhead, provides type safety.
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: []
+    
+  - id: "R6"
+    type: "MANAGER_API_AVAILABILITY"
+    status: "OPEN"
+    title: "messages_manager API may not match expected interface"
+    description: |
+      Adapter expects these methods:
+      - send_message(dialog_id, content, reply_to) -> MessageId
+      - get_history(dialog_id, offset, limit, from_msg_id) -> Vec<Message>
+      - get_messages(&[MessageId]) -> Vec<Message>
+      
+      Actual messages_manager API may differ.
+    impact: "High"
+    probability: "Medium"
+    mitigation: |
+      Verification steps (Phase 2.5):
+      1. Read messages_manager/src/lib.rs
+      2. Check if methods exist
+      3. Note signature differences
+      4. Create adapter wrapper if needed
+      
+      Example wrapper (if needed):
+      ```rust
+      async fn send_message_adapter(
+          &self,
+          dialog_id: DialogId,
+          content: MessageContent,
+          reply_to: Option<MessageId>,
+      ) -> Result<MessageId, AdapterError> {
+          // Translate parameters if needed
+          let input_dialog = self.to_input_peer(dialog_id)?;
+          
+          // Call actual manager
+          self.messages_manager
+              .send(input_dialog, content, reply_to)
+              .await
+              .map_err(AdapterError::from)
+      }
+      ```
+    owner: "Phase 2.5 (Verification Gate)"
+    is_blocker: true
+    dependencies: ["messages_manager API audit"]
+    
+  - id: "R7"
+    type: "ASYNC_CHANNEL_CAPACITY"
+    status: "OPEN"
+    title: "async_channel capacity limits during update storm"
+    description: |
+      During high message throughput (e.g., active group chat),
+      updates may arrive faster than glib main loop consumes them.
+      
+      Bounded channel will block or drop updates when full.
+    impact: "Medium"
+    probability: "Medium"
+    mitigation: |
+      Multi-layered strategy:
+      
+      1. **Tunable channel capacity**:
+         ```rust
+         const UPDATE_CHANNEL_CAPACITY: usize = 500;  // Default
+         ```
+      
+      2. **Overflow handling**:
+         ```rust
+         match tx.try_send(update) {
+              Ok(()) => {},
+              Err(async_channel::TrySendError::Full(update)) => {
+                  // Log warning, optionally buffer to disk
+                  tracing::warn!("Update channel full, dropping update");
+              }
+              Err(e) => {},
+         }
+         ```
+      
+      3. **Priority queue** (optional enhancement):
+         - High-priority: auth state changes, new messages
+         - Low-priority: user status updates, typing indicators
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: ["load testing"]
+    
+  - id: "R8"
+    type: "ERROR_PROPAGATION"
+    status: "OPEN"
+    title: "Manager errors may not map to TDLib error format"
+    description: |
+      TDLib errors have specific JSON structure:
+      ```json
+      {
+        "@type": "error",
+        "code": 400,
+        "message": "PHONE_CODE_INVALID"
+      }
+      ```
+      
+      rustgram managers use thiserror::Error.
+    impact: "Medium"
+    probability: "Low"
+    mitigation: |
+      Error translation layer:
+      
+      ```rust
+      impl From<ManagerError> for TdError {
+          fn from(err: ManagerError) -> Self {
+              match err {
+                  ManagerError::NetworkError(msg) => TdError {
+                      code: 500,
+                      message: "NETWORK_ERROR".to_string(),
+                  },
+                  ManagerError::InvalidInput => TdError {
+                      code: 400,
+                      message: "INVALID_ARGUMENTS".to_string(),
+                  },
+                  // ... map all variants
+              }
+          }
+      }
+      ```
+    owner: "Phase 3"
+    is_blocker: false
+    dependencies: []
+
+risk_matrix:
+  high_impact_high_probability:
+    - "R6: MANAGER_API_AVAILABILITY (BLOCKER)"
+    
+  high_impact_medium_probability:
+    - "R2: AUTH_STATE_MISMATCH"
+    - "R4: JSON_SERIALIZATION"
+    
+  medium_impact_medium_probability:
+    - "R3: UPDATE_THREADING"
+    - "R7: ASYNC_CHANNEL_CAPACITY"
+    - "R8: ERROR_PROPAGATION"
+    
+  low_impact_low_probability:
+    - "R1: UNRESOLVED_API (MITIGATED)"
+    - "R5: CLIENT_ID_MISMATCH"
+
+blocker_risks:
+  - id: "R6"
+    reason: "messages_manager API must be verified before implementation"
+    unblock_action: "Audit messages_manager API in Phase 2.5"
+    contingency: "If API mismatch, create wrapper layer in adapter"
+
+mitigation_timeline:
+  phase_2_5:
+    - "R6: Verify messages_manager API"
+    - "R2: Audit AuthManager states"
+    
+  phase_3:
+    - "R3: Implement async_channel bridge"
+    - "R4: Create JSON transformation layer"
+    - "R5: Implement ClientId wrapper"
+    - "R7: Add overflow handling"
+    - "R8: Implement error translation"
+    
+  phase_4:
+    - "Load testing for R7"
+    - "Stress testing update channel"
+```
+
+## Risk Acceptance Criteria
+
+| Risk | Acceptable If | Owner |
+|------|---------------|-------|
+| R1 | ✅ MITIGATED - async functions pattern confirmed | Phase 1 |
+| R2 | State translation layer implemented with tests | Phase 3 |
+| R3 | async_channel prototyped and tested | Phase 3 |
+| R4 | JSON transformation layer covers all used types | Phase 3 |
+| R5 | ClientId wrapper with bidirectional conversion | Phase 3 |
+| R6 | ⛔ MUST VERIFY before Phase 3 | Phase 2.5 |
+| R7 | Overflow handling + tunable capacity parameter | Phase 3 |
+| R8 | Error mapping covers all manager error types | Phase 3 |
+
+## Risk Review Process
+
+1. **Phase 2.5 (Verification Gate)**: Review all OPEN risks
+2. **Phase 3 (Development)**: Implement mitigations, update status
+3. **Phase 5 (Review Gate)**: Final risk assessment
+
+## Risk Metrics
+
+| Category | Count | Blockers | Mitigated |
+|----------|-------|----------|-----------|
+| API Risks | 2 | 1 (R6) | 1 (R1) |
+| Threading Risks | 1 | 0 | 0 |
+| Serialization Risks | 2 | 0 | 0 |
+| Type Mapping Risks | 3 | 0 | 0 |
+| **Total** | **8** | **1** | **1** |

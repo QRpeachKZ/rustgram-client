@@ -1,0 +1,6976 @@
+{
+  "total_crates": 396,
+  "categories": {
+    "critical": [
+      "actor",
+      "auth",
+      "auth_manager",
+      "client_actor",
+      "crypto",
+      "dialog_manager",
+      "message_db",
+      "net",
+      "password_manager",
+      "secure_storage",
+      "storage",
+      "td_db",
+      "user_manager"
+    ],
+    "manager": [
+      "access_rights",
+      "account_manager",
+      "active_story_state",
+      "affected_history",
+      "affiliate_type",
+      "age_verification_parameters",
+      "alarm_manager",
+      "animations_manager",
+      "attach_menu_manager",
+      "audios_manager",
+      "auto_download_settings",
+      "autosave_manager",
+      "background_info",
+      "background_manager",
+      "background_type",
+      "base_theme",
+      "birthdate",
+      "boost_manager",
+      "bot_command",
+      "bot_command_scope",
+      "bot_info_manager",
+      "bot_queries",
+      "bot_recommendation_manager",
+      "bot_verification",
+      "bot_verifier_settings",
+      "business_away_message",
+      "business_away_message_schedule",
+      "business_bot_manage_bar",
+      "business_bot_rights",
+      "business_connected_bot",
+      "business_connection_manager",
+      "business_greeting_message",
+      "business_intro",
+      "business_manager",
+      "business_recipients",
+      "business_work_hours",
+      "call_actor",
+      "call_manager",
+      "callback_queries_manager",
+      "changes_processor",
+      "channel_participant_filter",
+      "channel_recommendation_manager",
+      "channel_type",
+      "chat_manager",
+      "chat_reactions",
+      "chat_theme",
+      "common_dialog_manager",
+      "connection_state",
+      "connection_state_manager",
+      "connectionstate",
+      "contact",
+      "country_info_manager",
+      "currency_amount",
+      "delay_dispatcher",
+      "device_token_manager",
+      "dh_cache",
+      "dh_config",
+      "dialog-location",
+      "dialog-notification-settings",
+      "dialog-participant",
+      "dialog-participant-filter",
+      "dialog-photo",
+      "dialog-source",
+      "dialog_action_manager",
+      "dialog_administrator",
+      "dialog_boost_link_info",
+      "dialog_date",
+      "dialog_filter_dialog_info",
+      "dialog_filter_invite_link",
+      "dialog_filter_manager",
+      "dialog_invite_link_manager",
+      "dialog_participant_manager",
+      "dialog_source",
+      "dimensions",
+      "document",
+      "documents_manager",
+      "download_manager",
+      "email_verification",
+      "emoji_group",
+      "emoji_group_type",
+      "emoji_status",
+      "encrypted_file",
+      "file_bitmask",
+      "file_downloader",
+      "file_encryption_key",
+      "file_gc_parameters",
+      "file_loader_utils",
+      "file_location",
+      "file_reference_manager",
+      "file_type",
+      "file_uploader",
+      "formatted_text",
+      "forum_topic",
+      "forum_topic_edited_data",
+      "forum_topic_icon",
+      "forum_topic_info",
+      "forum_topic_manager",
+      "game",
+      "giveaway_parameters",
+      "global_privacy_settings",
+      "group_call_join_parameters",
+      "group_call_manager",
+      "group_call_message",
+      "group_call_message_limit",
+      "group_call_participant",
+      "group_call_participant_order",
+      "group_call_video_payload",
+      "inline_message_manager",
+      "inline_queries_manager",
+      "input_business_chat_link",
+      "input_group_call",
+      "input_message_text",
+      "json_value",
+      "labeled_price_part",
+      "language_pack_manager",
+      "link_manager",
+      "log",
+      "media_area",
+      "media_area_coordinates",
+      "message_content_type",
+      "message_copy_options",
+      "message_extended_media",
+      "message_forward_info",
+      "message_import_manager",
+      "message_input_reply_to",
+      "message_origin",
+      "message_query_manager",
+      "message_quote",
+      "message_reactor",
+      "message_search_filter",
+      "message_search_offset",
+      "message_self_destruct_type",
+      "message_sender",
+      "message_source",
+      "message_thread_db",
+      "message_thread_info",
+      "message_topic",
+      "message_ttl",
+      "message_viewer",
+      "messages-manager",
+      "min_channel",
+      "misc",
+      "missing_invitee",
+      "new_password_state",
+      "notification",
+      "notification_group_from_database",
+      "notification_group_info",
+      "notification_group_key",
+      "notification_group_type",
+      "option_manager",
+      "ordered_messages",
+      "paid_reaction_type",
+      "parts_manager",
+      "passkey",
+      "peer_color",
+      "peer_color_collectible",
+      "phone_number_manager",
+      "photo",
+      "photo_format",
+      "photo_size_source",
+      "photo_size_type",
+      "poll_manager",
+      "premium",
+      "premium_gift_option",
+      "privacy_manager",
+      "profile_tab",
+      "promo_data_manager",
+      "pts_manager",
+      "public_dialog_type",
+      "quick_reply_manager",
+      "reaction_list_type",
+      "reaction_manager",
+      "reaction_type",
+      "recent_dialog_list",
+      "referral_program_info",
+      "referral_program_manager",
+      "referral_program_parameters",
+      "referral_program_sort_order",
+      "replied_message_info",
+      "report_reason",
+      "resource_manager",
+      "restriction_reason",
+      "saved_messages_manager",
+      "search_posts_flood",
+      "secret_chat_db",
+      "secret_chat_layer",
+      "secure_value",
+      "send_code_helper",
+      "sent_email_code",
+      "sequence_dispatcher",
+      "set_with_position",
+      "shared_dialog",
+      "star_amount",
+      "star_gift",
+      "star_gift_attribute",
+      "star_gift_auction_round",
+      "star_gift_auction_state",
+      "star_gift_background",
+      "star_gift_resale_price",
+      "star_gift_settings",
+      "star_manager",
+      "star_rating",
+      "star_subscription_pricing",
+      "state_manager",
+      "statistics_manager",
+      "sticker_format",
+      "sticker_list_type",
+      "sticker_mask_position",
+      "sticker_photo_size",
+      "sticker_set_info",
+      "sticker_set_type",
+      "sticker_type",
+      "stickers_manager",
+      "stickersetid",
+      "story_content_type",
+      "story_forward_info",
+      "story_notification_settings",
+      "story_stealth_mode",
+      "suggested_action",
+      "suggested_action_manager",
+      "suggested_post",
+      "suggested_post_price",
+      "support",
+      "synchronous_requests",
+      "td_c_client",
+      "td_callback",
+      "td_json_client",
+      "td_log",
+      "temp_password_state",
+      "terms_of_service",
+      "terms_of_service_manager",
+      "theme",
+      "theme_manager",
+      "theme_settings",
+      "time_zone_manager",
+      "todo_completion",
+      "todo_item",
+      "todo_list",
+      "ton_amount",
+      "top_dialog_category",
+      "top_dialog_manager",
+      "transcription_info",
+      "transcription_manager",
+      "translation_manager",
+      "updates_manager",
+      "user_privacy_setting",
+      "user_privacy_setting_rule",
+      "user_star_gift",
+      "user_status",
+      "usernames",
+      "venue",
+      "verification_status",
+      "version",
+      "video_notes_manager",
+      "videos_manager",
+      "voice_notes_manager",
+      "web_app",
+      "web_app_manager",
+      "web_app_open_parameters",
+      "web_page_block",
+      "web_pages_manager"
+    ],
+    "type": [
+      "accent_color_id",
+      "background_id",
+      "block_list_id",
+      "bot_menu_button",
+      "business_connection_id",
+      "call_discard_reason",
+      "call_id",
+      "chain_id",
+      "custom_emoji_id",
+      "dialog_filter_id",
+      "dialog_id",
+      "dialog_list_id",
+      "file_db_id",
+      "file_id",
+      "file_source_id",
+      "file_upload_id",
+      "folder_id",
+      "forum_topic_full_id",
+      "forum_topic_id",
+      "group_call_id",
+      "input_dialog_id",
+      "input_group_call_id",
+      "message_effect_id",
+      "message_full_id",
+      "message_id",
+      "notification_group_id",
+      "notification_id",
+      "notification_object_id",
+      "poll_id",
+      "query_combiner",
+      "query_merger",
+      "quick_reply_message_full_id",
+      "quick_reply_shortcut_id",
+      "reaction_notification_settings",
+      "reaction_notifications_from",
+      "reaction_unavailability_reason",
+      "scheduled_server_message_id",
+      "server_message_id",
+      "star_gift_attribute_id",
+      "star_gift_auction_user_state",
+      "star_gift_collection_id",
+      "star_gift_id",
+      "sticker_set_id",
+      "story_album_id",
+      "story_full_id",
+      "story_id",
+      "story_list_id",
+      "unique_id",
+      "user_id",
+      "web_page_id"
+    ],
+    "stub": [
+      "animation_size",
+      "application",
+      "auction_bid_level",
+      "boost",
+      "buffer",
+      "business_chat_link",
+      "business_info",
+      "config",
+      "dialog-action",
+      "dialog_participant",
+      "download_manager_callback",
+      "draft_message",
+      "fact_check",
+      "git_commit_hash",
+      "global",
+      "hashtag_hints",
+      "input_invoice",
+      "logevent",
+      "message-types",
+      "message_auto_delete_time",
+      "message_content",
+      "message_entity",
+      "message_link_info",
+      "message_reply_header",
+      "message_reply_info",
+      "messages_info",
+      "notification-manager",
+      "notification-settings-manager",
+      "notification_type",
+      "online-manager",
+      "people_nearby",
+      "photo_size",
+      "promise",
+      "reply_markup",
+      "request_actor",
+      "requested_dialog_type",
+      "requests",
+      "scope_notification_settings",
+      "secret_chat_actor",
+      "secret_input_media",
+      "special_sticker_set_type",
+      "sponsored_message_message",
+      "sponsored_message_type",
+      "star_gift_collection",
+      "star_subscription",
+      "story_album",
+      "story_content",
+      "story_db",
+      "story_interaction_info",
+      "story_viewer",
+      "subscription_pricing",
+      "subscription_type",
+      "target_dialog_types",
+      "td",
+      "theme_object",
+      "theme_parameters",
+      "time_zone",
+      "toggle_message_ids_top_peers",
+      "top_chat_category",
+      "top_peer_category",
+      "types",
+      "url_authenticator",
+      "user",
+      "user_full_info",
+      "user_info",
+      "user_profile_photo",
+      "user_type",
+      "video_note",
+      "voice_note",
+      "web_app_instant_view",
+      "web_page",
+      "web_page_type"
+    ]
+  },
+  "crates": {
+    "accent_color_id": {
+      "name": "accent_color_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/accent_color_id",
+      "category": "type",
+      "loc": 117,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "access_rights": {
+      "name": "access_rights",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/access_rights",
+      "category": "manager",
+      "loc": 354,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "account_manager": {
+      "name": "account_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/account_manager",
+      "category": "manager",
+      "loc": 3067,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-age-verification-parameters",
+        "serde",
+        "serde_json",
+        "tokio",
+        "dashmap",
+        "thiserror",
+        "tracing",
+        "rstest",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "active_story_state": {
+      "name": "active_story_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/active_story_state",
+      "category": "manager",
+      "loc": 752,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "actor": {
+      "name": "actor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/actor",
+      "category": "critical",
+      "loc": 433,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P0"
+    },
+    "affected_history": {
+      "name": "affected_history",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/affected_history",
+      "category": "manager",
+      "loc": 417,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "affiliate_type": {
+      "name": "affiliate_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/affiliate_type",
+      "category": "manager",
+      "loc": 313,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "age_verification_parameters": {
+      "name": "age_verification_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/age_verification_parameters",
+      "category": "manager",
+      "loc": 478,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "alarm_manager": {
+      "name": "alarm_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/alarm_manager",
+      "category": "manager",
+      "loc": 672,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "tokio",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "animation_size": {
+      "name": "animation_size",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/animation_size",
+      "category": "stub",
+      "loc": 39,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [
+        "rustgram-file-id",
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "animations_manager": {
+      "name": "animations_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/animations_manager",
+      "category": "manager",
+      "loc": 3133,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "rustgram-photo-size",
+        "rustgram-animation-size",
+        "rustgram-dimensions",
+        "rustgram-secret-input-media",
+        "serde",
+        "serde_json",
+        "tokio",
+        "dashmap",
+        "thiserror",
+        "tracing",
+        "rstest",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "application": {
+      "name": "application",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/application",
+      "category": "stub",
+      "loc": 300,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "attach_menu_manager": {
+      "name": "attach_menu_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/attach_menu_manager",
+      "category": "manager",
+      "loc": 2208,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "serde",
+        "serde_json",
+        "tokio",
+        "dashmap",
+        "thiserror",
+        "tracing",
+        "rstest",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "auction_bid_level": {
+      "name": "auction_bid_level",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/auction_bid_level",
+      "category": "stub",
+      "loc": 601,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "audios_manager": {
+      "name": "audios_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/audios_manager",
+      "category": "manager",
+      "loc": 597,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-photo-size",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "auth": {
+      "name": "auth",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/auth",
+      "category": "critical",
+      "loc": 3494,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "base64",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "auth_manager": {
+      "name": "auth_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/auth_manager",
+      "category": "critical",
+      "loc": 1185,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "serde",
+        "rustgram-types",
+        "rustgram-net",
+        "rustgram-auth",
+        "rustgram-terms-of-service",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "auto_download_settings": {
+      "name": "auto_download_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/auto_download_settings",
+      "category": "manager",
+      "loc": 791,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "autosave_manager": {
+      "name": "autosave_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/autosave_manager",
+      "category": "manager",
+      "loc": 969,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "background_id": {
+      "name": "background_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/background_id",
+      "category": "type",
+      "loc": 279,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "background_info": {
+      "name": "background_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/background_info",
+      "category": "manager",
+      "loc": 447,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "background_manager": {
+      "name": "background_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/background_manager",
+      "category": "manager",
+      "loc": 1126,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-background-id",
+        "rustgram-background-type",
+        "rustgram-dialog-id",
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "rustgram-file-upload-id",
+        "rustgram-types",
+        "rustgram-logevent",
+        "serde",
+        "thiserror",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "background_type": {
+      "name": "background_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/background_type",
+      "category": "manager",
+      "loc": 798,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "base_theme": {
+      "name": "base_theme",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/base_theme",
+      "category": "manager",
+      "loc": 447,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "birthdate": {
+      "name": "birthdate",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/birthdate",
+      "category": "manager",
+      "loc": 1123,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tracing",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "block_list_id": {
+      "name": "block_list_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/block_list_id",
+      "category": "type",
+      "loc": 331,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "boost": {
+      "name": "boost",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/boost",
+      "category": "stub",
+      "loc": 1272,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "boost_manager": {
+      "name": "boost_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/boost_manager",
+      "category": "manager",
+      "loc": 878,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-boost",
+        "rustgram-dialog-id",
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_command": {
+      "name": "bot_command",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_command",
+      "category": "manager",
+      "loc": 109,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_command_scope": {
+      "name": "bot_command_scope",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_command_scope",
+      "category": "manager",
+      "loc": 236,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_info_manager": {
+      "name": "bot_info_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_info_manager",
+      "category": "manager",
+      "loc": 1144,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-dialog-participant",
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "rustgram-file-upload-id",
+        "rustgram-types",
+        "rustgram-story-content",
+        "rustgram-requested-dialog-type",
+        "serde",
+        "thiserror",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_menu_button": {
+      "name": "bot_menu_button",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_menu_button",
+      "category": "type",
+      "loc": 95,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "bot_queries": {
+      "name": "bot_queries",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_queries",
+      "category": "manager",
+      "loc": 250,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_recommendation_manager": {
+      "name": "bot_recommendation_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_recommendation_manager",
+      "category": "manager",
+      "loc": 716,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-bot-command",
+        "rustgram-bot-command-scope",
+        "rustgram-bot-menu-button",
+        "serde",
+        "thiserror",
+        "tokio",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_verification": {
+      "name": "bot_verification",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_verification",
+      "category": "manager",
+      "loc": 917,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-formatted-text",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "bot_verifier_settings": {
+      "name": "bot_verifier_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/bot_verifier_settings",
+      "category": "manager",
+      "loc": 154,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-custom-emoji-id",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "buffer": {
+      "name": "buffer",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/buffer",
+      "category": "stub",
+      "loc": 636,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "bytes"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "business_away_message": {
+      "name": "business_away_message",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_away_message",
+      "category": "manager",
+      "loc": 1149,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_away_message_schedule": {
+      "name": "business_away_message_schedule",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_away_message_schedule",
+      "category": "manager",
+      "loc": 467,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_bot_manage_bar": {
+      "name": "business_bot_manage_bar",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_bot_manage_bar",
+      "category": "manager",
+      "loc": 636,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_bot_rights": {
+      "name": "business_bot_rights",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_bot_rights",
+      "category": "manager",
+      "loc": 693,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_chat_link": {
+      "name": "business_chat_link",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_chat_link",
+      "category": "stub",
+      "loc": 822,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "business_connected_bot": {
+      "name": "business_connected_bot",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_connected_bot",
+      "category": "manager",
+      "loc": 1824,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "proptest",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_connection_id": {
+      "name": "business_connection_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_connection_id",
+      "category": "type",
+      "loc": 289,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "business_connection_manager": {
+      "name": "business_connection_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_connection_manager",
+      "category": "manager",
+      "loc": 2036,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-business-connection-id",
+        "rustgram-message-input-reply-to",
+        "rustgram-message-types",
+        "rustgram-reply-markup",
+        "rustgram-net",
+        "rustgram-file-upload-id",
+        "rustgram-star-amount",
+        "serde",
+        "thiserror",
+        "tokio",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_greeting_message": {
+      "name": "business_greeting_message",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_greeting_message",
+      "category": "manager",
+      "loc": 1191,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_info": {
+      "name": "business_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_info",
+      "category": "stub",
+      "loc": 721,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "business_intro": {
+      "name": "business_intro",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_intro",
+      "category": "manager",
+      "loc": 593,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_manager": {
+      "name": "business_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_manager",
+      "category": "manager",
+      "loc": 1235,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-business-connected-bot",
+        "rustgram-business-chat-link",
+        "rustgram-business-away-message",
+        "rustgram-business-greeting-message",
+        "rustgram-business-intro",
+        "rustgram-input-business-chat-link",
+        "rustgram-formatted-text",
+        "serde",
+        "thiserror",
+        "tokio",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_recipients": {
+      "name": "business_recipients",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_recipients",
+      "category": "manager",
+      "loc": 647,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "business_work_hours": {
+      "name": "business_work_hours",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/business_work_hours",
+      "category": "manager",
+      "loc": 656,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "call_actor": {
+      "name": "call_actor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/call_actor",
+      "category": "manager",
+      "loc": 1070,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-call-id",
+        "rustgram-call-discard-reason",
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "call_discard_reason": {
+      "name": "call_discard_reason",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/call_discard_reason",
+      "category": "type",
+      "loc": 44,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "call_id": {
+      "name": "call_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/call_id",
+      "category": "type",
+      "loc": 228,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "call_manager": {
+      "name": "call_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/call_manager",
+      "category": "manager",
+      "loc": 1247,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-call-id",
+        "rustgram-call-discard-reason",
+        "rustgram-types",
+        "thiserror.workspace",
+        "serde",
+        "tokio",
+        "hex.workspace",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "callback_queries_manager": {
+      "name": "callback_queries_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/callback_queries_manager",
+      "category": "manager",
+      "loc": 1014,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-message-full-id",
+        "thiserror.workspace",
+        "serde",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "chain_id": {
+      "name": "chain_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/chain_id",
+      "category": "type",
+      "loc": 123,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "changes_processor": {
+      "name": "changes_processor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/changes_processor",
+      "category": "manager",
+      "loc": 583,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "channel_participant_filter": {
+      "name": "channel_participant_filter",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/channel_participant_filter",
+      "category": "manager",
+      "loc": 228,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "channel_recommendation_manager": {
+      "name": "channel_recommendation_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/channel_recommendation_manager",
+      "category": "manager",
+      "loc": 719,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror.workspace",
+        "serde",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "channel_type": {
+      "name": "channel_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/channel_type",
+      "category": "manager",
+      "loc": 282,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "chat_manager": {
+      "name": "chat_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/chat_manager",
+      "category": "manager",
+      "loc": 1909,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "chat_reactions": {
+      "name": "chat_reactions",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/chat_reactions",
+      "category": "manager",
+      "loc": 824,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-reaction-type",
+        "thiserror",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "chat_theme": {
+      "name": "chat_theme",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/chat_theme",
+      "category": "manager",
+      "loc": 107,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "client_actor": {
+      "name": "client_actor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/client_actor",
+      "category": "critical",
+      "loc": 719,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "common_dialog_manager": {
+      "name": "common_dialog_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/common_dialog_manager",
+      "category": "manager",
+      "loc": 1026,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "config": {
+      "name": "config",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/config",
+      "category": "stub",
+      "loc": 2148,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-net",
+        "bytes",
+        "thiserror",
+        "tracing",
+        "tokio",
+        "async-trait",
+        "hex",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "connection_state": {
+      "name": "connection_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/connection_state",
+      "category": "manager",
+      "loc": 407,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "connection_state_manager": {
+      "name": "connection_state_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/connection_state_manager",
+      "category": "manager",
+      "loc": 747,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-connectionstate",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "connectionstate": {
+      "name": "connectionstate",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/connectionstate",
+      "category": "manager",
+      "loc": 1155,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "contact": {
+      "name": "contact",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/contact",
+      "category": "manager",
+      "loc": 135,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "country_info_manager": {
+      "name": "country_info_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/country_info_manager",
+      "category": "manager",
+      "loc": 1045,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tracing",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "crypto": {
+      "name": "crypto",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/crypto",
+      "category": "critical",
+      "loc": 715,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "hex"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P0"
+    },
+    "currency_amount": {
+      "name": "currency_amount",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/currency_amount",
+      "category": "manager",
+      "loc": 464,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-star-amount",
+        "rustgram-ton-amount",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "custom_emoji_id": {
+      "name": "custom_emoji_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/custom_emoji_id",
+      "category": "type",
+      "loc": 99,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "delay_dispatcher": {
+      "name": "delay_dispatcher",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/delay_dispatcher",
+      "category": "manager",
+      "loc": 527,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-net",
+        "tokio",
+        "serde",
+        "tracing",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "device_token_manager": {
+      "name": "device_token_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/device_token_manager",
+      "category": "manager",
+      "loc": 905,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tracing",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dh_cache": {
+      "name": "dh_cache",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dh_cache",
+      "category": "manager",
+      "loc": 634,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dh_config": {
+      "name": "dh_config",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dh_config",
+      "category": "manager",
+      "loc": 657,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "hex",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-action": {
+      "name": "dialog-action",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-action",
+      "category": "stub",
+      "loc": 4,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "dialog-location": {
+      "name": "dialog-location",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-location",
+      "category": "manager",
+      "loc": 380,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-notification-settings": {
+      "name": "dialog-notification-settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-notification-settings",
+      "category": "manager",
+      "loc": 658,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-participant": {
+      "name": "dialog-participant",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-participant",
+      "category": "manager",
+      "loc": 645,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-participant-filter": {
+      "name": "dialog-participant-filter",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-participant-filter",
+      "category": "manager",
+      "loc": 608,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-photo": {
+      "name": "dialog-photo",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-photo",
+      "category": "manager",
+      "loc": 466,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog-source": {
+      "name": "dialog-source",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog-source",
+      "category": "manager",
+      "loc": 577,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_action_manager": {
+      "name": "dialog_action_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_action_manager",
+      "category": "manager",
+      "loc": 967,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_administrator": {
+      "name": "dialog_administrator",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_administrator",
+      "category": "manager",
+      "loc": 753,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tracing",
+        "serde",
+        "proptest",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_boost_link_info": {
+      "name": "dialog_boost_link_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_boost_link_info",
+      "category": "manager",
+      "loc": 532,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_date": {
+      "name": "dialog_date",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_date",
+      "category": "manager",
+      "loc": 623,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-server-message-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_filter_dialog_info": {
+      "name": "dialog_filter_dialog_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_filter_dialog_info",
+      "category": "manager",
+      "loc": 722,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-folder-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_filter_id": {
+      "name": "dialog_filter_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_filter_id",
+      "category": "type",
+      "loc": 421,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "dialog_filter_invite_link": {
+      "name": "dialog_filter_invite_link",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_filter_invite_link",
+      "category": "manager",
+      "loc": 682,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_filter_manager": {
+      "name": "dialog_filter_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_filter_manager",
+      "category": "manager",
+      "loc": 1546,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-chat-manager",
+        "serde",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_id": {
+      "name": "dialog_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_id",
+      "category": "type",
+      "loc": 374,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "dialog_invite_link_manager": {
+      "name": "dialog_invite_link_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_invite_link_manager",
+      "category": "manager",
+      "loc": 1327,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_list_id": {
+      "name": "dialog_list_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_list_id",
+      "category": "type",
+      "loc": 555,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "rustgram-dialog-filter-id",
+        "rustgram-folder-id",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "dialog_manager": {
+      "name": "dialog_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_manager",
+      "category": "critical",
+      "loc": 1566,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-chat-manager",
+        "serde",
+        "thiserror"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "dialog_participant": {
+      "name": "dialog_participant",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_participant",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "dialog_participant_manager": {
+      "name": "dialog_participant_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_participant_manager",
+      "category": "manager",
+      "loc": 928,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-participant",
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dialog_source": {
+      "name": "dialog_source",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dialog_source",
+      "category": "manager",
+      "loc": 601,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "dimensions": {
+      "name": "dimensions",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/dimensions",
+      "category": "manager",
+      "loc": 482,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "document": {
+      "name": "document",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/document",
+      "category": "manager",
+      "loc": 298,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "documents_manager": {
+      "name": "documents_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/documents_manager",
+      "category": "manager",
+      "loc": 565,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-document",
+        "rustgram-file-id",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "download_manager": {
+      "name": "download_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/download_manager",
+      "category": "manager",
+      "loc": 861,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "download_manager_callback": {
+      "name": "download_manager_callback",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/download_manager_callback",
+      "category": "stub",
+      "loc": 875,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "draft_message": {
+      "name": "draft_message",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/draft_message",
+      "category": "stub",
+      "loc": 401,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "anyhow",
+        "rustgram-types",
+        "rustgram-input-message-text",
+        "rustgram-formatted-text",
+        "bincode"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "email_verification": {
+      "name": "email_verification",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/email_verification",
+      "category": "manager",
+      "loc": 503,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "emoji_group": {
+      "name": "emoji_group",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/emoji_group",
+      "category": "manager",
+      "loc": 225,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-custom-emoji-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "emoji_group_type": {
+      "name": "emoji_group_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/emoji_group_type",
+      "category": "manager",
+      "loc": 265,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "emoji_status": {
+      "name": "emoji_status",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/emoji_status",
+      "category": "manager",
+      "loc": 159,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-custom-emoji-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "encrypted_file": {
+      "name": "encrypted_file",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/encrypted_file",
+      "category": "manager",
+      "loc": 552,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "fact_check": {
+      "name": "fact_check",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/fact_check",
+      "category": "stub",
+      "loc": 604,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "file_bitmask": {
+      "name": "file_bitmask",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_bitmask",
+      "category": "manager",
+      "loc": 662,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_db_id": {
+      "name": "file_db_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_db_id",
+      "category": "type",
+      "loc": 201,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "file_downloader": {
+      "name": "file_downloader",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_downloader",
+      "category": "manager",
+      "loc": 1212,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-location",
+        "rustgram-file-encryption-key",
+        "rustgram-file-type",
+        "rustgram-parts-manager",
+        "rustgram-resource-manager",
+        "thiserror",
+        "serde",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_encryption_key": {
+      "name": "file_encryption_key",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_encryption_key",
+      "category": "manager",
+      "loc": 456,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "proptest",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_gc_parameters": {
+      "name": "file_gc_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_gc_parameters",
+      "category": "manager",
+      "loc": 909,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-dialog-id",
+        "rustgram-file-type",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_id": {
+      "name": "file_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_id",
+      "category": "type",
+      "loc": 435,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "proptest",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "file_loader_utils": {
+      "name": "file_loader_utils",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_loader_utils",
+      "category": "manager",
+      "loc": 975,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-file-type",
+        "thiserror",
+        "percent-encoding",
+        "dirs",
+        "tempfile",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_location": {
+      "name": "file_location",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_location",
+      "category": "manager",
+      "loc": 936,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-file-type",
+        "serde_json",
+        "proptest",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_reference_manager": {
+      "name": "file_reference_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_reference_manager",
+      "category": "manager",
+      "loc": 796,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-file-source-id",
+        "rustgram-message-full-id",
+        "rustgram-dialog-id",
+        "rustgram-types",
+        "rustgram-quick-reply-message-full-id",
+        "rustgram-background-id",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_source_id": {
+      "name": "file_source_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_source_id",
+      "category": "type",
+      "loc": 193,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "file_type": {
+      "name": "file_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_type",
+      "category": "manager",
+      "loc": 606,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "proptest",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "file_upload_id": {
+      "name": "file_upload_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_upload_id",
+      "category": "type",
+      "loc": 223,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-file-id",
+        "serde_json",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "file_uploader": {
+      "name": "file_uploader",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/file_uploader",
+      "category": "manager",
+      "loc": 1127,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-file-upload-id",
+        "rustgram-file-encryption-key",
+        "rustgram-file-type",
+        "rustgram-parts-manager",
+        "rustgram-resource-manager",
+        "thiserror",
+        "serde",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "folder_id": {
+      "name": "folder_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/folder_id",
+      "category": "type",
+      "loc": 435,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "formatted_text": {
+      "name": "formatted_text",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/formatted_text",
+      "category": "manager",
+      "loc": 577,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "forum_topic": {
+      "name": "forum_topic",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic",
+      "category": "manager",
+      "loc": 185,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-dialog-notification-settings",
+        "rustgram-draft-message",
+        "rustgram-forum-topic-info",
+        "rustgram-types",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "forum_topic_edited_data": {
+      "name": "forum_topic_edited_data",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_edited_data",
+      "category": "manager",
+      "loc": 703,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "forum_topic_full_id": {
+      "name": "forum_topic_full_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_full_id",
+      "category": "type",
+      "loc": 172,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-forum-topic-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "forum_topic_icon": {
+      "name": "forum_topic_icon",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_icon",
+      "category": "manager",
+      "loc": 309,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "forum_topic_id": {
+      "name": "forum_topic_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_id",
+      "category": "type",
+      "loc": 289,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "forum_topic_info": {
+      "name": "forum_topic_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_info",
+      "category": "manager",
+      "loc": 234,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-forum-topic-id",
+        "rustgram-forum-topic-icon",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "forum_topic_manager": {
+      "name": "forum_topic_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/forum_topic_manager",
+      "category": "manager",
+      "loc": 1389,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-forum-topic-id",
+        "rustgram-forum-topic-info",
+        "rustgram-forum-topic-icon",
+        "rustgram-forum-topic",
+        "rustgram-forum-topic-edited-data",
+        "rustgram-dialog-notification-settings",
+        "rustgram-draft-message",
+        "rustgram-types",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "game": {
+      "name": "game",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/game",
+      "category": "manager",
+      "loc": 161,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-file-id",
+        "rustgram-formatted-text",
+        "rustgram-user-id",
+        "serde",
+        "rstest",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "git_commit_hash": {
+      "name": "git_commit_hash",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/git_commit_hash",
+      "category": "stub",
+      "loc": 80,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "giveaway_parameters": {
+      "name": "giveaway_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/giveaway_parameters",
+      "category": "manager",
+      "loc": 491,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "global": {
+      "name": "global",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/global",
+      "category": "stub",
+      "loc": 92,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "global_privacy_settings": {
+      "name": "global_privacy_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/global_privacy_settings",
+      "category": "manager",
+      "loc": 441,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-star-gift-settings",
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_id": {
+      "name": "group_call_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_id",
+      "category": "type",
+      "loc": 196,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "group_call_join_parameters": {
+      "name": "group_call_join_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_join_parameters",
+      "category": "manager",
+      "loc": 596,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_manager": {
+      "name": "group_call_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_manager",
+      "category": "manager",
+      "loc": 1161,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-input-group-call-id",
+        "rustgram-types",
+        "thiserror.workspace",
+        "serde",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_message": {
+      "name": "group_call_message",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_message",
+      "category": "manager",
+      "loc": 382,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-formatted-text",
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_message_limit": {
+      "name": "group_call_message_limit",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_message_limit",
+      "category": "manager",
+      "loc": 465,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_participant": {
+      "name": "group_call_participant",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_participant",
+      "category": "manager",
+      "loc": 652,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-group-call-participant-order",
+        "rustgram-group-call-video-payload",
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_participant_order": {
+      "name": "group_call_participant_order",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_participant_order",
+      "category": "manager",
+      "loc": 382,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "group_call_video_payload": {
+      "name": "group_call_video_payload",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/group_call_video_payload",
+      "category": "manager",
+      "loc": 941,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "hashtag_hints": {
+      "name": "hashtag_hints",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/hashtag_hints",
+      "category": "stub",
+      "loc": 124,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rstest.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "inline_message_manager": {
+      "name": "inline_message_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/inline_message_manager",
+      "category": "manager",
+      "loc": 887,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-user-id",
+        "thiserror.workspace",
+        "serde",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "inline_queries_manager": {
+      "name": "inline_queries_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/inline_queries_manager",
+      "category": "manager",
+      "loc": 1081,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-venue",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tokio",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "input_business_chat_link": {
+      "name": "input_business_chat_link",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_business_chat_link",
+      "category": "manager",
+      "loc": 413,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "input_dialog_id": {
+      "name": "input_dialog_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_dialog_id",
+      "category": "type",
+      "loc": 259,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rstest.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "input_group_call": {
+      "name": "input_group_call",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_group_call",
+      "category": "manager",
+      "loc": 464,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "input_group_call_id": {
+      "name": "input_group_call_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_group_call_id",
+      "category": "type",
+      "loc": 515,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "input_invoice": {
+      "name": "input_invoice",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_invoice",
+      "category": "stub",
+      "loc": 630,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "input_message_text": {
+      "name": "input_message_text",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/input_message_text",
+      "category": "manager",
+      "loc": 555,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "rustgram-message-entity",
+        "serde",
+        "thiserror",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "json_value": {
+      "name": "json_value",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/json_value",
+      "category": "manager",
+      "loc": 1057,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "labeled_price_part": {
+      "name": "labeled_price_part",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/labeled_price_part",
+      "category": "manager",
+      "loc": 537,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "language_pack_manager": {
+      "name": "language_pack_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/language_pack_manager",
+      "category": "manager",
+      "loc": 1104,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-promise",
+        "rustgram-net",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tokio",
+        "tracing",
+        "regex",
+        "once-cell"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "link_manager": {
+      "name": "link_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/link_manager",
+      "category": "manager",
+      "loc": 1198,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-boost-link-info",
+        "rustgram-venue",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tokio",
+        "tracing",
+        "url",
+        "urlencoding"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "log": {
+      "name": "log",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/log",
+      "category": "manager",
+      "loc": 1040,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "logevent": {
+      "name": "logevent",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/logevent",
+      "category": "stub",
+      "loc": 3720,
+      "has_tests": true,
+      "test_file_count": 4,
+      "dependencies": [
+        "tokio",
+        "thiserror",
+        "anyhow",
+        "tracing",
+        "bytes",
+        "byteorder",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "media_area": {
+      "name": "media_area",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/media_area",
+      "category": "manager",
+      "loc": 535,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "media_area_coordinates": {
+      "name": "media_area_coordinates",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/media_area_coordinates",
+      "category": "manager",
+      "loc": 947,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message-types": {
+      "name": "message-types",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message-types",
+      "category": "stub",
+      "loc": 1168,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-message-content-type",
+        "rustgram-formatted-text",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_auto_delete_time": {
+      "name": "message_auto_delete_time",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_auto_delete_time",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_content": {
+      "name": "message_content",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_content",
+      "category": "stub",
+      "loc": 2589,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "rustgram-message-content-type",
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "bincode",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_content_type": {
+      "name": "message_content_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_content_type",
+      "category": "manager",
+      "loc": 866,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_copy_options": {
+      "name": "message_copy_options",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_copy_options",
+      "category": "manager",
+      "loc": 101,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "rustgram-message-input-reply-to",
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_db": {
+      "name": "message_db",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_db",
+      "category": "critical",
+      "loc": 695,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "message_effect_id": {
+      "name": "message_effect_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_effect_id",
+      "category": "type",
+      "loc": 297,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "message_entity": {
+      "name": "message_entity",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_entity",
+      "category": "stub",
+      "loc": 206,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_extended_media": {
+      "name": "message_extended_media",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_extended_media",
+      "category": "manager",
+      "loc": 156,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_forward_info": {
+      "name": "message_forward_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_forward_info",
+      "category": "manager",
+      "loc": 781,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-message-origin",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_full_id": {
+      "name": "message_full_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_full_id",
+      "category": "type",
+      "loc": 103,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "message_id": {
+      "name": "message_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_id",
+      "category": "type",
+      "loc": 757,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-server-message-id",
+        "rustgram-scheduled-server-message-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "message_import_manager": {
+      "name": "message_import_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_import_manager",
+      "category": "manager",
+      "loc": 1934,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "rustgram-types",
+        "rustgram-file-upload-id",
+        "rustgram-file-id",
+        "proptest",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_input_reply_to": {
+      "name": "message_input_reply_to",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_input_reply_to",
+      "category": "manager",
+      "loc": 167,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_link_info": {
+      "name": "message_link_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_link_info",
+      "category": "stub",
+      "loc": 524,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-message-id",
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_origin": {
+      "name": "message_origin",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_origin",
+      "category": "manager",
+      "loc": 565,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "rustgram-types",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_query_manager": {
+      "name": "message_query_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_query_manager",
+      "category": "manager",
+      "loc": 3151,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-message-full-id",
+        "rustgram-message-search-filter",
+        "rustgram-message-viewer",
+        "rustgram-business-connection-id",
+        "rustgram-forum-topic-id",
+        "rustgram-saved-messages-manager",
+        "rustgram-affected-history",
+        "rustgram-file-upload-id",
+        "rustgram-dialog-list-id",
+        "rustgram-message-topic",
+        "rustgram-formatted-text",
+        "rustgram-file-location",
+        "rustgram-message-thread-info",
+        "rustgram-message-extended-media",
+        "rustgram-file-id",
+        "serde",
+        "thiserror",
+        "tokio",
+        "rstest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_quote": {
+      "name": "message_quote",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_quote",
+      "category": "manager",
+      "loc": 987,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "rustgram-formatted-text",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_reactor": {
+      "name": "message_reactor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_reactor",
+      "category": "manager",
+      "loc": 377,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_reply_header": {
+      "name": "message_reply_header",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_reply_header",
+      "category": "stub",
+      "loc": 439,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_reply_info": {
+      "name": "message_reply_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_reply_info",
+      "category": "stub",
+      "loc": 855,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "message_search_filter": {
+      "name": "message_search_filter",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_search_filter",
+      "category": "manager",
+      "loc": 1074,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_search_offset": {
+      "name": "message_search_offset",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_search_offset",
+      "category": "manager",
+      "loc": 364,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "rustgram-types",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_self_destruct_type": {
+      "name": "message_self_destruct_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_self_destruct_type",
+      "category": "manager",
+      "loc": 475,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_sender": {
+      "name": "message_sender",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_sender",
+      "category": "manager",
+      "loc": 520,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_source": {
+      "name": "message_source",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_source",
+      "category": "manager",
+      "loc": 257,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_thread_db": {
+      "name": "message_thread_db",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_thread_db",
+      "category": "manager",
+      "loc": 573,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-forum-topic-id",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_thread_info": {
+      "name": "message_thread_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_thread_info",
+      "category": "manager",
+      "loc": 380,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_topic": {
+      "name": "message_topic",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_topic",
+      "category": "manager",
+      "loc": 571,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-forum-topic-id",
+        "rustgram-saved-messages-manager",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_ttl": {
+      "name": "message_ttl",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_ttl",
+      "category": "manager",
+      "loc": 615,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "bytes",
+        "thiserror",
+        "tracing",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "message_viewer": {
+      "name": "message_viewer",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/message_viewer",
+      "category": "manager",
+      "loc": 693,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "messages-manager": {
+      "name": "messages-manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/messages-manager",
+      "category": "manager",
+      "loc": 486,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-message-types",
+        "rustgram-message-content-type",
+        "rustgram-draft-message",
+        "rustgram-ordered-messages",
+        "serde",
+        "thiserror",
+        "tokio",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "messages_info": {
+      "name": "messages_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/messages_info",
+      "category": "stub",
+      "loc": 278,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "anyhow",
+        "rustgram-types",
+        "bincode"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "min_channel": {
+      "name": "min_channel",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/min_channel",
+      "category": "manager",
+      "loc": 451,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-accent-color-id",
+        "rustgram-dialog-photo",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "misc": {
+      "name": "misc",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/misc",
+      "category": "manager",
+      "loc": 1919,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "md5",
+        "rustgram-venue",
+        "rustgram-types",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "missing_invitee": {
+      "name": "missing_invitee",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/missing_invitee",
+      "category": "manager",
+      "loc": 577,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "net": {
+      "name": "net",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/net",
+      "category": "critical",
+      "loc": 19540,
+      "has_tests": true,
+      "test_file_count": 2,
+      "dependencies": [
+        "tokio",
+        "tokio-util",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "anyhow",
+        "tracing",
+        "aes",
+        "rand",
+        "sha1",
+        "sha2",
+        "bytes",
+        "futures",
+        "async-trait",
+        "parking-lot",
+        "socket2",
+        "proptest",
+        "criterion",
+        "tokio-test"
+      ],
+      "is_stub": false,
+      "coverage_target": 70,
+      "priority": "P0"
+    },
+    "new_password_state": {
+      "name": "new_password_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/new_password_state",
+      "category": "manager",
+      "loc": 821,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification": {
+      "name": "notification",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification",
+      "category": "manager",
+      "loc": 521,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-notification-id",
+        "rustgram-notification-type",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification-manager": {
+      "name": "notification-manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification-manager",
+      "category": "stub",
+      "loc": 952,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-call-id",
+        "rustgram-notification-id",
+        "rustgram-notification-group-id",
+        "rustgram-notification-group-type",
+        "rustgram-notification-type",
+        "rustgram-notification",
+        "rustgram-notification-object-id",
+        "rustgram-types"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "notification-settings-manager": {
+      "name": "notification-settings-manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification-settings-manager",
+      "category": "stub",
+      "loc": 886,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-scope-notification-settings",
+        "rustgram-reaction-notification-settings",
+        "rustgram-types"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "notification_group_from_database": {
+      "name": "notification_group_from_database",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_group_from_database",
+      "category": "manager",
+      "loc": 442,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-notification",
+        "rustgram-notification-group-type",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification_group_id": {
+      "name": "notification_group_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_group_id",
+      "category": "type",
+      "loc": 236,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "notification_group_info": {
+      "name": "notification_group_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_group_info",
+      "category": "manager",
+      "loc": 416,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-notification-group-id",
+        "rustgram-notification-id",
+        "rustgram-notification-object-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification_group_key": {
+      "name": "notification_group_key",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_group_key",
+      "category": "manager",
+      "loc": 279,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-notification-group-id",
+        "rustgram-dialog-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification_group_type": {
+      "name": "notification_group_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_group_type",
+      "category": "manager",
+      "loc": 595,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "notification_id": {
+      "name": "notification_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_id",
+      "category": "type",
+      "loc": 376,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "notification_object_id": {
+      "name": "notification_object_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_object_id",
+      "category": "type",
+      "loc": 451,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "notification_type": {
+      "name": "notification_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/notification_type",
+      "category": "stub",
+      "loc": 422,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "online-manager": {
+      "name": "online-manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/online-manager",
+      "category": "stub",
+      "loc": 506,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "option_manager": {
+      "name": "option_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/option_manager",
+      "category": "manager",
+      "loc": 1468,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "tokio",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "ordered_messages": {
+      "name": "ordered_messages",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/ordered_messages",
+      "category": "manager",
+      "loc": 743,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "anyhow",
+        "rustgram-types",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "paid_reaction_type": {
+      "name": "paid_reaction_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/paid_reaction_type",
+      "category": "manager",
+      "loc": 668,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "parts_manager": {
+      "name": "parts_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/parts_manager",
+      "category": "manager",
+      "loc": 1172,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-bitmask",
+        "thiserror",
+        "serde",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "passkey": {
+      "name": "passkey",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/passkey",
+      "category": "manager",
+      "loc": 1127,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "password_manager": {
+      "name": "password_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/password_manager",
+      "category": "critical",
+      "loc": 2941,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "tokio",
+        "sha2",
+        "rustgram-email-verification",
+        "rustgram-new-password-state",
+        "rustgram-temp-password-state",
+        "rustgram-passkey",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "peer_color": {
+      "name": "peer_color",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/peer_color",
+      "category": "manager",
+      "loc": 436,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "peer_color_collectible": {
+      "name": "peer_color_collectible",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/peer_color_collectible",
+      "category": "manager",
+      "loc": 476,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-custom-emoji-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "people_nearby": {
+      "name": "people_nearby",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/people_nearby",
+      "category": "stub",
+      "loc": 1464,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "rustgram-types",
+        "rustgram-venue",
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "phone_number_manager": {
+      "name": "phone_number_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/phone_number_manager",
+      "category": "manager",
+      "loc": 1123,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "tokio",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "photo": {
+      "name": "photo",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/photo",
+      "category": "manager",
+      "loc": 422,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-animation-size",
+        "rustgram-photo-size",
+        "rustgram-sticker-photo-size",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "photo_format": {
+      "name": "photo_format",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/photo_format",
+      "category": "manager",
+      "loc": 342,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "photo_size": {
+      "name": "photo_size",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/photo_size",
+      "category": "stub",
+      "loc": 33,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "photo_size_source": {
+      "name": "photo_size_source",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/photo_size_source",
+      "category": "manager",
+      "loc": 577,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-file-type",
+        "rustgram-photo-size-type",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "photo_size_type": {
+      "name": "photo_size_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/photo_size_type",
+      "category": "manager",
+      "loc": 388,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "poll_id": {
+      "name": "poll_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/poll_id",
+      "category": "type",
+      "loc": 233,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "poll_manager": {
+      "name": "poll_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/poll_manager",
+      "category": "manager",
+      "loc": 1572,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-message-full-id",
+        "rustgram-formatted-text",
+        "serde",
+        "thiserror",
+        "tokio",
+        "tracing"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "premium": {
+      "name": "premium",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/premium",
+      "category": "manager",
+      "loc": 386,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-premium-gift-option",
+        "rustgram-dialog-id",
+        "rustgram-user-id",
+        "rustgram-message-full-id",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "premium_gift_option": {
+      "name": "premium_gift_option",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/premium_gift_option",
+      "category": "manager",
+      "loc": 438,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "privacy_manager": {
+      "name": "privacy_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/privacy_manager",
+      "category": "manager",
+      "loc": 1053,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-user-privacy-setting",
+        "rustgram-user-privacy-setting-rule",
+        "serde",
+        "thiserror",
+        "tokio",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "profile_tab": {
+      "name": "profile_tab",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/profile_tab",
+      "category": "manager",
+      "loc": 734,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-channel-type",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "promise": {
+      "name": "promise",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/promise",
+      "category": "stub",
+      "loc": 517,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "promo_data_manager": {
+      "name": "promo_data_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/promo_data_manager",
+      "category": "manager",
+      "loc": 588,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-dialog-source",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "pts_manager": {
+      "name": "pts_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/pts_manager",
+      "category": "manager",
+      "loc": 560,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-changes-processor",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "public_dialog_type": {
+      "name": "public_dialog_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/public_dialog_type",
+      "category": "manager",
+      "loc": 281,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "query_combiner": {
+      "name": "query_combiner",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/query_combiner",
+      "category": "type",
+      "loc": 93,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "query_merger": {
+      "name": "query_merger",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/query_merger",
+      "category": "type",
+      "loc": 75,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "quick_reply_manager": {
+      "name": "quick_reply_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/quick_reply_manager",
+      "category": "manager",
+      "loc": 951,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-quick-reply-shortcut-id",
+        "rustgram-quick-reply-message-full-id",
+        "rustgram-dialog-id",
+        "serde",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "quick_reply_message_full_id": {
+      "name": "quick_reply_message_full_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/quick_reply_message_full_id",
+      "category": "type",
+      "loc": 123,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-quick-reply-shortcut-id",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "quick_reply_shortcut_id": {
+      "name": "quick_reply_shortcut_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/quick_reply_shortcut_id",
+      "category": "type",
+      "loc": 107,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "reaction_list_type": {
+      "name": "reaction_list_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_list_type",
+      "category": "manager",
+      "loc": 474,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "reaction_manager": {
+      "name": "reaction_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_manager",
+      "category": "manager",
+      "loc": 1355,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-reaction-type",
+        "rustgram-chat-reactions",
+        "rustgram-message-effect-id",
+        "rustgram-file-id",
+        "rustgram-saved-messages-manager",
+        "rustgram-paid-reaction-type",
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "reaction_notification_settings": {
+      "name": "reaction_notification_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_notification_settings",
+      "category": "type",
+      "loc": 93,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-reaction-notifications-from",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "reaction_notifications_from": {
+      "name": "reaction_notifications_from",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_notifications_from",
+      "category": "type",
+      "loc": 78,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "reaction_type": {
+      "name": "reaction_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_type",
+      "category": "manager",
+      "loc": 842,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "md5",
+        "base64",
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "reaction_unavailability_reason": {
+      "name": "reaction_unavailability_reason",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reaction_unavailability_reason",
+      "category": "type",
+      "loc": 81,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "recent_dialog_list": {
+      "name": "recent_dialog_list",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/recent_dialog_list",
+      "category": "manager",
+      "loc": 157,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "referral_program_info": {
+      "name": "referral_program_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/referral_program_info",
+      "category": "manager",
+      "loc": 493,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-referral-program-parameters",
+        "rustgram-star-amount",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "referral_program_manager": {
+      "name": "referral_program_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/referral_program_manager",
+      "category": "manager",
+      "loc": 1345,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-referral-program-info",
+        "rustgram-referral-program-parameters",
+        "rustgram-referral-program-sort-order",
+        "rustgram-types",
+        "rustgram-star-amount",
+        "chrono",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "referral_program_parameters": {
+      "name": "referral_program_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/referral_program_parameters",
+      "category": "manager",
+      "loc": 343,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "referral_program_sort_order": {
+      "name": "referral_program_sort_order",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/referral_program_sort_order",
+      "category": "manager",
+      "loc": 454,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "replied_message_info": {
+      "name": "replied_message_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/replied_message_info",
+      "category": "manager",
+      "loc": 109,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "reply_markup": {
+      "name": "reply_markup",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/reply_markup",
+      "category": "stub",
+      "loc": 408,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "report_reason": {
+      "name": "report_reason",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/report_reason",
+      "category": "manager",
+      "loc": 114,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "request_actor": {
+      "name": "request_actor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/request_actor",
+      "category": "stub",
+      "loc": 758,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-actor",
+        "rustgram-promise",
+        "rustgram-td"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "requested_dialog_type": {
+      "name": "requested_dialog_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/requested_dialog_type",
+      "category": "stub",
+      "loc": 937,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "requests": {
+      "name": "requests",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/requests",
+      "category": "stub",
+      "loc": 736,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-actor",
+        "rustgram-promise",
+        "rustgram-td",
+        "rustgram-types",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "resource_manager": {
+      "name": "resource_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/resource_manager",
+      "category": "manager",
+      "loc": 2230,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "restriction_reason": {
+      "name": "restriction_reason",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/restriction_reason",
+      "category": "manager",
+      "loc": 506,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "saved_messages_manager": {
+      "name": "saved_messages_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/saved_messages_manager",
+      "category": "manager",
+      "loc": 2373,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "serde_json",
+        "thiserror",
+        "tracing",
+        "tokio",
+        "rstest",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "scheduled_server_message_id": {
+      "name": "scheduled_server_message_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/scheduled_server_message_id",
+      "category": "type",
+      "loc": 288,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "scope_notification_settings": {
+      "name": "scope_notification_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/scope_notification_settings",
+      "category": "stub",
+      "loc": 982,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "search_posts_flood": {
+      "name": "search_posts_flood",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/search_posts_flood",
+      "category": "manager",
+      "loc": 864,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "tracing",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "secret_chat_actor": {
+      "name": "secret_chat_actor",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secret_chat_actor",
+      "category": "stub",
+      "loc": 932,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-actor",
+        "rustgram-promise",
+        "rustgram-types",
+        "rustgram-secret-chat-layer",
+        "rustgram-secret-chat-db",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "secret_chat_db": {
+      "name": "secret_chat_db",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secret_chat_db",
+      "category": "manager",
+      "loc": 691,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "serde",
+        "thiserror",
+        "anyhow",
+        "tracing",
+        "bincode",
+        "bytes",
+        "proptest",
+        "tokio-test"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "secret_chat_layer": {
+      "name": "secret_chat_layer",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secret_chat_layer",
+      "category": "manager",
+      "loc": 662,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "secret_input_media": {
+      "name": "secret_input_media",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secret_input_media",
+      "category": "stub",
+      "loc": 1361,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "bytes",
+        "thiserror",
+        "tracing",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "secure_storage": {
+      "name": "secure_storage",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secure_storage",
+      "category": "critical",
+      "loc": 1031,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-buffer",
+        "rustgram-crypto",
+        "rustgram-types",
+        "serde",
+        "sha2",
+        "pbkdf2"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "secure_value": {
+      "name": "secure_value",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/secure_value",
+      "category": "manager",
+      "loc": 588,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "send_code_helper": {
+      "name": "send_code_helper",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/send_code_helper",
+      "category": "manager",
+      "loc": 556,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sent_email_code": {
+      "name": "sent_email_code",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sent_email_code",
+      "category": "manager",
+      "loc": 289,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sequence_dispatcher": {
+      "name": "sequence_dispatcher",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sequence_dispatcher",
+      "category": "manager",
+      "loc": 522,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-net",
+        "tokio",
+        "serde",
+        "tracing",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "server_message_id": {
+      "name": "server_message_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/server_message_id",
+      "category": "type",
+      "loc": 246,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "set_with_position": {
+      "name": "set_with_position",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/set_with_position",
+      "category": "manager",
+      "loc": 620,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "shared_dialog": {
+      "name": "shared_dialog",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/shared_dialog",
+      "category": "manager",
+      "loc": 415,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-dialog-id",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "special_sticker_set_type": {
+      "name": "special_sticker_set_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/special_sticker_set_type",
+      "category": "stub",
+      "loc": 953,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "sponsored_message_message": {
+      "name": "sponsored_message_message",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sponsored_message_message",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "sponsored_message_type": {
+      "name": "sponsored_message_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sponsored_message_type",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "star_amount": {
+      "name": "star_amount",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_amount",
+      "category": "manager",
+      "loc": 463,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift": {
+      "name": "star_gift",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift",
+      "category": "manager",
+      "loc": 638,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-dialog-id",
+        "rustgram-star-gift-attribute",
+        "rustgram-formatted-text",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_attribute": {
+      "name": "star_gift_attribute",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_attribute",
+      "category": "manager",
+      "loc": 652,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-dialog-id",
+        "rustgram-formatted-text",
+        "rustgram-star-gift-attribute-id",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_attribute_id": {
+      "name": "star_gift_attribute_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_attribute_id",
+      "category": "type",
+      "loc": 528,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "star_gift_auction_round": {
+      "name": "star_gift_auction_round",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_auction_round",
+      "category": "manager",
+      "loc": 308,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_auction_state": {
+      "name": "star_gift_auction_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_auction_state",
+      "category": "manager",
+      "loc": 188,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-auction-bid-level",
+        "rustgram-star-gift-auction-round",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_auction_user_state": {
+      "name": "star_gift_auction_user_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_auction_user_state",
+      "category": "type",
+      "loc": 52,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "star_gift_background": {
+      "name": "star_gift_background",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_background",
+      "category": "manager",
+      "loc": 518,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_collection": {
+      "name": "star_gift_collection",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_collection",
+      "category": "stub",
+      "loc": 777,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "star_gift_collection_id": {
+      "name": "star_gift_collection_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_collection_id",
+      "category": "type",
+      "loc": 277,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "star_gift_id": {
+      "name": "star_gift_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_id",
+      "category": "type",
+      "loc": 535,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "star_gift_resale_price": {
+      "name": "star_gift_resale_price",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_resale_price",
+      "category": "manager",
+      "loc": 383,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_gift_settings": {
+      "name": "star_gift_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_gift_settings",
+      "category": "manager",
+      "loc": 619,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_manager": {
+      "name": "star_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_manager",
+      "category": "manager",
+      "loc": 569,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-star-amount",
+        "rustgram-ton-amount",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_rating": {
+      "name": "star_rating",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_rating",
+      "category": "manager",
+      "loc": 376,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "star_subscription": {
+      "name": "star_subscription",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_subscription",
+      "category": "stub",
+      "loc": 205,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-star-subscription-pricing",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "star_subscription_pricing": {
+      "name": "star_subscription_pricing",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/star_subscription_pricing",
+      "category": "manager",
+      "loc": 401,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-star-amount",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "state_manager": {
+      "name": "state_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/state_manager",
+      "category": "manager",
+      "loc": 818,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-connectionstate",
+        "rustgram-net",
+        "tokio",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "statistics_manager": {
+      "name": "statistics_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/statistics_manager",
+      "category": "manager",
+      "loc": 2785,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "tokio",
+        "serde",
+        "thiserror",
+        "tracing",
+        "tokio-test"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_format": {
+      "name": "sticker_format",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_format",
+      "category": "manager",
+      "loc": 805,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-sticker-type",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_list_type": {
+      "name": "sticker_list_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_list_type",
+      "category": "manager",
+      "loc": 266,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_mask_position": {
+      "name": "sticker_mask_position",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_mask_position",
+      "category": "manager",
+      "loc": 179,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_photo_size": {
+      "name": "sticker_photo_size",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_photo_size",
+      "category": "manager",
+      "loc": 160,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-custom-emoji-id",
+        "rustgram-sticker-set-id",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_set_id": {
+      "name": "sticker_set_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_set_id",
+      "category": "type",
+      "loc": 257,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "sticker_set_info": {
+      "name": "sticker_set_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_set_info",
+      "category": "manager",
+      "loc": 463,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-sticker-set-id",
+        "rustgram-sticker-set-type",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_set_type": {
+      "name": "sticker_set_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_set_type",
+      "category": "manager",
+      "loc": 254,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "sticker_type": {
+      "name": "sticker_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/sticker_type",
+      "category": "manager",
+      "loc": 572,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "stickers_manager": {
+      "name": "stickers_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/stickers_manager",
+      "category": "manager",
+      "loc": 2512,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror.workspace",
+        "anyhow.workspace",
+        "serde.workspace",
+        "serde_json.workspace",
+        "tokio",
+        "tracing.workspace",
+        "dashmap",
+        "lru",
+        "rustgram-file-id",
+        "rustgram-dialog-id",
+        "rustgram-sticker-type",
+        "rustgram-sticker-format",
+        "rustgram-sticker-set-id",
+        "rustgram-sticker-set-info",
+        "rustgram-sticker-set-type",
+        "rustgram-custom-emoji-id",
+        "rustgram-message-full-id",
+        "rustgram-dimensions",
+        "tokio",
+        "proptest.workspace",
+        "rstest.workspace",
+        "criterion.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "stickersetid": {
+      "name": "stickersetid",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/stickersetid",
+      "category": "manager",
+      "loc": 395,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "bincode",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "storage": {
+      "name": "storage",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/storage",
+      "category": "critical",
+      "loc": 1823,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rusqlite",
+        "tokio",
+        "thiserror",
+        "tracing",
+        "async-trait",
+        "futures",
+        "bytes",
+        "aes",
+        "cbc",
+        "pbkdf2",
+        "sha2",
+        "rand",
+        "getrandom",
+        "tempfile"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P0"
+    },
+    "story_album": {
+      "name": "story_album",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_album",
+      "category": "stub",
+      "loc": 162,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-story-album-id",
+        "rustgram-file-id",
+        "serde",
+        "serde_json.workspace"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "story_album_id": {
+      "name": "story_album_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_album_id",
+      "category": "type",
+      "loc": 494,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "story_content": {
+      "name": "story_content",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_content",
+      "category": "stub",
+      "loc": 379,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "story_content_type": {
+      "name": "story_content_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_content_type",
+      "category": "manager",
+      "loc": 278,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "story_db": {
+      "name": "story_db",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_db",
+      "category": "stub",
+      "loc": 341,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-story-full-id",
+        "rustgram-story-list-id",
+        "rustgram-story-id",
+        "rustgram-dialog-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "story_forward_info": {
+      "name": "story_forward_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_forward_info",
+      "category": "manager",
+      "loc": 901,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-active-story-state",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "story_full_id": {
+      "name": "story_full_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_full_id",
+      "category": "type",
+      "loc": 395,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-story-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "story_id": {
+      "name": "story_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_id",
+      "category": "type",
+      "loc": 484,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "story_interaction_info": {
+      "name": "story_interaction_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_interaction_info",
+      "category": "stub",
+      "loc": 457,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "story_list_id": {
+      "name": "story_list_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_list_id",
+      "category": "type",
+      "loc": 372,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "story_notification_settings": {
+      "name": "story_notification_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_notification_settings",
+      "category": "manager",
+      "loc": 383,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "story_stealth_mode": {
+      "name": "story_stealth_mode",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_stealth_mode",
+      "category": "manager",
+      "loc": 612,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "story_viewer": {
+      "name": "story_viewer",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/story_viewer",
+      "category": "stub",
+      "loc": 496,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-dialog-id",
+        "rustgram-reaction-type",
+        "rustgram-story-id",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "subscription_pricing": {
+      "name": "subscription_pricing",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/subscription_pricing",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "subscription_type": {
+      "name": "subscription_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/subscription_type",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "suggested_action": {
+      "name": "suggested_action",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/suggested_action",
+      "category": "manager",
+      "loc": 562,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "rustgram-dialog-id",
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "suggested_action_manager": {
+      "name": "suggested_action_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/suggested_action_manager",
+      "category": "manager",
+      "loc": 588,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-suggested-action",
+        "rustgram-dialog-id",
+        "tokio",
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "suggested_post": {
+      "name": "suggested_post",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/suggested_post",
+      "category": "manager",
+      "loc": 531,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-suggested-post-price",
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "suggested_post_price": {
+      "name": "suggested_post_price",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/suggested_post_price",
+      "category": "manager",
+      "loc": 516,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "support": {
+      "name": "support",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/support",
+      "category": "manager",
+      "loc": 264,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "synchronous_requests": {
+      "name": "synchronous_requests",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/synchronous_requests",
+      "category": "manager",
+      "loc": 260,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "target_dialog_types": {
+      "name": "target_dialog_types",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/target_dialog_types",
+      "category": "stub",
+      "loc": 0,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "td": {
+      "name": "td",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td",
+      "category": "stub",
+      "loc": 272,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "td_c_client": {
+      "name": "td_c_client",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td_c_client",
+      "category": "manager",
+      "loc": 190,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "libc",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "td_callback": {
+      "name": "td_callback",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td_callback",
+      "category": "manager",
+      "loc": 257,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "td_db": {
+      "name": "td_db",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td_db",
+      "category": "critical",
+      "loc": 313,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": true,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "td_json_client": {
+      "name": "td_json_client",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td_json_client",
+      "category": "manager",
+      "loc": 142,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde_json",
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "td_log": {
+      "name": "td_log",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/td_log",
+      "category": "manager",
+      "loc": 125,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "temp_password_state": {
+      "name": "temp_password_state",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/temp_password_state",
+      "category": "manager",
+      "loc": 766,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "thiserror",
+        "tracing",
+        "rustgram-logevent",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "terms_of_service": {
+      "name": "terms_of_service",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/terms_of_service",
+      "category": "manager",
+      "loc": 634,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "terms_of_service_manager": {
+      "name": "terms_of_service_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/terms_of_service_manager",
+      "category": "manager",
+      "loc": 582,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-terms-of-service",
+        "tokio",
+        "thiserror",
+        "tracing",
+        "serde",
+        "serde_json",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "theme": {
+      "name": "theme",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/theme",
+      "category": "manager",
+      "loc": 446,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "rstest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "theme_manager": {
+      "name": "theme_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/theme_manager",
+      "category": "manager",
+      "loc": 790,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-accent-color-id",
+        "rustgram-types",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "theme_object": {
+      "name": "theme_object",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/theme_object",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "theme_parameters": {
+      "name": "theme_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/theme_parameters",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "theme_settings": {
+      "name": "theme_settings",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/theme_settings",
+      "category": "manager",
+      "loc": 623,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-base-theme",
+        "rustgram-background-info",
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "time_zone": {
+      "name": "time_zone",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/time_zone",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "time_zone_manager": {
+      "name": "time_zone_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/time_zone_manager",
+      "category": "manager",
+      "loc": 497,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "todo_completion": {
+      "name": "todo_completion",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/todo_completion",
+      "category": "manager",
+      "loc": 434,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "todo_item": {
+      "name": "todo_item",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/todo_item",
+      "category": "manager",
+      "loc": 347,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "serde",
+        "serde_json",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "todo_list": {
+      "name": "todo_list",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/todo_list",
+      "category": "manager",
+      "loc": 288,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror.workspace",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "toggle_message_ids_top_peers": {
+      "name": "toggle_message_ids_top_peers",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/toggle_message_ids_top_peers",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "ton_amount": {
+      "name": "ton_amount",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/ton_amount",
+      "category": "manager",
+      "loc": 328,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "top_chat_category": {
+      "name": "top_chat_category",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/top_chat_category",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "top_dialog_category": {
+      "name": "top_dialog_category",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/top_dialog_category",
+      "category": "manager",
+      "loc": 177,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "top_dialog_manager": {
+      "name": "top_dialog_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/top_dialog_manager",
+      "category": "manager",
+      "loc": 735,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "rustgram-top-dialog-category",
+        "rustgram-types",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "top_peer_category": {
+      "name": "top_peer_category",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/top_peer_category",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "transcription_info": {
+      "name": "transcription_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/transcription_info",
+      "category": "manager",
+      "loc": 221,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "thiserror.workspace",
+        "serde",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "transcription_manager": {
+      "name": "transcription_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/transcription_manager",
+      "category": "manager",
+      "loc": 881,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-transcription-info",
+        "rustgram-file-id",
+        "rustgram-message-content-type",
+        "rustgram-message-full-id",
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "tracing"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "translation_manager": {
+      "name": "translation_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/translation_manager",
+      "category": "manager",
+      "loc": 705,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-formatted-text",
+        "rustgram-message-full-id",
+        "serde",
+        "thiserror",
+        "tracing"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "types": {
+      "name": "types",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/types",
+      "category": "stub",
+      "loc": 4863,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "thiserror",
+        "anyhow",
+        "bytes",
+        "hex",
+        "base64",
+        "tokio",
+        "tracing",
+        "proptest"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "unique_id": {
+      "name": "unique_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/unique_id",
+      "category": "type",
+      "loc": 205,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "updates_manager": {
+      "name": "updates_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/updates_manager",
+      "category": "manager",
+      "loc": 854,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde",
+        "thiserror",
+        "tracing"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "url_authenticator": {
+      "name": "url_authenticator",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/url_authenticator",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "user": {
+      "name": "user",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user",
+      "category": "stub",
+      "loc": 1416,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-accent-color-id",
+        "rustgram-active-story-state",
+        "rustgram-emoji-status",
+        "rustgram-usernames",
+        "rustgram-verification-status",
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "user_full_info": {
+      "name": "user_full_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_full_info",
+      "category": "stub",
+      "loc": 1202,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-formatted-text",
+        "rustgram-birthdate",
+        "rustgram-block-list-id",
+        "rustgram-profile-tab",
+        "rustgram-bot-verification",
+        "rustgram-business-info",
+        "rustgram-star-rating",
+        "rustgram-star-gift-settings",
+        "rustgram-file-id",
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "user_id": {
+      "name": "user_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_id",
+      "category": "type",
+      "loc": 57,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "user_info": {
+      "name": "user_info",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_info",
+      "category": "stub",
+      "loc": 877,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "user_manager": {
+      "name": "user_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_manager",
+      "category": "critical",
+      "loc": 565,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "rustgram-user-id",
+        "rustgram-usernames",
+        "rustgram-dialog-photo",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 70,
+      "priority": "P1"
+    },
+    "user_privacy_setting": {
+      "name": "user_privacy_setting",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_privacy_setting",
+      "category": "manager",
+      "loc": 670,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "user_privacy_setting_rule": {
+      "name": "user_privacy_setting_rule",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_privacy_setting_rule",
+      "category": "manager",
+      "loc": 193,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "user_profile_photo": {
+      "name": "user_profile_photo",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_profile_photo",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "user_star_gift": {
+      "name": "user_star_gift",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_star_gift",
+      "category": "manager",
+      "loc": 127,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "user_status": {
+      "name": "user_status",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_status",
+      "category": "manager",
+      "loc": 1115,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "user_type": {
+      "name": "user_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/user_type",
+      "category": "stub",
+      "loc": 1297,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json"
+      ],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "usernames": {
+      "name": "usernames",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/usernames",
+      "category": "manager",
+      "loc": 248,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "venue": {
+      "name": "venue",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/venue",
+      "category": "manager",
+      "loc": 2255,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "thiserror",
+        "tracing",
+        "simdutf8",
+        "serde",
+        "proptest"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "verification_status": {
+      "name": "verification_status",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/verification_status",
+      "category": "manager",
+      "loc": 435,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "thiserror",
+        "anyhow",
+        "proptest",
+        "bincode"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "version": {
+      "name": "version",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/version",
+      "category": "manager",
+      "loc": 107,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "video_note": {
+      "name": "video_note",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/video_note",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "video_notes_manager": {
+      "name": "video_notes_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/video_notes_manager",
+      "category": "manager",
+      "loc": 414,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "rustgram-file-id",
+        "rustgram-dimensions",
+        "rustgram-photo-size",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "videos_manager": {
+      "name": "videos_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/videos_manager",
+      "category": "manager",
+      "loc": 629,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "tokio",
+        "rustgram-file-id",
+        "rustgram-dimensions",
+        "rustgram-photo-size",
+        "rustgram-animation-size",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "voice_note": {
+      "name": "voice_note",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/voice_note",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "voice_notes_manager": {
+      "name": "voice_notes_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/voice_notes_manager",
+      "category": "manager",
+      "loc": 694,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-file-id",
+        "rustgram-transcription-info",
+        "serde",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "web_app": {
+      "name": "web_app",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_app",
+      "category": "manager",
+      "loc": 178,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "web_app_instant_view": {
+      "name": "web_app_instant_view",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_app_instant_view",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "web_app_manager": {
+      "name": "web_app_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_app_manager",
+      "category": "manager",
+      "loc": 571,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "rustgram-dialog-id",
+        "rustgram-user-id",
+        "rustgram-web-app",
+        "serde",
+        "tokio"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "web_app_open_parameters": {
+      "name": "web_app_open_parameters",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_app_open_parameters",
+      "category": "manager",
+      "loc": 593,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde",
+        "serde_json",
+        "serde_json"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "web_page": {
+      "name": "web_page",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_page",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "web_page_block": {
+      "name": "web_page_block",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_page_block",
+      "category": "manager",
+      "loc": 252,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-types",
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 60,
+      "priority": "P2"
+    },
+    "web_page_id": {
+      "name": "web_page_id",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_page_id",
+      "category": "type",
+      "loc": 337,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "serde"
+      ],
+      "is_stub": false,
+      "coverage_target": 50,
+      "priority": "P3"
+    },
+    "web_page_type": {
+      "name": "web_page_type",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_page_type",
+      "category": "stub",
+      "loc": 1,
+      "has_tests": false,
+      "test_file_count": 0,
+      "dependencies": [],
+      "is_stub": true,
+      "coverage_target": 20,
+      "priority": "P4"
+    },
+    "web_pages_manager": {
+      "name": "web_pages_manager",
+      "path": "/Users/alfa/Documents/Self_projects/github/rustgram-client/crates/web_pages_manager",
+      "category": "manager",
+      "loc": 720,
+      "has_tests": true,
+      "test_file_count": 1,
+      "dependencies": [
+        "rustgram-web-page-id",
+        "rustgram-file-id",
+        "rustgram-user-id",
+        "serde",
+        "tokio"
+      ],
+      "is_stub": true,
+      "coverage_target": 60,
+      "priority": "P2"
+    }
+  },
+  "summary": {
+    "critical_count": 13,
+    "manager_count": 261,
+    "type_count": 50,
+    "stub_count": 72,
+    "crates_with_tests": 375,
+    "total_loc": 274723
+  }
+}

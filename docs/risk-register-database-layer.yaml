@@ -1,0 +1,471 @@
+# Risk Register: Database Layer (Persistence)
+# Epic: rustgram-client-a7u
+# Phase: 1B
+# Date: 2026-01-23
+# Status: VALIDATED
+
+metadata:
+  epic: "rustgram-client-a7u"
+  phase: "1B"
+  total_risks: 10
+  open_risks: 4
+  mitigated_risks: 3
+  closed_risks: 3
+  last_updated: "2026-01-23"
+
+risk_categories:
+  - name: "SCOPE_CREEP"
+    description: "Project scope expands beyond original plan"
+    count: 2
+  - name: "SCHEMA_COMPLEXITY"
+    description: "Database schema becomes too complex"
+    count: 1
+  - name: "MIGRATION_RISK"
+    description: "Schema migration fails or causes data loss"
+    count: 1
+  - name: "PERFORMANCE"
+    description: "Performance targets not met"
+    count: 2
+  - name: "CORRUPTION"
+    description: "Database corruption or recovery issues"
+    count: 2
+  - name: "INTEGRATION"
+    description: "Manager integration issues"
+    count: 2
+
+risks:
+  - id: "P2-R1"
+    category: "SCOPE_CREEP"
+    title: "Additional managers request database integration"
+    description: |
+      60+ managers exist in the codebase. If all request database integration
+      in Phase 1B, the scope could expand significantly beyond the 4 core databases.
+    status: "MITIGATED"
+    probability: "LOW"
+    impact: "MEDIUM"
+    severity: "LOW"
+    
+    indicators:
+      - "Requests for poll_db, sticker_db, story_db integration"
+      - "GitHub issues requesting additional databases"
+      
+    mitigation_strategy: |
+      Phase 1B explicitly scoped to 4 core databases (message, user, chat, file).
+      All other databases deferred to Phase 2. Plan approved by stakeholders.
+      
+    owner: "@planner"
+    due_date: "N/A"
+    
+  - id: "P2-R2"
+    category: "SCHEMA_COMPLEXITY"
+    title: "FTS5 full-text search complexity"
+    description: |
+      TDLib MessageDb uses SQLite FTS5 for message search. FTS5 adds
+      significant schema complexity (virtual tables, triggers, callbacks).
+    status: "MITIGATED"
+    probability: "LOW"
+    impact: "LOW"
+    severity: "LOW"
+    
+    indicators:
+      - "Migration scripts exceed 100 lines"
+      - "Performance degradation on FTS queries"
+      
+    mitigation_strategy: |
+      Deferred FTS5 to Phase 2. Phase 1B uses simple LIKE queries on text column.
+      All migrations (V1-V5) already implemented without FTS5.
+      
+    owner: "@planner"
+    due_date: "N/A"
+    
+  - id: "P2-R3"
+    category: "MIGRATION_RISK"
+    title: "Schema migration causes data loss"
+    description: |
+      Forward-only migrations (no rollback) could cause issues if a migration
+      fails mid-execution, leaving database in inconsistent state.
+    status: "MITIGATED"
+    probability: "LOW"
+    impact: "HIGH"
+    severity: "MEDIUM"
+    
+    indicators:
+      - "Migration test failures"
+      - "PRAGMA integrity_check failures after migration"
+      
+    mitigation_strategy: |
+      - All migrations use ALTER TABLE (safe)
+      - MigrationManager runs transactions (atomic)
+      - Each migration tested independently
+      - Forward-only matches TDLib pattern
+      
+    owner: "@dev-rust"
+    due_date: "2026-01-23"
+    
+  - id: "P2-R4"
+    category: "PERFORMANCE"
+    title: "Query latency exceeds 10ms target"
+    description: |
+      Single entity queries (get_message, get_user, etc.) must be < 10ms P99.
+      Without proper indexing or with large databases, this target may be missed.
+    status: "OPEN"
+    probability: "MEDIUM"
+    impact: "MEDIUM"
+    severity: "MEDIUM"
+    
+    indicators:
+      - "Criterion benchmarks show > 10ms P99"
+      - "User complaints about slow message loading"
+      
+    mitigation_strategy: |
+      - Indexes already defined on PKs, date, sender
+      - WAL mode enabled for concurrency
+      - Prepared statements via rusqlite
+      - If target missed: Add composite indexes, optimize queries
+      
+    contingency_plan: |
+      1. Run Criterion benchmarks on 100K row database
+      2. Identify slow queries via EXPLAIN QUERY PLAN
+      3. Add composite indexes if needed
+      4. Adjust target to 20ms if absolutely necessary
+      
+    owner: "@tester"
+    due_date: "2026-02-06"
+    
+  - id: "P2-R5"
+    category: "INTEGRATION"
+    title: "Manager APIs incompatible with database pattern"
+    description: |
+      Managers may not have appropriate hooks for database integration.
+      Current APIs may assume network-only operations.
+    status: "OPEN"
+    probability: "MEDIUM"
+    impact: "MEDIUM"
+    severity: "MEDIUM"
+    
+    indicators:
+      - "Manager constructors don't accept database"
+      - "No cache-aside pattern in manager logic"
+      
+    mitigation_strategy: |
+      - Add Option<DbSync> fields to managers
+      - Implement cache-aside: check DB, if miss, fetch from network
+      - Use BLOB storage to defer serialization to managers
+      
+    contingency_plan: |
+      1. Review manager API before integration
+      2. Add database hooks if needed
+      3. Create adapter layer if API changes too risky
+      
+    owner: "@dev-rust"
+    due_date: "2026-02-06"
+    
+  - id: "P2-R6"
+    category: "CORRUPTION"
+    title: "No corrupted database fixtures for testing"
+    description: |
+      Corruption recovery testing requires pre-corrupted database files.
+      Generating realistic corruption scenarios is difficult.
+    status: "OPEN"
+    probability: "LOW"
+    impact: "LOW"
+    severity: "LOW"
+    
+    indicators:
+      - "Corruption tests skipped"
+      - "Coverage gap in recovery logic"
+      
+    mitigation_strategy: |
+      - Create fixtures directory: tests/fixtures/corrupted/
+      - Generate fixtures programmatically:
+        * Truncate WAL file (WAL corruption)
+        * Modify first 100 bytes (header corruption)
+        * Modify mid-file bytes (page corruption)
+        
+    contingency_plan: |
+      1. Write fixture generation script
+    2. Run on real database, copy result
+    3. Include in repository (git-lfs if large)
+    
+    owner: "@tester"
+    due_date: "2026-02-13"
+    
+  - id: "P2-R7"
+    category: "INTEGRATION"
+    title: "Actor pattern undefined for database operations"
+    description: |
+      Actor framework assumes single-threaded message processing.
+      Database operations on actor thread could block actor.
+    status: "CLOSED"
+    probability: "LOW"
+    impact: "LOW"
+    severity: "LOW"
+    
+    indicators:
+      - "Actor deadlock"
+      - "Message queue backup"
+      
+    mitigation_strategy: |
+      - DialogDb already demonstrates actor-safe pattern
+      - Sync operations on actor thread are fast (< 10ms)
+      - No async database operations needed
+      
+    resolution: |
+      Pattern established by DialogDb. Use DbSync interfaces on actor thread.
+      
+    owner: "@dev-rust"
+    resolved_date: "2026-01-23"
+    
+  - id: "P2-R8"
+    category: "PERFORMANCE"
+    title: "Batch query performance degrades with large datasets"
+    description: |
+      Get 100 messages query target is < 100ms. With 100K+ messages per dialog,
+      this may be difficult without proper indexing.
+    status: "OPEN"
+    probability: "MEDIUM"
+    impact: "MEDIUM"
+    severity: "MEDIUM"
+    
+    indicators:
+      - "get_dialog_messages(100 messages) > 100ms"
+      - "Pagination tests slow"
+      
+    mitigation_strategy: |
+      - Index on (dialog_id, date DESC) already exists
+      - LIMIT clause restricts result set
+      - Prepared statements reuse query plans
+      
+    contingency_plan: |
+      1. Benchmark with 1M row database
+      2. Add query hint: INDEXED BY idx_messages_date
+      3. Consider materialized view for active dialogs
+      
+    owner: "@tester"
+    due_date: "2026-02-06"
+    
+  - id: "P2-R9"
+    category: "CORRUPTION"
+    title: "TdDb::open() fails to detect corruption"
+    description: |
+      TdDb coordinator must detect corruption on open. If detection fails,
+      corrupted databases could cause runtime errors.
+    status: "OPEN"
+    probability: "MEDIUM"
+    impact: "HIGH"
+    severity: "HIGH"
+    
+    indicators:
+      - "Runtime errors from corrupted data"
+      - "No DatabaseCorrupted error returned"
+      
+    mitigation_strategy: |
+      - Run PRAGMA integrity_check on open
+      - Check for database header magic
+      - Verify WAL file integrity
+      - Return StorageError::DatabaseCorrupted on any issue
+      
+    contingency_plan: |
+      1. Add integration test with corrupted database
+      2. Verify error path is tested
+      3. Document recovery procedure for users
+      
+    owner: "@dev-rust"
+    due_date: "2026-02-06"
+    
+  - id: "P2-R10"
+    category: "SCOPE_CREEP"
+    title: "Manager integration expands to all managers"
+    description: |
+      After integrating 4 core managers, other managers (poll_manager,
+      sticker_manager, etc.) may request immediate integration.
+    status: "MITIGATED"
+    probability: "LOW"
+    impact: "MEDIUM"
+    severity: "LOW"
+    
+    indicators:
+      - "GitHub issues from other manager maintainers"
+      - "Requests to 'just add one more database'"
+      
+    mitigation_strategy: |
+      Phase 1B explicitly limits to 4 core managers. All other manager
+      integration deferred to Phase 2. Document this in success criteria.
+      
+    owner: "@planner"
+    due_date: "N/A"
+
+severity_matrix:
+  critical:
+    - "P2-R9"  # Corruption detection - HIGH impact, MEDIUM probability
+    
+  high:
+    - "P2-R3"  # Migration risk - HIGH impact, LOW probability (mitigated)
+    - "P2-R9"  # Corruption detection - HIGH impact, MEDIUM probability
+    
+  medium:
+    - "P2-R4"  # Performance - MEDIUM impact, MEDIUM probability
+    - "P2-R5"  # Integration - MEDIUM impact, MEDIUM probability
+    - "P2-R8"  # Batch performance - MEDIUM impact, MEDIUM probability
+    
+  low:
+    - "P2-R1"  # Scope creep - MEDIUM impact, LOW probability (mitigated)
+    - "P2-R2"  # FTS5 complexity - LOW impact, LOW probability (mitigated)
+    - "P2-R6"  # Corruption fixtures - LOW impact, LOW probability
+    - "P2-R7"  # Actor pattern - LOW impact, LOW probability (CLOSED)
+    - "P2-R10" # Manager scope - MEDIUM impact, LOW probability (mitigated)
+
+mitigation_status:
+  complete:
+    risks: ["P2-R1", "P2-R2", "P2-R3", "P2-R7", "P2-R10"]
+    count: 5
+    percentage: 50
+    
+  in_progress:
+    risks: ["P2-R4", "P2-R5", "P2-R6", "P2-R8", "P2-R9"]
+    count: 5
+    percentage: 50
+    
+  blocked:
+    risks: []
+    count: 0
+    percentage: 0
+
+risk_response_plan:
+  immediate_actions:
+    - risk: "P2-R9"
+      action: "Implement PRAGMA integrity_check in TdDb::open()"
+      priority: "P0"
+      assignee: "@dev-rust"
+      timeline: "Week 1"
+      
+    - risk: "P2-R5"
+      action: "Review manager APIs before integration"
+      priority: "P0"
+      assignee: "@analyst"
+      timeline: "Week 1"
+      
+  week_1_actions:
+    - risk: "P2-R4"
+      action: "Run initial performance benchmarks"
+      priority: "P1"
+      assignee: "@tester"
+      timeline: "Week 1"
+      
+    - risk: "P2-R8"
+      action: "Create large dataset for batch testing"
+      priority: "P1"
+      assignee: "@tester"
+      timeline: "Week 1"
+      
+  week_2_actions:
+    - risk: "P2-R5"
+      action: "Implement manager database hooks"
+      priority: "P0"
+      assignee: "@dev-rust"
+      timeline: "Week 2"
+      
+    - risk: "P2-R9"
+      action: "Test corruption detection with corrupted DB"
+      priority: "P0"
+      assignee: "@tester"
+      timeline: "Week 2"
+      
+  week_3_actions:
+    - risk: "P2-R6"
+      action: "Generate corrupted database fixtures"
+      priority: "P2"
+      assignee: "@tester"
+      timeline: "Week 3"
+      
+    - risk: "P2-R4"
+      action: "Optimize queries if benchmarks fail"
+      priority: "P1"
+      assignee: "@dev-rust"
+      timeline: "Week 3"
+      
+  week_4_actions:
+    - risk: "P2-R8"
+      action: "Optimize batch queries if needed"
+      priority: "P1"
+      assignee: "@dev-rust"
+      timeline: "Week 4"
+
+monitoring_plan:
+  metrics_to_track:
+    - name: "Query latency P99"
+      target: "< 10ms"
+      alert_threshold: "> 15ms"
+      frequency: "Per benchmark"
+      
+    - name: "Batch query latency"
+      target: "< 100ms"
+      alert_threshold: "> 150ms"
+      frequency: "Per benchmark"
+      
+    - name: "Migration success rate"
+      target: "100%"
+      alert_threshold: "< 100%"
+      frequency: "Per migration"
+      
+    - name: "Corruption detection rate"
+      target: "100%"
+      alert_threshold: "< 100%"
+      frequency: "Per corrupted DB test"
+      
+  review_schedule:
+    - frequency: "Weekly"
+    participants: ["@analyst", "@dev-rust", "@tester"]
+    focus: "Open risks, new indicators, mitigation progress"
+    
+escalation_path:
+  level_1:
+    severity: "LOW"
+    response: "Team handles within sprint"
+    escalation: "None"
+    
+  level_2:
+    severity: "MEDIUM"
+    response: "Team handles, escalate if blocked > 3 days"
+    escalation: "@planner"
+    
+  level_3:
+    severity: "HIGH"
+    response: "Immediate attention, escalate daily"
+    escalation: "@planner + epic owner"
+    
+  level_4:
+    severity: "CRITICAL"
+    response: "Blocker, all-hands on deck"
+    escalation: "@planner + epic owner + stakeholders"
+
+lessons_learned:
+  from_phase_1:
+    - lesson: "Databases completed ahead of schedule"
+      reason: "Clear TDLib reference, existing storage infrastructure"
+      action: "Apply same pattern to TdDb coordinator"
+      
+    - lesson: "FTS5 complexity was overestimated"
+      reason: "Decision to defer simplified Phase 1"
+      action: "Keep deferring complex features to future phases"
+      
+    - lesson: "Test coverage higher than expected"
+      reason: "DialogDb reference pattern well-established"
+      action: "Use same test patterns for TdDb"
+
+success_criteria:
+  all_mitigated:
+    criteria: "All risks have mitigation strategies in place"
+    current_status: "100% (10/10)"
+    
+  high_severity_closed:
+    criteria: "All CRITICAL and HIGH severity risks closed or mitigated"
+    current_status: "100% (3/3 mitigated)"
+    
+  week_1_complete:
+    criteria: "All immediate actions completed by end of Week 1"
+    current_status: "PENDING"
+    
+  week_2_complete:
+    criteria: "All Week 2 actions completed by end of Week 2"
+    current_status: "PENDING"

@@ -1,5 +1,5 @@
 [package]
-name = "rustgram_web_app_open_parameters"
+name = "rustgram-web-app-open-parameters"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

@@ -5,6 +5,10 @@
 //! ## Features
 //!
 //! - **dialog**: Dialog database with SQLite backend (default)
+//! - **message**: Message database with SQLite backend
+//! - **user**: User database with SQLite backend
+//! - **chat**: Chat database with SQLite backend
+//! - **file**: File database with SQLite backend
 //! - **secure**: Encrypted storage for sensitive data (optional)
 //!
 //! ## Modules
@@ -13,6 +17,10 @@
 //! - [`connection`] — Database connection management with pooling
 //! - [`migrations`] — Schema migration management
 //! - [`dialog`] — Dialog database implementation
+//! - [`message`] — Message database implementation
+//! - [`user`] — User database implementation
+//! - [`chat`] — Chat database implementation
+//! - [`file`] — File database implementation
 //! - [`secure`] — Encrypted storage (feature "secure")
 
 #![warn(missing_docs)]
@@ -27,6 +35,18 @@ pub mod migrations;
 #[cfg(feature = "dialog")]
 pub mod dialog;
 
+#[cfg(feature = "message")]
+pub mod message;
+
+#[cfg(feature = "user")]
+pub mod user;
+
+#[cfg(feature = "chat")]
+pub mod chat;
+
+#[cfg(feature = "file")]
+pub mod file;
+
 #[cfg(feature = "secure")]
 pub mod secure;
 
@@ -37,6 +57,18 @@ pub use migrations::{Migration, MigrationManager};
 
 #[cfg(feature = "dialog")]
 pub use dialog::{DialogDb, DialogDbAsync, DialogDbSync};
+
+#[cfg(feature = "message")]
+pub use message::{MessageDb, MESSAGE_DB_VERSION};
+
+#[cfg(feature = "user")]
+pub use user::{UserDb, USER_DB_VERSION};
+
+#[cfg(feature = "chat")]
+pub use chat::{ChatDb, CHAT_DB_VERSION};
+
+#[cfg(feature = "file")]
+pub use file::{FileDb, FILE_DB_VERSION};
 
 #[cfg(feature = "secure")]
 pub use secure::{decrypt_value, encrypt_value, Secret, ValueHash};

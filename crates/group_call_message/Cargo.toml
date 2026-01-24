@@ -1,0 +1,12 @@
+[package]
+name = "rustgram-group-call-message"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-formatted-text = { path = "../formatted-text" }
+
+[dev-dependencies]
+rstest.workspace = true

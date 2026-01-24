@@ -1,0 +1,32 @@
+[package]
+name = "rustgram-saved-messages-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Saved messages topic management for Telegram client"
+
+[dependencies]
+# Core types
+rustgram-types = { path = "../types" }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+[dev-dependencies]
+# Testing
+rstest = { workspace = true }
+proptest = { workspace = true }

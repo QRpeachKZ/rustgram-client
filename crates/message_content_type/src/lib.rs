@@ -62,10 +62,11 @@ use std::fmt;
 /// - `Animation = 1` - GIF animation
 /// - `Audio = 2` - Audio file
 /// - etc.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
 #[repr(i32)]
 pub enum MessageContentType {
     /// No content (-1)
+    #[default]
     None = -1,
     /// Plain text message (0)
     Text = 0,
@@ -586,12 +587,6 @@ impl MessageContentType {
     }
 }
 
-impl Default for MessageContentType {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
 impl fmt::Display for MessageContentType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let name = match self {
@@ -693,10 +688,22 @@ mod tests {
 
     #[test]
     fn test_from_i32() {
-        assert_eq!(MessageContentType::from_i32(-1), Some(MessageContentType::None));
-        assert_eq!(MessageContentType::from_i32(0), Some(MessageContentType::Text));
-        assert_eq!(MessageContentType::from_i32(4), Some(MessageContentType::Photo));
-        assert_eq!(MessageContentType::from_i32(85), Some(MessageContentType::StarGiftPurchaseOfferDeclined));
+        assert_eq!(
+            MessageContentType::from_i32(-1),
+            Some(MessageContentType::None)
+        );
+        assert_eq!(
+            MessageContentType::from_i32(0),
+            Some(MessageContentType::Text)
+        );
+        assert_eq!(
+            MessageContentType::from_i32(4),
+            Some(MessageContentType::Photo)
+        );
+        assert_eq!(
+            MessageContentType::from_i32(85),
+            Some(MessageContentType::StarGiftPurchaseOfferDeclined)
+        );
         assert_eq!(MessageContentType::from_i32(999), None);
     }
 
@@ -811,7 +818,9 @@ mod tests {
     #[test]
     fn test_all_content_types_covered() {
         // Ensure all 102 types are covered (None + 1-85)
-        let count = (0..=85).filter(|&i| MessageContentType::from_i32(i).is_some()).count();
+        let count = (0..=85)
+            .filter(|&i| MessageContentType::from_i32(i).is_some())
+            .count();
         assert_eq!(count, 86); // 0-85 inclusive
         assert!(MessageContentType::from_i32(-1).is_some()); // None
     }

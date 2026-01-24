@@ -1,0 +1,24 @@
+[package]
+name = "rustgram_common_dialog_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_common_dialog_manager"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

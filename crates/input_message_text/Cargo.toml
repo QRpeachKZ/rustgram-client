@@ -14,8 +14,8 @@ name = "rustgram_input_message_text"
 path = "src/lib.rs"
 
 [dependencies]
-rustgram_formatted_text = { path = "../formatted_text" }
-rustgram_message_entity = { path = "../message_entity" }
+rustgram-formatted-text = { path = "../formatted-text" }
+rustgram-message-entity = { path = "../message-entity" }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
