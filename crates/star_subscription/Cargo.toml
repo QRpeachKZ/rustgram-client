@@ -1,0 +1,22 @@
+[package]
+name = "rustgram-star-subscription"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Star subscription for Telegram MTProto client"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-star-subscription-pricing = { path = "../star_subscription-pricing" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]

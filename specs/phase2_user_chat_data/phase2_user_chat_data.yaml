@@ -1,0 +1,768 @@
+# Technical Specification: Phase 2 - User & Chat Data
+# Epic: rustgram-client-1gk
+# Version: 1.0
+# Date: 2026-01-21
+# Status: Draft
+
+---
+
+## 1. Overview
+
+### 1.1 Purpose
+Implement user profile display, chat participant loading, and profile photo download functionality for GUI consumption.
+
+### 1.2 Scope
+- **Subtask 1gk.1:** User Profile Display via UserManager
+- **Subtask 1gk.2:** Chat Participant Loading via DialogManager
+- **Subtask 1gk.3:** Profile Photo Download via new PhotoDownloader
+
+### 1.3 Existing Infrastructure
+- UserManager has `fetch_full_user()` via `users.getFullUser`
+- DialogManager has network integration (405 lines)
+- FileDownloader exists with chunked download support
+- Photo crate has basic types defined
+
+---
+
+## 2. Subtask 1gk.1: User Profile Display
+
+### 2.1 API Design
+
+```rust
+// crates/user_manager/src/lib.rs
+
+impl UserManager {
+    /// Fetch full user profile from network.
+    ///
+    /// Returns UserFull with: user, profile_photo, can_call, 
+    /// has_private_calls, block, voice_messages_blocked, phone, 
+    /// bot_info, about, common_chat_count.
+    pub async fn fetch_full_user(
+        &self,
+        user_id: UserId,
+    ) -> Result<Option<UserFull>, UserManagerError>;
+
+    /// Get cached full user profile.
+    pub async fn get_full_user(
+        &self,
+        user_id: UserId,
+    ) -> Option<UserFull>;
+
+    /// Invalidate cached user data.
+    pub async fn invalidate_user(&self, user_id: UserId);
+}
+```
+
+### 2.2 Data Structures
+
+```rust
+// crates/user_manager/src/tl.rs
+
+/// Full user profile information.
+///
+/// TL Schema: users.UserFull (verified from telegram_api.tl)
+#[derive(Debug, Clone, PartialEq)]
+pub struct UserFull {
+    /// Basic user information
+    pub user: User,
+    
+    /// Profile photo
+    pub profile_photo: Option<Photo>,
+    
+    /// Can make calls to this user
+    pub can_call: bool,
+    
+    /// Has private calls
+    pub has_private_calls: bool,
+    
+    /// User is blocked
+    pub block: bool,
+    
+    /// Voice messages blocked
+    pub voice_messages_blocked: bool,
+    
+    /// Phone number
+    pub phone: Option<String>,
+    
+    /// Bot information (if user is a bot)
+    pub bot_info: Option<BotInfo>,
+    
+    /// User bio/about text
+    pub about: Option<String>,
+    
+    /// Number of common chats
+    pub common_chat_count: i32,
+}
+```
+
+### 2.3 Network Integration
+
+**TL Request:**
+```
+users.getFullUser#{CONSTRUCTOR_ID} id:InputUser = users.UserFull
+```
+
+**Constructor ID:** To be verified from telegram_api.tl
+
+**Serialization:**
+```rust
+#[derive(Debug, Clone)]
+pub struct GetFullUserRequest {
+    pub user: InputUser,
+}
+
+impl TlSerialize for GetFullUserRequest {
+    fn serialize_tl(&self, buf: &mut BytesMut) -> Result<()> {
+        // Write constructor ID
+        buf.put_u32_le(Self::CONSTRUCTOR_ID);
+        // Serialize InputUser
+        self.user.serialize_tl(buf)?;
+        Ok(())
+    }
+}
+```
+
+### 2.4 Caching Strategy
+
+```rust
+// crates/user_manager/src/cache.rs
+
+pub struct UserCache {
+    /// Basic user cache (5 min TTL)
+    users: Arc<parking_lot::Mutex<LruCache<UserId, CacheEntry<User>>>>,
+    
+    /// Full user profile cache (10 min TTL)
+    full_users: Arc<parking_lot::Mutex<LruCache<UserId, CacheEntry<UserFull>>>>,
+    
+    /// Default TTL for basic users
+    user_ttl: Duration,
+    
+    /// Default TTL for full profiles
+    full_user_ttl: Duration,
+}
+
+const DEFAULT_USER_TTL: Duration = Duration::from_secs(300);  // 5 min
+const DEFAULT_FULL_USER_TTL: Duration = Duration::from_secs(600);  // 10 min
+```
+
+### 2.5 Error Handling
+
+```rust
+#[derive(Debug, Clone, PartialEq, Error)]
+pub enum UserManagerError {
+    /// Network client not configured
+    #[error("network client not configured")]
+    NoClient,
+    
+    /// Network request failed
+    #[error("network error: {0}")]
+    NetworkError(String),
+    
+    /// User not found
+    #[error("user not found: {0}")]
+    UserNotFound(UserId),
+    
+    /// Invalid access hash
+    #[error("invalid access hash for user: {0}")]
+    InvalidAccessHash(UserId),
+    
+    /// Request timeout
+    #[error("request timeout after {0:?}")]
+    Timeout(Duration),
+    
+    /// Rate limited
+    #[error("rate limited: retry after {0}s")]
+    FloodWait { seconds: u32 },
+    
+    /// Deserialization error
+    #[error("failed to deserialize user data: {0}")]
+    DeserializationError(String),
+}
+```
+
+### 2.6 Testing Requirements
+
+**Unit Tests (20+):**
+- Test cache TTL expiration
+- Test cache hit/miss scenarios
+- Test error type conversions
+- Test InputUser serialization
+
+**Integration Tests (15+):**
+- Test fetch_full_user with mocked network
+- Test cache integration
+- Test timeout handling
+- Test rate limit handling
+
+**Contract Tests:**
+- Verify TL serialization matches TDLib format
+- Golden test vectors for GetFullUserRequest
+
+---
+
+## 3. Subtask 1gk.2: Chat Participant Loading
+
+### 3.1 API Design
+
+```rust
+// crates/dialog_manager/src/lib.rs
+
+impl DialogManager {
+    /// Load full chat information including participants.
+    pub async fn load_full_chat(
+        &self,
+        chat_id: ChatId,
+    ) -> Result<ChatFull, DialogError>;
+    
+    /// Load full channel information including participants.
+    pub async fn load_full_channel(
+        &self,
+        channel_id: ChannelId,
+    ) -> Result<ChatFull, DialogError>;
+    
+    /// Load chat participants with pagination.
+    pub async fn load_participants(
+        &self,
+        peer: InputPeer,
+        filter: ChannelParticipantsFilter,
+        offset: i32,
+        limit: i32,
+    ) -> Result<ChannelParticipants, DialogError>;
+}
+```
+
+### 3.2 Data Structures
+
+```rust
+// crates/dialog_manager/src/tl_types.rs
+
+/// Full chat information.
+///
+/// TL Schema: chatFull#2633421b (telegram_api.tl:132)
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChatFull {
+    /// Chat ID
+    pub id: ChatId,
+    
+    /// Chat description/about
+    pub about: String,
+    
+    /// Chat participants
+    pub participants: ChatParticipants,
+    
+    /// Chat photo
+    pub chat_photo: Option<Photo>,
+    
+    /// Notification settings
+    pub notify_settings: PeerNotifySettings,
+    
+    /// Exported invite link
+    pub exported_invite: Option<ExportedChatInvite>,
+    
+    /// Bot information (if chat has bots)
+    pub bot_info: Option<Vec<BotInfo>>,
+    
+    /// Pinned message ID
+    pub pinned_msg_id: Option<i32>,
+    
+    /// Folder ID
+    pub folder_id: Option<i32>,
+    
+    /// Active group call
+    pub call: Option<InputGroupCall>,
+    
+    /// Message TTL period
+    pub ttl_period: Option<i32>,
+    
+    /// Available reactions
+    pub available_reactions: Option<ChatReactions>,
+    
+    /// ... (11 more optional fields per telegram_api.tl:132)
+}
+
+/// Chat participant information.
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChatParticipant {
+    /// User ID
+    pub user_id: UserId,
+    
+    /// Inviter ID
+    pub inviter_id: Option<UserId>,
+    
+    /// Join date
+    pub date: i32,
+    
+    /// Participant role
+    pub role: ParticipantRole,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum ParticipantRole {
+    Creator,
+    Admin,
+    Member,
+}
+
+/// Participant filter for queries.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ChannelParticipantsFilter {
+    /// All participants
+    All,
+    
+    /// Search by name
+    Search(String),
+    
+    /// Administrators only
+    Administrators,
+    
+    /// Bots only
+    Bots,
+    
+    /// Banned users
+    Banned,
+    
+    /// Kicked users
+    Kicked,
+    
+    /// Recent participants
+    Recent,
+    
+    /// Custom (for specific queries)
+    Custom { query: String },
+}
+```
+
+### 3.3 Network Integration
+
+**TL Requests:**
+```
+messages.getFullChat#aeb00b34 chat_id:long = messages.ChatFull
+channels.getFullChannel#8736a09 channel:InputChannel = messages.ChatFull
+channels.getParticipants#77ced9d0 
+    channel:InputChannel 
+    filter:ChannelParticipantsFilter 
+    offset:int 
+    limit:int 
+    = channels.ChannelParticipants
+```
+
+**Response Types:**
+```rust
+#[derive(Debug, Clone, PartialEq)]
+pub enum GetFullChatResponse {
+    /// Regular chat full info
+    Chat(ChatFull),
+    
+    /// Channel full info
+    Channel(ChatFull),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ChannelParticipants {
+    /// Total participant count
+    pub count: i32,
+    
+    /// List of participants
+    pub participants: Vec<ChannelParticipant>,
+    
+    /// Users referenced
+    pub users: Vec<User>,
+}
+```
+
+### 3.4 Caching Strategy
+
+```rust
+// crates/dialog_manager/src/cache.rs
+
+pub struct DialogCache {
+    /// Existing: dialogs cache
+    
+    /// Full chat info cache (5 min TTL)
+    full_chats: Arc<parking_lot::Mutex<HashMap<ChatId, CacheEntry<ChatFull>>>>,
+    
+    /// Participants cache (3 min TTL)
+    participants: Arc<parking_lot::Mutex<HashMap<ChatId, CacheEntry<Vec<ChatParticipant>>>>>,
+    
+    /// TTL configuration
+    full_chat_ttl: Duration,
+    participants_ttl: Duration,
+}
+
+const DEFAULT_FULL_CHAT_TTL: Duration = Duration::from_secs(300);  // 5 min
+const DEFAULT_PARTICIPANTS_TTL: Duration = Duration::from_secs(180);  // 3 min
+```
+
+### 3.5 Error Handling
+
+```rust
+// Extend DialogError enum
+
+#[derive(Debug, Clone, PartialEq, Error)]
+pub enum DialogError {
+    // ... existing variants ...
+    
+    /// Chat not found
+    #[error("chat not found: {0}")]
+    ChatNotFound(ChatId),
+    
+    /// Channel not found
+    #[error("channel not found: {0}")]
+    ChannelNotFound(ChannelId),
+    
+    /// Invalid access hash for channel
+    #[error("invalid access hash for channel: {0}")]
+    InvalidChannelAccessHash(ChannelId),
+    
+    /// Participants list too large
+    #[error("participants list exceeds maximum size")]
+    ParticipantsTooLarge,
+    
+    /// Invalid filter for participants query
+    #[error("invalid participants filter: {0}")]
+    InvalidParticipantsFilter(String),
+}
+```
+
+### 3.6 Testing Requirements
+
+**Unit Tests (25+):**
+- Test ChatFull deserialization
+- Test participant filter serialization
+- Test pagination logic
+- Test cache TTL for participants
+
+**Integration Tests (15+):**
+- Test load_full_chat flow
+- Test load_participants with pagination
+- Test error scenarios (not found, invalid hash)
+
+**Edge Cases:**
+- Empty participant list
+- Very large participant lists (1000+)
+- Channels vs chats behavior differences
+
+---
+
+## 4. Subtask 1gk.3: Profile Photo Download
+
+### 4.1 API Design
+
+```rust
+// New crate: crates/photo_downloader/src/lib.rs
+
+pub struct PhotoDownloader {
+    /// Network client for file downloads
+    file_downloader: Arc<FileDownloader>,
+    
+    /// Cache for downloaded photos
+    cache: Arc<PhotoCache>,
+    
+    /// Default photo size preference
+    default_size: PhotoSizePreference,
+}
+
+impl PhotoDownloader {
+    /// Download profile photo for user.
+    pub async fn download_user_photo(
+        &self,
+        user_id: UserId,
+        size: PhotoSizePreference,
+    ) -> Result<Vec<u8>, PhotoDownloadError>;
+    
+    /// Download chat photo.
+    pub async fn download_chat_photo(
+        &self,
+        chat_id: ChatId,
+        size: PhotoSizePreference,
+    ) -> Result<Vec<u8>, PhotoDownloadError>;
+    
+    /// Download photo from Photo object.
+    pub async fn download_photo(
+        &self,
+        photo: &Photo,
+        size: PhotoSizePreference,
+    ) -> Result<Vec<u8>, PhotoDownloadError>;
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum PhotoSizePreference {
+    /// Smallest available (thumbnail)
+    Small,
+    
+    /// Medium size
+    Medium,
+    
+    /// Largest available (full resolution)
+    Large,
+    
+    /// Specific size
+    Specific { width: u32, height: u32 },
+}
+```
+
+### 4.2 Data Structures
+
+```rust
+// crates/photo_downloader/src/types.rs
+
+/// Cached photo data.
+#[derive(Debug, Clone)]
+pub struct CachedPhoto {
+    /// Photo data bytes
+    pub data: Vec<u8>,
+    
+    /// Photo size metadata
+    pub size: PhotoSize,
+    
+    /// Cache expiration time
+    pub expires_at: Instant,
+    
+    /// Original photo ID
+    pub photo_id: i64,
+}
+
+/// Photo cache with LRU eviction.
+pub struct PhotoCache {
+    /// In-memory cache (LRU)
+    cache: Arc<parking_lot::Mutex<LruCache<PhotoCacheKey, CachedPhoto>>>,
+    
+    /// Maximum cache size (in bytes)
+    max_size_bytes: usize,
+    
+    /// Current cache size
+    current_size: Arc<AtomicUsize>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct PhotoCacheKey {
+    pub photo_id: i64,
+    pub size_type: PhotoSizeType,
+}
+```
+
+### 4.3 Network Integration
+
+**TL Request:**
+```
+upload.getFile#be5335be 
+    flags:# 
+    precise:flags.0?true 
+    cdn_supported:flags.1?true 
+    location:InputFileLocation 
+    offset:long 
+    limit:int 
+    = upload.File
+```
+
+**Photo File Location:**
+```rust
+#[derive(Debug, Clone, PartialEq)]
+pub struct InputPhotoFileLocation {
+    /// Photo ID
+    pub id: i64,
+    
+    /// Access hash
+    pub access_hash: i64,
+    
+    /// File reference
+    pub file_reference: Vec<u8>,
+    
+    /// Thumbnail size
+    pub thumb_size: String,
+}
+
+impl TlSerialize for InputPhotoFileLocation {
+    const CONSTRUCTOR_ID: u32 = 0x40181ffe;  // inputPhotoFileLocation
+    
+    fn serialize_tl(&self, buf: &mut BytesMut) -> Result<()> {
+        buf.put_u32_le(Self::CONSTRUCTOR_ID);
+        buf.put_i64_le(self.id);
+        buf.put_i64_le(self.access_hash);
+        TlHelper::write_bytes(self.file_reference.as_ref(), buf);
+        TlHelper::write_string(&self.thumb_size, buf);
+        Ok(())
+    }
+}
+```
+
+### 4.4 Caching Strategy
+
+```rust
+// crates/photo_downloader/src/cache.rs
+
+const PHOTO_CACHE_TTL: Duration = Duration::from_secs(3600);  // 1 hour
+const MAX_PHOTO_CACHE_SIZE: usize = 100 * 1024 * 1024;  // 100 MB
+
+impl PhotoCache {
+    /// Get cached photo if not expired.
+    pub fn get(&self, key: &PhotoCacheKey) -> Option<CachedPhoto>;
+    
+    /// Insert photo into cache with LRU eviction.
+    pub fn insert(&self, key: PhotoCacheKey, photo: CachedPhoto);
+    
+    /// Clear all cached photos.
+    pub fn clear(&self);
+    
+    /// Get cache statistics.
+    pub fn stats(&self) -> CacheStats;
+}
+```
+
+### 4.5 Error Handling
+
+```rust
+#[derive(Debug, Clone, PartialEq, Error)]
+pub enum PhotoDownloadError {
+    /// Photo not found
+    #[error("photo not found: {0}")]
+    PhotoNotFound(i64),
+    
+    /// Invalid access hash
+    #[error("invalid access hash for photo: {0}")]
+    InvalidAccessHash(i64),
+    
+    /// Download failed
+    #[error("download failed: {0}")]
+    DownloadFailed(String),
+    
+    /// Cache error
+    #[error("cache error: {0}")]
+    CacheError(String),
+    
+    /// File too large
+    #[error("photo size {0} exceeds maximum {1}")]
+    PhotoTooLarge(usize, usize),
+    
+    /// Unsupported photo format
+    #[error("unsupported photo format: {0}")]
+    UnsupportedFormat(String),
+}
+```
+
+### 4.6 Testing Requirements
+
+**Unit Tests (20+):**
+- Test photo size selection logic
+- Test cache LRU eviction
+- Test InputPhotoFileLocation serialization
+- Test error type conversions
+
+**Integration Tests (10+):**
+- Test download flow with mocked FileDownloader
+- Test cache integration
+- Test different photo sizes
+- Test error scenarios
+
+---
+
+## 5. Cross-Cutting Concerns
+
+### 5.1 Authentication
+All operations require `AuthFlag::On` for network queries.
+
+### 5.2 Rate Limiting
+Implement exponential backoff for:
+- `users.getFullUser`: 1 request/second
+- `messages.getFullChat`: 1 request/second
+- `channels.getFullChannel`: 1 request/second
+- `channels.getParticipants`: 1 request/second
+- `upload.getFile`: 5 requests/second
+
+### 5.3 Error Recovery
+- Retry transient errors (500, 502, 503)
+- Handle FloodWait errors with delay
+- Cache results during errors when possible
+
+### 5.4 Memory Management
+- Limit cache sizes (users: 5000, chats: 1000, photos: 100 MB)
+- Use LRU eviction
+- Clear caches on explicit user action
+
+---
+
+## 6. Success Criteria
+
+### 6.1 Functional Requirements
+- fetch_full_user() returns UserFull with all fields
+- load_full_chat() returns ChatFull with participants
+- download_photo() returns photo bytes for all sizes
+
+### 6.2 Code Quality Metrics
+- **Test Count:** ≥ 80 tests total
+- **Code Coverage:** ≥ 70% per crate
+- **Cyclomatic Complexity:** ≤ 10 per function
+- **Clippy Warnings:** 0
+- **Production unwrap():** 0
+
+### 6.3 Performance Requirements
+- User profile fetch: < 2 seconds (p99)
+- Chat participant load: < 5 seconds (p99)
+- Photo download: < 10 seconds (p99) for 1 MB photo
+- Cache hit rate: ≥ 80%
+
+---
+
+## 7. Dependencies
+
+### 7.1 Internal
+```toml
+[dependencies]
+rustgram-user-manager = { path = "../user_manager" }
+rustgram-dialog-manager = { path = "../dialog_manager" }
+rustgram-photo = { path = "../photo" }
+rustgram-file-downloader = { path = "../file_downloader" }
+rustgram-net = { path = "../net" }
+rustgram-types = { path = "../types" }
+
+tokio = { workspace = true, features = ["sync", "rt-multi-thread"] }
+bytes = { workspace = true }
+serde = { workspace = true }
+thiserror = { workspace = true }
+parking_lot = { workspace = true }
+```
+
+### 7.2 Dev Dependencies
+```toml
+[dev-dependencies]
+tokio-test = "0.4"
+rstest = { workspace = true }
+proptest = { workspace = true }  # For property-based testing
+```
+
+---
+
+## 8. Timeline
+
+| Week | Tasks | Deliverables |
+|------|-------|--------------|
+| 0.5 | TL Schema Verification + Mock Infrastructure | Verified constructor IDs, MockNetQueryDispatcher |
+| 1 | User Profile Display (1gk.1) | fetch_full_user() with tests |
+| 1.5 | Chat Participant Loading (1gk.2) | getFullChat() with participants |
+| 1 | Profile Photo Download (1gk.3) | PhotoDownloader adapter |
+| 0.5 | Integration + Contract Tests | 70%+ coverage, contract tests passing |
+
+**Total:** 4.5 weeks
+
+---
+
+## 9. Open Questions
+
+1. **Photo Download Architecture:** Create new `photo_downloader` crate vs extend `photo` crate?
+2. **ChatFull Location:** Create `chat_full` crate vs add to `dialog_manager`?
+3. **Participant Pagination Strategy:** How to handle channels with 10,000+ participants?
+4. **Cache Coherency:** How to invalidate cached data when updates arrive?
+
+---
+
+## 10. References
+
+- TDLib TL Schema: `references/td/td/generate/scheme/telegram_api.tl`
+- DialogManager Spec: `specs/dialog-manager-network.yaml`
+- UserManager Network Spec: `specs/user_manager_network_integration/spec.yaml`
+- Photo Type Definition: `crates/photo/src/lib.rs`
+
+---
+
+**Version History:**
+- v1.0 (2026-01-21): Initial specification based on plan validation

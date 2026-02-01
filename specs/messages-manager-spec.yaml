@@ -1,0 +1,496 @@
+# MessagesManager Module Specification
+# Generated for Phase 2 Analysis
+
+module:
+  name: messages_manager
+  display_name: MessagesManager
+  version: 0.1.0
+  description: |
+    Core message CRUD operations for Telegram client.
+    Focused implementation of TDLib's MessagesManager (39K+ lines) 
+    providing essential send, get, delete, edit, and read operations.
+
+crates:
+  - name: rustgram_message_types
+    display_name: Message Types
+    description: Core message type definitions
+    target_loc: 800-1200
+    target_tests: 60-80
+    complexity: MEDIUM
+    
+  - name: rustgram_messages_manager
+    display_name: Messages Manager
+    description: Message CRUD operations
+    target_loc: 1500-1700
+    target_tests: 140-160
+    complexity: HIGH
+
+# Scope Definition
+scope:
+  included:
+    - Send text messages
+    - Get message(s) from server
+    - Delete messages (single, batch, history)
+    - Edit message text/caption
+    - Read history (inbox/outbox)
+    - Message metadata (id, date, sender)
+    - Reply-to handling
+    - Forward info (stub)
+    
+  excluded:
+    - Secret chat messages (requires encryption)
+    - Scheduled messages (requires separate module)
+    - Message search (requires search infrastructure)
+    - Full content types (use stubs for now)
+    - Message reactions (separate module)
+    - Message threads (separate module)
+    - Story replies (separate module)
+
+# TDLib Reference
+tdlib:
+  header_file: references/td/td/telegram/MessagesManager.h
+  source_file: references/td/td/telegram/MessagesManager.cpp
+  key_methods:
+    - delete_messages
+    - delete_dialog_history
+    - edit_message_text
+    - edit_message_caption
+    - get_message
+    - get_messages
+    - read_history_inbox
+    - read_history_outbox
+    - send_message
+
+# Dependency Matrix
+dependencies:
+  # From rustgram_types (already verified)
+  - type: DialogId
+    source: rustgram_types
+    constructor: from_user/from_chat/from_channel
+    verified: true
+    location: crates/types/src/ids.rs:658
+    
+  - type: MessageId
+    source: rustgram_types
+    constructor: from_server_id/new
+    verified: true
+    location: crates/types/src/ids.rs:355
+    
+  - type: UserId
+    source: rustgram_types
+    constructor: new
+    verified: true
+    location: crates/types/src/ids.rs:30
+    
+  - type: ChatId
+    source: rustgram_types
+    constructor: new
+    verified: true
+    location: crates/types/src/ids.rs:140
+    
+  - type: ChannelId
+    source: rustgram_types
+    constructor: new
+    verified: true
+    location: crates/types/src/ids.rs:240
+    
+  - type: MessageFullId
+    source: rustgram_message_full_id
+    constructor: new
+    verified: true
+    location: crates/message_full_id/src/lib.rs:36
+    
+  - type: MessageContentType
+    source: rustgram_message_content_type
+    constructor: N/A (enum)
+    verified: true
+    location: crates/message_content_type/src/lib.rs:38
+    
+  # Message-related types
+  - type: FormattedText
+    source: rustgram_formatted_text
+    constructor: new
+    verified: true
+    location: crates/formatted_text/src/lib.rs
+    
+  - type: MessageEntity
+    source: rustgram_formatted_text
+    constructor: new
+    verified: true
+    location: crates/formatted_text/src/lib.rs:30
+    
+  - type: MessageInputReplyTo
+    source: rustgram_message_input_reply_to
+    constructor: new
+    verified: true
+    location: crates/message_input_reply_to/src/lib.rs
+    
+  - type: DraftMessage
+    source: rustgram_draft_message
+    constructor: new
+    verified: true
+    location: crates/draft_message/src/lib.rs:164
+    
+  - type: OrderedMessages
+    source: rustgram_ordered_messages
+    constructor: new
+    verified: true
+    location: crates/ordered_messages/src/lib.rs:58
+    
+  # Stub implementations needed
+  - type: MessageContent
+    source: TDLIB_STUB
+    constructor: N/A
+    verified: false
+    stub_required: true
+    reason: "Full content too large (86 variants), use simplified stub"
+    
+  - type: MessageForwardInfo
+    source: TDLIB_STUB
+    constructor: N/A
+    verified: false
+    stub_required: true
+    reason: "Complex nested type, use placeholder"
+    
+  - type: MessageReplyHeader
+    source: TDLIB_STUB
+    constructor: N/A
+    verified: false
+    stub_required: true
+    reason: "Thread replies, defer to future"
+    
+  - type: ReplyMarkup
+    source: rustgram_message_copy_options
+    constructor: N/A
+    verified: true
+    location: crates/message_copy_options/src/lib.rs:8
+
+# Risk Assessment
+risks:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    description: MessageContent not implemented
+    impact: MEDIUM
+    probability: HIGH
+    mitigation: Create simplified stub with content_type field only
+    outcome: TBD
+    
+  - id: R2
+    type: MISSING_DEPENDENCY
+    description: MessageForwardInfo not implemented
+    impact: LOW
+    probability: HIGH
+    mitigation: Create stub with origin_message_id field
+    outcome: TBD
+    
+  - id: R3
+    type: COMPLEXITY
+    description: Message send validation complex
+    impact: MEDIUM
+    probability: MEDIUM
+    mitigation: Start with basic validation, expand iteratively
+    outcome: TBD
+    
+  - id: R4
+    type: API_ALIGNMENT
+    description: TDLib send_message has many flags/options
+    impact: LOW
+    probability: MEDIUM
+    mitigation: Implement core flags first, document unsupported flags
+    outcome: TBD
+    
+  - id: R5
+    type: THREAD_SAFETY
+    description: Concurrent message access
+    impact: MEDIUM
+    probability: LOW
+    mitigation: Use Arc<RwLock<Message>> for shared state
+    outcome: TBD
+
+# API Design (Draft)
+public_api:
+  rustgram_message_types:
+    - type: struct
+      name: Message
+      fields:
+        - name: id
+          type: MessageId
+          doc: Unique message identifier
+        - name: dialog_id
+          type: DialogId
+          doc: Dialog containing this message
+        - name: sender_id
+          type: DialogId
+          doc: Sender of the message
+        - name: date
+          type: i32
+          doc: Unix timestamp
+        - name: content_type
+          type: MessageContentType
+          doc: Type of message content
+        - name: content
+          type: MessageContent
+          doc: Message content (stub)
+        - name: reply_to
+          type: Option<MessageInputReplyTo>
+          doc: What this message replies to
+        - name: forward_info
+          type: Option<MessageForwardInfo>
+          doc: Forward information
+        - name: edit_date
+          type: Option<i32>
+          doc: Last edit timestamp
+        - name: views
+          type: Option<i32>
+          doc: View count
+      methods:
+        - name: new
+          returns: Self
+          doc: Creates new message
+        - name: is_valid
+          returns: bool
+          doc: Checks if message is valid
+        - name: is_edited
+          returns: bool
+          doc: Checks if message was edited
+        - name: is_outgoing
+          returns: bool
+          doc: Checks if message is outgoing
+          
+  rustgram_messages_manager:
+    - type: struct
+      name: MessagesManager
+      fields:
+        - name: messages
+          type: HashMap<DialogId, OrderedMessages>
+          doc: Message storage by dialog
+        - name: message_cache
+          type: HashMap<MessageFullId, Message>
+          doc: Message content cache
+      methods:
+        # Send operations
+        - name: send_message
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: content
+              type: MessageContent
+            - name: reply_to
+              type: Option<MessageInputReplyTo>
+          returns: Result<MessageId, Error>
+          doc: Send a message to a dialog
+          
+        # Get operations  
+        - name: get_message
+          inputs:
+            - name: full_id
+              type: MessageFullId
+          returns: Result<&Message, Error>
+          doc: Get a message by full ID
+          
+        - name: get_messages
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: message_ids
+              type: Vec<MessageId>
+          returns: Result<Vec<&Message>, Error>
+          doc: Get multiple messages
+          
+        # Delete operations
+        - name: delete_messages
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: message_ids
+              type: Vec<MessageId>
+            - name: revoke
+              type: bool
+          returns: Result<(), Error>
+          doc: Delete messages (revoke if true)
+          
+        - name: delete_dialog_history
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: revoke
+              type: bool
+          returns: Result<(), Error>
+          doc: Delete all dialog history
+          
+        # Edit operations
+        - name: edit_message_text
+          inputs:
+            - name: full_id
+              type: MessageFullId
+            - name: text
+              type: FormattedText
+          returns: Result<(), Error>
+          doc: Edit message text
+          
+        - name: edit_message_caption
+          inputs:
+            - name: full_id
+              type: MessageFullId
+            - name: caption
+              type: FormattedText
+          returns: Result<(), Error>
+          doc: Edit message caption
+          
+        # Read operations
+        - name: read_history_inbox
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: max_id
+              type: MessageId
+          returns: Result<(), Error>
+          doc: Mark messages as read (inbox)
+          
+        - name: read_history_outbox
+          inputs:
+            - name: dialog_id
+              type: DialogId
+            - name: max_id
+              type: MessageId
+          returns: Result<(), Error>
+          doc: Mark messages as read (outbox)
+
+# Error Types
+errors:
+  - type: MessageError
+    variants:
+      - NotFound
+      - InvalidId
+      - NotEditable
+      - NotDeletable
+      - SendFailed(String)
+      - EditFailed(String)
+      - NetworkError(String)
+      - ValidationError(String)
+
+# Test Strategy
+testing:
+  rustgram_message_types:
+    target_count: 60-80
+    coverage:
+      - Message construction
+      - Message validation
+      - Message cloning/serialization
+      - Reply-to handling
+      - Forward info stubs
+      - Edit state tracking
+      
+  rustgram_messages_manager:
+    target_count: 140-160
+    coverage:
+      - Send operations (happy path + errors)
+      - Get operations (cache hits/misses)
+      - Delete operations (single/batch/history)
+      - Edit operations (text/caption)
+      - Read operations (inbox/outbox)
+      - Concurrent access patterns
+      - Error handling paths
+      - State transitions
+
+# Implementation Phases
+phases:
+  - phase: 1
+    name: Foundation Types
+    crate: rustgram_message_types
+    tasks:
+      - Create MessageContent stub
+      - Create MessageForwardInfo stub  
+      - Implement Message struct
+      - Implement Message validation
+      - Add 60+ tests
+    estimated_loc: 800-1200
+    
+  - phase: 2
+    name: Core Manager
+    crate: rustgram_messages_manager
+    tasks:
+      - Implement MessagesManager struct
+      - Implement message storage
+      - Implement get_message(s)
+      - Implement delete_messages
+      - Add 80+ tests
+    estimated_loc: 800-1000
+    
+  - phase: 3
+    name: Send & Edit
+    crate: rustgram_messages_manager
+    tasks:
+      - Implement send_message
+      - Implement edit_message_text
+      - Implement edit_message_caption
+      - Add send validation
+      - Add 40+ tests
+    estimated_loc: 400-500
+    
+  - phase: 4
+    name: Read Operations
+    crate: rustgram_messages_manager
+    tasks:
+      - Implement read_history_inbox
+      - Implement read_history_outbox
+      - Implement delete_dialog_history
+      - Add 20+ tests
+    estimated_loc: 300-400
+
+# Success Criteria
+success_criteria:
+  code_quality:
+    - criterion: Zero clippy warnings
+      metric: 0
+      measurement: cargo clippy -p rustgram-$crate -- -D warnings
+    - criterion: Zero unwrap() in production
+      metric: 0
+      measurement: grep -r "unwrap()" crates/$crate/src/ | grep -v "test"
+    - criterion: Public API documented
+      metric: 100%
+      measurement: cargo doc --no-deps
+      
+  test_coverage:
+    - criterion: Total tests (message_types)
+      metric: ">=60"
+      measurement: cargo test
+    - criterion: Total tests (messages_manager)
+      metric: ">=140"
+      measurement: cargo test
+    - criterion: Test pass rate
+      metric: 100%
+      measurement: cargo test
+      
+  code_size:
+    - criterion: Total LOC (both crates)
+      metric: 2300-2900
+      measurement: cloc crates/*/src/
+    - criterion: Message types LOC
+      metric: 800-1200
+      measurement: cloc crates/rustgram_message_types/
+    - criterion: Manager LOC
+      metric: 1500-1700
+      measurement: cloc crates/rustgram_messages_manager/
+
+# Documentation Requirements
+documentation:
+  required:
+    - Module-level overview
+    - TDLib alignment notes
+    - Usage examples for each public API
+    - Stub implementation documentation
+    - Known limitations
+    - Thread safety guarantees
+  output:
+    - docs/messages-manager-module.md
+    - crates/rustgram_message_types/README.md
+    - crates/rustgram_messages_manager/README.md
+
+# Notes
+notes:
+  - TDLib MessagesManager is 39K+ lines; we're implementing ~2300-2900 lines (6-7%)
+  - Focus is CRUD operations only; advanced features deferred
+  - Stubs are acceptable for complex nested types
+  - All external types verified before development (Phase 2.5)
+  - Thread safety via Arc<RwLock<T>> for shared state

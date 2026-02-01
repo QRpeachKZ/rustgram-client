@@ -1,0 +1,97 @@
+# Specification: Requests
+module: requests
+crate: rustgram-requests
+tdlib_reference: references/td/td/telegram/Requests.h
+complexity: HIGH
+module_type: Manager Type
+estimated_loc: 1200-1800
+estimated_tests: 50-70
+
+types:
+  - name: Requests
+    description: |
+      Request manager for TDLib client.
+      
+      Handles routing of TDLib JSON requests to appropriate handlers.
+      Contains thousands of on_request methods for different TDLib API calls.
+      This is a simplified version focusing on the core infrastructure.
+    fields:
+      - name: td
+        type: Td
+        description: Reference to the main Td instance
+        optional: false
+      - name: td_actor
+        type: ActorId<Td>
+        description: Actor ID for sending messages to Td
+        optional: false
+
+  - name: RequestPromiseBase
+    description: Base promise type for request handling
+    visibility: private
+    fields:
+      - name: state
+        type: RequestState
+        description: Current state of the request
+        optional: false
+      - name: request_id
+        type: u64
+        description: Request identifier
+        optional: false
+
+  - name: RequestState
+    description: State of a request promise
+    variants:
+      - Empty
+      - Ready
+      - Complete
+
+external_dependencies:
+  - type: Td
+    crate: rustgram-td
+    verified: false # STUB NEEDED
+  - type: ActorId
+    crate: rustgram-actor
+    verified: false # STUB NEEDED
+  - type: SentEmailCode
+    crate: rustgram-email-verification
+    verified: false # STUB NEEDED
+
+constructors:
+  - name: new
+    description: Creates new Requests manager
+    parameters:
+      - name: td
+        type: &Td
+    returns: Self
+
+methods:
+  - name: run_request
+    description: Runs a TDLib request
+    parameters:
+      - name: id
+        type: u64
+      - name: function
+        type: Function
+  - name: create_request_promise
+    description: Creates a promise for a request
+    returns: Promise<T>
+
+traits:
+  - Debug (if Td: Debug)
+
+test_plan:
+  unit_tests: 50
+  doc_tests: 8
+
+notes: |
+  This is a MASSIVE type in TDLib with 2000+ lines.
+  For the Rust implementation, create a simplified version that:
+  1. Provides the infrastructure for request routing
+  2. Implements a few key on_request methods as examples
+  3. Documents the pattern for adding more methods
+  
+  Td and ActorId are complex dependencies that will need stubs.
+  Focus on the RequestPromise infrastructure rather than all on_request methods.
+
+  The full TDLib Requests.h has ~450 on_request method declarations.
+  Implement only a subset (e.g., 10-20) for demonstration.

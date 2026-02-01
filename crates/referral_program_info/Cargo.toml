@@ -1,0 +1,21 @@
+[package]
+name = "rustgram_referral_program_info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Referral program information for Telegram"
+
+[lib]
+name = "rustgram_referral_program_info"
+
+[dependencies]
+rustgram-referral-program-parameters = { path = "../referral_program-parameters" }
+rustgram-star-amount = { path = "../star-amount" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

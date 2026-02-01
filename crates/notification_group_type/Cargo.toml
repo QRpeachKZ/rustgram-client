@@ -1,0 +1,26 @@
+[package]
+name = "rustgram-notification-group-type"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Notification group type enumeration for Telegram MTProto client"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = []
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

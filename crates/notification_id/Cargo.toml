@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-notification-id"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+
+license = "MIT OR Apache-2.0"
+authors = ["rustgram-client contributors"]
+description = "Notification ID type for Telegram MTProto client"
+repository = "https://github.com/your-org/rustgram-client"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[features]
+default = []
+serde = ["dep:serde"]

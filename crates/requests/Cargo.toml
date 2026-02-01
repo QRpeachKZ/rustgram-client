@@ -1,0 +1,31 @@
+[package]
+name = "rustgram-requests"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Requests manager for rustgram-client"
+keywords = ["telegram", "mtproto", "requests"]
+categories = ["api-bindings"]
+
+[features]
+default = []
+
+[dependencies]
+rustgram-actor = { path = "../actor" }
+rustgram-promise = { path = "../promise" }
+rustgram-td = { path = "../td" }
+rustgram-types = { path = "../types" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

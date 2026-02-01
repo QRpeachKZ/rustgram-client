@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-message-forward-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_message_forward_info"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-message-origin = { path = "../message-origin" }
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

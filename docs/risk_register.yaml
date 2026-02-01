@@ -1,0 +1,229 @@
+risks:
+  - id: R1
+    type: CONSTRUCTOR_CHANGE
+    status: BLOCKER
+    description: "AuthManager is missing from RequestMapper::new() constructor signature"
+    impact: "Cannot implement authentication request handlers (SetAuthenticationPhoneNumber, CheckAuthenticationCode, CheckAuthenticationPassword, GetAuthorizationState)"
+    likelihood: "Certain (100%)"
+    mitigation: |
+      Add `auth_manager: Option<Arc<AuthManager>>` field to `RequestMapper` struct and update `RequestMapper::new()` to accept it as parameter.
+      
+      Required changes:
+      1. Add field to struct (mapper.rs:22-37)
+      2. Add parameter to new() (mapper.rs:43-48)
+      3. Update InternalClientConfig (lib.rs:678-695)
+      4. Update mapper creation in RustgramClient::with_config() (lib.rs:235-248)
+      
+      Estimated LOC: 15
+      Estimated time: 30 minutes
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "Before implementation start"
+    
+  - id: R2
+    type: API_MISMATCH
+    status: OPEN
+    description: "Manager methods return different types (Option vs Result) requiring type-specific error mapping"
+    impact: "Complex error handling logic in process_request() match arms"
+    likelihood: "High (90%)"
+    mitigation: |
+      Create helper methods for each manager type:
+      - `map_user_result(option: Option<User>) -> Response`
+      - `map_message_result(result: Result<MessageId, MessagesManagerError>) -> Response`
+      - `map_auth_result(result: Result<(), AuthManagerError>) -> Response`
+      - `map_dialog_result(bool) -> Response`
+      
+      This centralizes error mapping and reduces duplication.
+      Estimated LOC: 40
+      Estimated time: 1 hour
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "During implementation phase"
+
+  - id: R3
+    type: TEST_GAP
+    status: OPEN
+    description: "Current tests only verify stub responses; manager mocking infrastructure not in place"
+    impact: "Tests may not catch integration issues with real manager behavior"
+    likelihood: "Medium (60%)"
+    mitigation: |
+      Create mock manager implementations in test module:
+      - `MockUserManager` implementing `get_me()`, `get_user()`
+      - `MockMessagesManager` implementing `send_text()`
+      - `MockAuthManager` implementing auth methods
+      
+      Use `std::sync::Arc` for mocking and set up in test fixtures.
+      Estimated LOC: 80
+      Estimated time: 2 hours
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "During implementation, before committing"
+
+  - id: R4
+    type: RESPONSE_TYPE_MISSING
+    status: OPEN
+    description: "Response enum lacks required variants for User, UserFull, Chat, and extended AuthorizationState"
+    impact: "Cannot return proper TDLib-compatible JSON responses"
+    likelihood: "Certain (100%)"
+    mitigation: |
+      Add Response variants in response.rs:
+      - `Response::User { id, first_name, last_name, username, phone_number, ... }`
+      - `Response::UserFull { user, bio, profile_photo, ... }`
+      - `Response::Chat { id, title, type, ... }`
+      - Extend `AuthorizationState` with: `WaitCode`, `WaitPassword`, `Ok`, `NetworkError(String)`
+      
+      Implement `to_json()` for each variant with TDLib format (@type field).
+      Estimated LOC: 70
+      Estimated time: 2 hours
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "Before implementing request handlers"
+
+  - id: R5
+    type: DEPENDENCY_MISSING
+    status: MITIGATED
+    description: "DialogManager::load_dialogs() not directly available - must use NetworkClient"
+    impact: "GetChats handler requires network client integration"
+    likelihood: "High (80%)"
+    mitigation: |
+      Use `DialogNetworkClient` already present in RequestMapper.
+      
+      Implementation approach:
+      1. Check if `dialog_network_client` is Some
+      2. Use network client to send `GetDialogsRequest`
+      3. Parse response and convert to `Response::Chats`
+      
+      Alternative: Use cached dialogs from DialogManager state if network is unavailable.
+      Estimated LOC: 25
+      Estimated time: 1 hour
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "During GetChats implementation"
+    note: "Network client already in struct, just needs to be used"
+
+  - id: R6
+    type: BUILD_FAILURE
+    status: OPEN
+    description: "Adding auth_manager dependency may cause circular dependency issues"
+    impact: "Compilation failure, blocking all work"
+    likelihood: "Low (20%)"
+    mitigation: |
+      Verify dependency graph before implementing:
+      
+      1. Check that `rustgram-auth-manager` doesn't depend on `paper_plane_adapter`
+      2. Use `Option<Arc<AuthManager>>` to avoid direct coupling
+      3. Test build with `cargo build -p paper_plane_adapter`
+      
+      If circular dependency detected:
+      - Use trait object (`dyn AuthManager`) instead of concrete type
+      - Or move AuthManager to separate crate level
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "Before committing code changes"
+    note: "AuthManager already in Cargo.toml dependencies, likely safe"
+
+  - id: R7
+    type: API_MISMATCH
+    status: OPEN
+    description: "UserManager::fetch_full_user() returns Result<Option<UserFull>, NetworkError> - double-wrapped option"
+    impact: "Need to handle both Result error and None case"
+    likelihood: "High (90%)"
+    mitigation: |
+      Pattern matching for both layers:
+      
+      ```rust
+      match manager.fetch_full_user(uid).await {
+          Ok(Some(full_user)) => Response::user_full(full_user),
+          Ok(None) => Response::error(404, "User not found"),
+          Err(NetworkError::NoClient) => Response::error(500, "Network unavailable"),
+          Err(NetworkError::Timeout) => Response::error(408, "Request timeout"),
+          Err(e) => Response::error(500, format!("Network error: {}", e)),
+      }
+      ```
+      
+      Already accounted for in spec (estimated LOC includes this).
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "During GetUserFull implementation"
+
+  - id: R8
+    type: TEST_GAP
+    status: OPEN
+    description: "No integration tests for end-to-end request flow"
+    impact: "May miss issues in JSON → Request → Manager → Response → JSON pipeline"
+    likelihood: "Medium (50%)"
+    mitigation: |
+      Add integration tests that:
+      1. Parse JSON request
+      2. Call `process_request()`
+      3. Verify Response::to_json() output
+      
+      This is out of scope for this task but should be tracked separately.
+      Create follow-up task for integration test coverage.
+    owner: "Test engineer (future task)"
+    due_date: "Post-implementation"
+
+  - id: R9
+    type: LOC_UNDERESTIMATION
+    status: MITIGATED
+    description: "Plan estimates 80 LOC but actual implementation may require ~120 LOC"
+    impact: "Task may take longer than estimated 2-3 days"
+    likelihood: "High (80%)"
+    mitigation: |
+      Revised estimate: 119 LOC (49 LOC over plan)
+      
+      Breakdown:
+      - Field/constructor changes: 15 LOC (was 8 LOC)
+      - Request handlers: 85 LOC (was 67 LOC)
+      - Response types: 70 LOC (not in plan)
+      - Error mapping helpers: 40 LOC (was 10 LOC)
+      
+      Revised time estimate: 3-4 days (not 2-3 days)
+      This has been reflected in the spec and plan validation.
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "N/A (already documented)"
+
+  - id: R10
+    type: CONSTRUCTOR_CHANGE
+    status: OPEN
+    description: "Default implementation of RequestMapper will fail to compile with new auth_manager field"
+    impact: "Build failure due to missing field in Default impl"
+    likelihood: "Certain (100%)"
+    mitigation: |
+      Update `Default` implementation (mapper.rs:128-137):
+      
+      ```rust
+      impl Default for RequestMapper {
+          fn default() -> Self {
+              Self {
+                  dialog_manager: DialogManager::new(),
+                  messages_manager: None,
+                  user_manager: None,
+                  auth_manager: None,  // ADD THIS
+                  dialog_network_client: None,
+              }
+          }
+      }
+      ```
+      Estimated LOC: 1
+      Estimated time: 5 minutes
+    owner: "Developer implementing rustgram-client-ufz.4"
+    due_date: "When adding auth_manager field"
+
+summary:
+  total_risks: 10
+  blockers: 1
+  open: 7
+  mitigated: 2
+  
+  critical_path:
+    - R1 (BLOCKER): Add auth_manager to RequestMapper
+    - R10 (OPEN): Update Default implementation
+    - R4 (OPEN): Add Response types
+    - R2 (OPEN): Implement error mapping
+  
+  recommended_order:
+    1. Fix R1 (add auth_manager field)
+    2. Fix R10 (update Default)
+    3. Fix R4 (add Response types)
+    4. Implement request handlers (R2 mitigation)
+    5. Add mock managers (R3 mitigation)
+  
+  confidence_level: "High"
+  notes: |
+    All risks are well-understood with clear mitigation paths.
+    The single BLOCKER (R1) is trivial to fix (15 LOC, 30 min).
+    Plan is technically sound and can proceed to implementation.

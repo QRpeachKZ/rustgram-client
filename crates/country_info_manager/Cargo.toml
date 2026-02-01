@@ -1,0 +1,35 @@
+[package]
+name = "rustgram_country_info_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Country information and phone number management for Telegram MTProto client"
+keywords = ["telegram", "country", "phone", "validation", "international"]
+categories = ["internationalization", "data-structures"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lib]
+name = "rustgram_country_info_manager"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

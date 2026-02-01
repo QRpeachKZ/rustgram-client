@@ -1,0 +1,36 @@
+[package]
+name = "rustgram-message-import-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace dependencies
+tokio = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Internal dependencies
+rustgram-types = { path = "../types" }
+rustgram-file-upload-id = { path = "../file_upload-id" }
+rustgram-file-id = { path = "../file_id" }
+
+[dev-dependencies]
+# Workspace dev dependencies
+proptest = { workspace = true }
+rstest = { workspace = true }
+
+[lints.rust]
+unsafe-code = "forbid"
+
+[lints.clippy]
+all = "warn"
+missing-errors-doc = "warn"
+missing-panics-doc = "warn"
+missing-docs-in-private-items = "warn"
+module-name-repetitions = "allow"

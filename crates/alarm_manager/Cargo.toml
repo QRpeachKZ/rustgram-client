@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-alarm-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Alarm manager for scheduled tasks in Telegram MTProto client"
+
+[dependencies]
+thiserror = "2.0"
+tracing = "0.1"
+tokio = { version = "1.35", features = ["sync", "time", "rt"] }
+
+[dev-dependencies]
+serde_json = "1.0"
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

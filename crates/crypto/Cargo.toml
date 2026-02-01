@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-crypto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Crypto stubs for rustgram-client"
+keywords = ["telegram", "mtproto", "crypto"]
+categories = ["cryptography"]
+
+[features]
+default = []
+
+[dependencies]
+hex = { workspace = true }
+
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

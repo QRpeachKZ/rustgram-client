@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-pts-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "PTS manager for Telegram MTProto client"
+
+[dependencies]
+rustgram-changes-processor = { path = "../changes-processor" }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

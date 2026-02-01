@@ -1,0 +1,13 @@
+[package]
+name = "rustgram-group-call-participant"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-group-call-participant-order = { path = "../group_call_participant-order" }
+rustgram-group-call-video-payload = { path = "../group_call_video-payload" }
+
+[dev-dependencies]
+rstest.workspace = true

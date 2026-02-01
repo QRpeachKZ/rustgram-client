@@ -1,0 +1,30 @@
+[package]
+name = "rustgram-actor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Actor framework for rustgram-client with TDLib-compatible messaging"
+keywords = ["telegram", "mtproto", "actor", "async"]
+categories = ["async", "concurrency"]
+
+[features]
+default = []
+test-utils = []
+
+[dependencies]
+tokio = { version = "1.35", features = ["sync", "rt", "time", "macros"] }
+parking_lot = { version = "0.12", features = ["arc_lock"] }
+crossbeam = { version = "0.8", features = ["queue"] }
+
+[dev-dependencies]
+tokio = { version = "1.35", features = ["sync", "rt", "time", "macros", "test-util"] }
+criterion = "0.5"
+proptest = "1.4"
+rand = "0.8"
+
+[package.metadata.docs.rs]
+all-features = true

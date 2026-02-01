@@ -1,0 +1,523 @@
+# Technical Specification: Paper Plane Integration Testing
+
+**Task:** rustgram-client-ufz.5.2 - Phase 2: Analysis
+**Epic:** rustgram-client-ufz - Phase 4: Paper Plane Integration
+**Version:** 1.0
+**Date:** 2026-01-21
+
+---
+
+## 1. Overview
+
+This specification defines the test architecture, scenarios, and implementation details for integration testing of the `paper_plane_adapter` crate.
+
+### 1.1 Scope
+
+- **Crate:** `crates/paper_plane_adapter/`
+- **Test Type:** Integration tests using mock managers
+- **Target Coverage:** 60%+
+- **Target Test Count:** 33 new integration tests
+- **Timeline:** 2-3 days
+
+### 1.2 Success Criteria
+
+| Metric | Current | Target |
+|--------|---------|--------|
+| Integration Tests | 3 | 36+ |
+| Code Coverage | 52% | 60%+ |
+| Clippy Warnings | 0 | 0 |
+| No unwrap() calls | Met | Met |
+
+---
+
+## 2. Test Architecture
+
+### 2.1 Component Diagram
+
+```mermaid
+graph TB
+    subgraph "Test Layer"
+        TEST[Test Cases]
+        FIXTURE[Test Fixtures]
+        HELPERS[Test Helpers]
+    end
+    
+    subgraph "Adapter Layer"
+        CLIENT[RustgramClient]
+        MAPPER[RequestMapper]
+        REGISTRY[ClientRegistry]
+    end
+    
+    subgraph "Mock Layer"
+        MOCK_MGR[MockManager]
+        STUB[Stub Responses]
+    end
+    
+    TEST --> FIXTURE
+    TEST --> HELPERS
+    FIXTURE --> CLIENT
+    FIXTURE --> MAPPER
+    CLIENT --> REGISTRY
+    MAPPER --> MOCK_MGR
+    MOCK_MGR --> STUB
+    
+    style TEST fill:#e1f5e1
+    style FIXTURE fill:#fff4e1
+    style MOCK_MGR fill:#f0e1ff
+```
+
+### 2.2 Test Directory Structure
+
+```
+crates/paper_plane_adapter/
+├── tests/
+│   ├── fixtures/
+│   │   ├── mod.rs
+│   │   ├── mock_manager.rs      # Mock manager fixture
+│   │   ├── test_client.rs       # Test client builders
+│   │   └── responses.rs         # Predefined responses
+│   ├── helpers/
+│   │   ├── mod.rs
+│   │   ├── assertions.rs        # Custom assertions
+│   │   └── json_helpers.rs      # JSON parsing helpers
+│   ├── batch1_simple/
+│   │   ├── mod.rs
+│   │   ├── request_parsing.rs   # 5 tests
+│   │   ├── response_serialization.rs  # 5 tests
+│   │   └── client_lifecycle.rs  # 5 tests
+│   ├── batch2_complex/
+│   │   ├── mod.rs
+│   │   ├── auth_flow.rs         # 3 tests
+│   │   ├── message_flow.rs      # 3 tests
+│   │   └── concurrent_access.rs # 4 tests
+│   └── batch3_state_machine/
+│       ├── mod.rs
+│       ├── auth_state_transitions.rs  # 4 tests
+│       └── error_recovery.rs    # 4 tests
+└── create_destroy_integration.rs  # Existing (3 tests)
+```
+
+### 2.3 Mock Architecture (Simplified)
+
+**Decision:** Use existing stub pattern instead of trait-based mocks.
+
+```rust
+// In tests/fixtures/mock_manager.rs
+
+use std::collections::HashMap;
+use std::sync::Arc;
+use paper_plane_adapter::response::{Response, UserInfo};
+
+/// Mock manager that returns predefined responses.
+pub struct MockManager {
+    responses: HashMap<String, Response>,
+}
+
+impl MockManager {
+    pub fn new() -> Self {
+        Self {
+            responses: HashMap::new(),
+        }
+    }
+    
+    pub fn with_response(mut self, key: &str, response: Response) -> Self {
+        self.responses.insert(key.to_string(), response);
+        self
+    }
+    
+    pub fn get_user_response(&self, user_id: i64) -> Option<Response> {
+        self.responses.get(&format!("user_{}", user_id)).cloned()
+    }
+    
+    pub fn get_chat_response(&self, chat_id: i64) -> Option<Response> {
+        self.responses.get(&format!("chat_{}", chat_id)).cloned()
+    }
+}
+
+impl Default for MockManager {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+```
+
+### 2.4 Test Helper Functions
+
+```rust
+// In tests/helpers/assertions.rs
+
+use paper_plane_adapter::request::Request;
+use paper_plane_adapter::response::Response;
+use serde_json::Value;
+
+/// Asserts that a JSON string contains expected @type.
+pub fn assert_response_type(json: &str, expected_type: &str) {
+    let value: Value = serde_json::from_str(json)
+        .expect("Invalid JSON");
+    assert_eq!(value["@type"], expected_type);
+}
+
+/// Asserts that a JSON string contains expected field.
+pub fn assert_has_field(json: &str, field: &str) {
+    let value: Value = serde_json::from_str(json)
+        .expect("Invalid JSON");
+    assert!(value.get(field).is_some(), "Missing field: {}", field);
+}
+
+/// Asserts error response has correct code.
+pub fn assert_error_code(json: &str, expected_code: i32) {
+    let value: Value = serde_json::from_str(json)
+        .expect("Invalid JSON");
+    assert_eq!(value["@type"], "error");
+    assert_eq!(value["code"], expected_code);
+}
+```
+
+---
+
+## 3. Test Scenarios
+
+### 3.1 Batch 1: Simple Tests (15 tests)
+
+#### 3.1.1 Request Parsing Tests (5 tests)
+
+File: `tests/batch1_simple/request_parsing.rs`
+
+| Test Name | Description | Input | Expected |
+|-----------|-------------|-------|----------|
+| `test_parse_get_me` | Parse getMe request | `{"@type":"getMe"}` | `Request::GetMe` |
+| `test_parse_get_chats` | Parse getChats with limit | `{"@type":"getChats","limit":50}` | `Request::GetChats{limit:50}` |
+| `test_parse_send_message` | Parse sendMessage | `{"@type":"sendMessage","chat_id":123,"text":"Hi"}` | `Request::SendMessage{...}` |
+| `test_parse_auth_phone` | Parse setAuthenticationPhoneNumber | `{"@type":"setAuthenticationPhoneNumber","phone_number":"+123"}` | `Request::SetAuthenticationPhoneNumber{...}` |
+| `test_parse_unknown_type` | Parse unknown request type | `{"@type":"unknownMethod"}` | `Request::Unknown("unknownMethod")` |
+
+#### 3.1.2 Response Serialization Tests (5 tests)
+
+File: `tests/batch1_simple/response_serialization.rs`
+
+| Test Name | Description | Response | Expected JSON contains |
+|-----------|-------------|----------|------------------------|
+| `test_serialize_user_response` | Serialize user info | `Response::user(UserInfo{...})` | `"@type":"user"`, `"id":123` |
+| `test_serialize_chats_response` | Serialize chat list | `Response::Chats{chat_ids:[1,2], total_count:2}` | `"@type":"chats"`, `"chat_ids"` |
+| `test_serialize_error_response` | Serialize error | `Response::error(404, "Not found")` | `"@type":"error"`, `"code":404` |
+| `test_serialize_with_extra` | Serialize with @extra | `Response + @extra: "test"` | `"@extra":"test"` |
+| `test_serialize_authorization_state` | Serialize auth state | `Response::authorization_state(State::Ok)` | `"authorizationStateReady"` |
+
+#### 3.1.3 Client Lifecycle Tests (5 tests)
+
+File: `tests/batch1_simple/client_lifecycle.rs`
+
+| Test Name | Description | Verification |
+|-----------|-------------|--------------|
+| `test_client_new_creates_instance` | Client::new() returns valid instance | `Arc<RustgramClient>` is created |
+| `test_client_send_queues_request` | send() queues request | Request ID increments |
+| `test_client_receive_timeout` | receive() returns None on timeout | `client.receive(0.1) == None` |
+| `test_client_send_invalid_json` | send() handles invalid JSON | No panic, error logged |
+| `test_client_request_correlation` | @extra is echoed in response | Response contains same @extra |
+
+### 3.2 Batch 2: Complex Tests (10 tests)
+
+#### 3.2.1 Authentication Flow Tests (3 tests)
+
+File: `tests/batch2_complex/auth_flow.rs`
+
+| Test Name | Description | Flow |
+|-----------|-------------|------|
+| `test_auth_flow_phone_to_code` | Phone → Code state transition | setPhoneNumber → state is WaitCode |
+| `test_auth_flow_code_to_password` | Code → Password transition | checkCode → state is WaitPassword or Ready |
+| `test_auth_flow_complete` | Full auth flow | Phone → Code → Password → Ready |
+
+```mermaid
+stateDiagram-v2
+    [*] --> WaitPhoneNumber: setAuthenticationPhoneNumber
+    WaitPhoneNumber --> WaitCode: checkAuthenticationCode
+    WaitCode --> WaitPassword: checkAuthenticationCode (2FA enabled)
+    WaitCode --> Ready: checkAuthenticationCode (no 2FA)
+    WaitPassword --> Ready: checkAuthenticationPassword
+    Ready --> [*]
+```
+
+#### 3.2.2 Message Flow Tests (3 tests)
+
+File: `tests/batch2_complex/message_flow.rs`
+
+| Test Name | Description | Flow |
+|-----------|-------------|------|
+| `test_send_then_get_history` | Send message then get history | sendMessage → getChatHistory |
+| `test_send_multiple_messages` | Send multiple messages sequentially | 3x sendMessage → verify IDs |
+| `test_send_to_different_chats` | Send to different chat IDs | sendMessage(chat1) → sendMessage(chat2) |
+
+#### 3.2.3 Concurrent Access Tests (4 tests)
+
+File: `tests/batch2_complex/concurrent_access.rs`
+
+| Test Name | Description | Verification |
+|-----------|-------------|--------------|
+| `test_concurrent_send_from_threads` | Multiple threads call send() | All requests processed |
+| `test_concurrent_client_creation` | Create multiple clients simultaneously | All client IDs unique |
+| `test_concurrent_receive` | Multiple threads call receive() | Each gets unique response |
+| `test_request_timeout_under_load` | Timeout with pending requests | Timed out requests return error |
+
+### 3.3 Batch 3: State Machine Tests (8 tests)
+
+#### 3.3.1 Auth State Transition Tests (4 tests)
+
+File: `tests/batch3_state_machine/auth_state_transitions.rs`
+
+| Test Name | Description | Transition |
+|-----------|-------------|------------|
+| `test_auth_state_none_to_wait_phone` | Initial state | None → WaitPhoneNumber |
+| `test_auth_state_wait_phone_to_wait_code` | After phone set | WaitPhoneNumber → WaitCode |
+| `test_auth_state_wait_code_to_ready` | After valid code | WaitCode → Ready |
+| `test_auth_state_invalid_transition` | Invalid transition rejected | Error response |
+
+#### 3.3.2 Error Recovery Tests (4 tests)
+
+File: `tests/batch3_state_machine/error_recovery.rs`
+
+| Test Name | Description | Scenario |
+|-----------|-------------|----------|
+| `test_manager_unavailable_error` | Manager is None | Returns 500 error |
+| `test_network_error_recovery` | Simulated network failure | Error → retry → success |
+| `test_invalid_request_error` | Malformed JSON | Returns 400 error |
+| `test_timeout_cleanup` | Request timeout cleanup | Pending request removed |
+
+---
+
+## 4. Data Flow Diagrams
+
+### 4.1 Request Processing Flow
+
+```mermaid
+sequenceDiagram
+    participant Test
+    participant Client as RustgramClient
+    participant Mapper as RequestMapper
+    participant Mock as MockManager
+    
+    Test->>Client: send(json_request)
+    Client->>Client: Parse JSON
+    Client->>Client: Generate request_id
+    Client->>Client: Store RequestContext
+    Client->>Mapper: process_request(request, id)
+    
+    alt Manager Available
+        Mapper->>Mock: get_user(user_id)
+        Mock-->>Mapper: Response
+        Mapper-->>Client: Ok(Response)
+    else Manager Unavailable
+        Mapper-->>Client: Ok(Error(500))
+    end
+    
+    Client->>Client: Serialize to JSON
+    Client->>Client: Send to response channel
+    
+    Test->>Client: receive(timeout)
+    Client-->>Test: Some(json_response)
+```
+
+### 4.2 Error Path Flow
+
+```mermaid
+flowchart TD
+    START([Test starts]) --> PARSE[Parse JSON request]
+    
+    PARSE -->|Invalid JSON| LOG_ERROR[Log error]
+    PARSE -->|Valid JSON| VALIDATE[Validate request]
+    
+    VALIDATE -->|Missing field| ERROR_400[Return 400 error]
+    VALIDATE -->|Valid| CHECK_MGR[Check manager available]
+    
+    CHECK_MGR -->|Manager None| ERROR_500[Return 500 error]
+    CHECK_MGR -->|Manager Some| CALL_MGR[Call manager]
+    
+    CALL_MGR -->|Manager error| ERROR_MGR[Return manager error]
+    CALL_MGR -->|Success| SERIALIZE[Serialize response]
+    
+    SERIALIZE -->|Serialization error| ERROR_500[Return 500 error]
+    SERIALIZE -->|Success| SEND[Send response]
+    
+    ERROR_400 --> END([Test verifies error])
+    ERROR_500 --> END
+    ERROR_MGR --> END
+    SEND --> END
+    
+    LOG_ERROR --> END
+    style ERROR_500 fill:#ffcccc
+    style ERROR_400 fill:#ffebcc
+```
+
+---
+
+## 5. Entry Points for Test Categories
+
+### 5.1 Unit Test Entry Points (Existing)
+
+| File | Entry Point | Coverage |
+|------|-------------|----------|
+| `src/lib.rs` | `mod tests` | Client lifecycle |
+| `src/request.rs` | `mod tests` | Request parsing |
+| `src/response.rs` | `mod tests` | Response serialization |
+| `src/mapper.rs` | `mod tests` | Request mapping |
+| `src/error.rs` | `mod tests` | Error types |
+
+### 5.2 Integration Test Entry Points (New)
+
+| Module | Entry Point | Batch |
+|--------|-------------|-------|
+| `tests/batch1_simple/request_parsing.rs` | `request_parsing_tests()` | 1 |
+| `tests/batch1_simple/response_serialization.rs` | `response_serialization_tests()` | 1 |
+| `tests/batch1_simple/client_lifecycle.rs` | `client_lifecycle_tests()` | 1 |
+| `tests/batch2_complex/auth_flow.rs` | `auth_flow_tests()` | 2 |
+| `tests/batch2_complex/message_flow.rs` | `message_flow_tests()` | 2 |
+| `tests/batch2_complex/concurrent_access.rs` | `concurrent_access_tests()` | 2 |
+| `tests/batch3_state_machine/auth_state_transitions.rs` | `auth_state_transition_tests()` | 3 |
+| `tests/batch3_state_machine/error_recovery.rs` | `error_recovery_tests()` | 3 |
+
+---
+
+## 6. Mock Manager Interface
+
+### 6.1 MockManager Trait Definition
+
+```rust
+// In tests/fixtures/mock_manager.rs
+
+use paper_plane_adapter::error::Result;
+use paper_plane_adapter::response::{Response, UserInfo};
+use rustgram_auth_manager::State;
+
+pub struct MockManager {
+    // Predefined responses keyed by request type and parameters
+    user_responses: std::collections::HashMap<i64, UserInfo>,
+    chat_responses: std::collections::HashMap<i64, Response>,
+    auth_state: State,
+    message_id_counter: std::sync::atomic::AtomicI32,
+}
+
+impl MockManager {
+    // Manager interface methods
+    pub async fn get_me(&self) -> Option<UserInfo> {
+        Some(UserInfo::new(123).with_first_name("Test".to_string()))
+    }
+    
+    pub async fn get_user(&self, user_id: i64) -> Option<UserInfo> {
+        self.user_responses.get(&user_id).cloned()
+    }
+    
+    pub async fn get_chats(&self, limit: i32) -> Response {
+        let chat_ids: Vec<i64> = (1..=limit).map(|i| i as i64).collect();
+        Response::Chats {
+            chat_ids,
+            total_count: limit,
+        }
+    }
+    
+    pub async fn send_message(&self, chat_id: i64, text: String) -> Result<Response> {
+        let id = self.message_id_counter.fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        Ok(Response::Message {
+            id,
+            chat_id,
+            content: paper_plane_adapter::response::MessageContent::text(text),
+            date: 0,
+        })
+    }
+    
+    pub fn get_auth_state(&self) -> State {
+        self.auth_state.clone()
+    }
+    
+    pub fn set_auth_state(&mut self, state: State) {
+        self.auth_state = state;
+    }
+}
+```
+
+---
+
+## 7. Test Execution Plan
+
+### 7.1 Test Commands
+
+```bash
+# Run all integration tests
+cargo test -p paper_plane_adapter --test '*'
+
+# Run specific batch
+cargo test -p paper_plane_adapter --test batch1_simple
+cargo test -p paper_plane_adapter --test batch2_complex
+cargo test -p paper_plane_adapter --test batch3_state_machine
+
+# Run with output
+cargo test -p paper_plane_adapter -- --nocapture
+
+# Run specific test
+cargo test -p paper_plane_adapter test_parse_get_me -- --exact
+```
+
+### 7.2 Coverage Measurement
+
+```bash
+# Install cargo-llvm-cov (if not installed)
+cargo install cargo-llvm-cov
+
+# Generate coverage report
+cargo llvm-cov -p paper_plane_adapter --html --output-dir coverage
+
+# View coverage percentage
+cargo llvm-cov -p paper_plane_adapter --summary
+```
+
+---
+
+## 8. Implementation Order
+
+### Day 1: Foundation + Batch 1
+1. Create test directory structure (30 min)
+2. Implement test fixtures (1 hour)
+3. Implement test helpers (30 min)
+4. Write Batch 1 tests (3 hours)
+5. Verify Batch 1 passes (30 min)
+
+### Day 2: Batch 2 + Partial Batch 3
+1. Write Batch 2 tests (3 hours)
+2. Write Batch 3 tests (2 hours)
+3. Measure coverage (30 min)
+4. Add coverage gap tests (1 hour)
+
+### Day 3 (Buffer): Polish + Bug Fixes
+1. Fix failing tests (2 hours)
+2. Run clippy and fix warnings (30 min)
+3. Final coverage check (30 min)
+4. Documentation updates (1 hour)
+
+---
+
+## 9. Dependencies
+
+### Internal Dependencies
+- `paper_plane_adapter::RustgramClient`
+- `paper_plane_adapter::RequestMapper`
+- `paper_plane_adapter::request::Request`
+- `paper_plane_adapter::response::Response`
+- `paper_plane_adapter::error::AdapterError`
+- `rustgram_auth_manager::State`
+- `rustgram_types::{ChatId, UserId, DialogId}`
+
+### External Dependencies
+- `tokio` (test framework)
+- `serde_json` (JSON parsing)
+- `std::collections::HashMap` (test fixtures)
+
+---
+
+## 10. Quality Gates
+
+Before marking Phase 3 complete, verify:
+
+- [ ] All 33+ new tests pass
+- [ ] Coverage >= 60%
+- [ ] `cargo clippy -p paper_plane_adapter -- -D warnings` shows 0 warnings
+- [ ] No `unwrap()` or `expect()` in test code
+- [ ] All tests have appropriate doc comments
+- [ ] Test execution time < 30 seconds total

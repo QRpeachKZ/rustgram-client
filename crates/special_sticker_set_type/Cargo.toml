@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-special-sticker-set-type"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Special sticker set type for Telegram MTProto client"
+
+[dependencies]
+
+[dev-dependencies]
+
+[features]
+default = []
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

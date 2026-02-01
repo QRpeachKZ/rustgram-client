@@ -1,0 +1,35 @@
+[package]
+name = "rustgram-message-ttl"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Message time-to-live (auto-delete) for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "message", "ttl", "auto-delete"]
+categories = ["data-structures"]
+
+[dependencies]
+# Internal dependencies
+rustgram-types = { path = "../types" }
+
+# External dependencies
+bytes = "1.5"
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+# Property-based testing
+proptest = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,14 @@
+[package]
+name = "rustgram-block-list-id"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Block list identifier for Telegram MTProto client"
+repository = "https://github.com/yourusername/rustgram-client"
+keywords = ["telegram", "mtproto", "blocking", "stories"]
+categories = ["data-structures"]
+
+[dependencies]
+
+[dev-dependencies]

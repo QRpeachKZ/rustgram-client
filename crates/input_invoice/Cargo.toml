@@ -1,0 +1,30 @@
+[package]
+name = "rustgram-input-invoice"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "InputInvoice type for Telegram payments"
+
+[dependencies]
+# ID types
+rustgram-types = { path = "../types" }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Serde
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

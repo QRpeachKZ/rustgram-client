@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-star-amount"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Star amount type for Telegram Premium"
+
+[lib]
+name = "rustgram_star_amount"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

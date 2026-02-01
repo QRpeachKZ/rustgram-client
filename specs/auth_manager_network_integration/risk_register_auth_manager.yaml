@@ -1,0 +1,749 @@
+# Risk Register: AuthManager Network Integration
+# Task ID: rustgram-client-ff7.2
+# Version: 1.0
+# Last Updated: 2026-01-19
+# Owner: @analyst (Phase 2)
+
+risk_register:
+  metadata:
+    task_id: "rustgram-client-ff7.2"
+    name: "AuthManager Network Integration"
+    total_risks: 12
+    critical_risks: 2
+    high_risks: 3
+    medium_risks: 5
+    low_risks: 2
+    overall_risk_level: "MEDIUM-HIGH"
+    
+  risks:
+    # =============================================================================
+    # CRITICAL RISKS (BLOCKER)
+    # =============================================================================
+    
+    - id: "R1"
+      title: "CodeSettings TL Type Not Implemented"
+      category: "UNRESOLVED_API"
+      severity: "CRITICAL"
+      probability: "HIGH"
+      impact: "BLOCKER"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        CodeSettings is a complex flag-based TL type required for auth.sendCode request.
+        It does not exist in the codebase and must be implemented before Batch 1 can complete.
+        
+      tl_schema: |
+        codeSettings#ad253d78 
+          flags:# 
+          allow_flashcall:flags.0?true 
+          current_number:flags.1?true 
+          allow_app_hash:flags.4?true 
+          allow_missed_call:flags.5?true 
+          allow_firebase:flags.7?true 
+          unknown_number:flags.9?true 
+          logout_tokens:flags.6?Vector<bytes> 
+          token:flags.8?string 
+          app_sandbox:flags.8?Bool 
+          = CodeSettings;
+          
+      impact_analysis:
+        blocks: "Batch 1 (TL Request/Response Types)"
+        timeline_impact: "+0.5 days if discovered late"
+        downstream_effects: "SendCodeRequest cannot be implemented"
+        
+      mitigation_strategy:
+        primary: "Implement CodeSettings in Batch 1.0 before SendCodeRequest"
+        steps:
+          - "Create crates/types/src/code_settings.rs"
+          - "Implement TlSerialize with all 9 flag combinations"
+          - "Add unit tests for each flag variant"
+          - "Add property tests for flag serialization"
+          
+      contingency_plan:
+        if_implementation_fails: "Use minimal CodeSettings (all flags false) as temporary workaround"
+        
+      success_criteria:
+        - "CodeSettings::serialize_tl() handles all 9 flags correctly"
+        - "Unit tests cover all flag combinations (2^9 = 512 combinations, sample strategically)"
+        - "Property tests pass for 1000 random flag combinations"
+        
+      references:
+        - "references/td/td/generate/scheme/telegram_api.tl:1263"
+        
+    - id: "R2"
+      title: "EmailVerification Polymorphic Type Not Implemented"
+      category: "UNRESOLVED_API"
+      severity: "CRITICAL"
+      probability: "HIGH"
+      impact: "BLOCKER"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        EmailVerification is a polymorphic TL type with 3 variants required for auth.signIn.
+        It implements TlBoxed for runtime dispatch and does not exist in the codebase.
+        
+      tl_schema: |
+        emailVerificationCode#922e55a9 code:string = EmailVerification;
+        emailVerificationGoogle#db909ec2 token:string = EmailVerification;
+        emailVerificationApple#96d074fd token:string = EmailVerification;
+        
+      impact_analysis:
+        blocks: "Batch 1 (TL Request/Response Types)"
+        timeline_impact: "+0.5 days if discovered late"
+        downstream_effects: "SignInRequest cannot handle email verification"
+        
+      mitigation_strategy:
+        primary: "Implement EmailVerification as TlBoxed type"
+        steps:
+          - "Create crates/types/src/email_verification.rs"
+          - "Implement 3 variants: Code, Google, Apple"
+          - "Implement TlBoxed trait for polymorphic dispatch"
+          - "Add unit tests for each variant"
+          
+      contingency_plan:
+        if_implementation_fails: "Make email_verification field optional (None) as temporary workaround"
+        
+      success_criteria:
+        - "All 3 variants serialize correctly"
+        - "TlBoxed::from_constructor_id() dispatches correctly"
+        - "Unit tests cover all 3 variants"
+        
+      references:
+        - "references/td/td/generate/scheme/telegram_api.tl:1598-1600"
+        
+    # =============================================================================
+    # HIGH RISKS
+    # =============================================================================
+    
+    - id: "R3"
+      title: "NetQueryDispatcher Integration Complexity"
+      category: "INTEGRATION"
+      severity: "HIGH"
+      probability: "MEDIUM"
+      impact: "HIGH"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        NetQueryDispatcher requires careful lifetime management and callback handling.
+        Arc cloning patterns must be followed exactly to avoid memory leaks or use-after-free.
+        
+      integration_points:
+        - "AuthManager must store Arc<NetQueryDispatcher>"
+        - "Callback must be Box<NetQueryCallback>"
+        - "Pending requests must track NetQueryId"
+        
+      impact_analysis:
+        blocks: "Batch 2 (Network Integration)"
+        timeline_impact: "+1 day if issues arise"
+        downstream_effects: "Cannot send/receive network requests"
+        
+      mitigation_strategy:
+        primary: "Follow ClientActor pattern exactly"
+        steps:
+          - "Study ClientActor::QueryCallbackImpl implementation"
+          - "Replicate Arc cloning pattern for dispatcher"
+          - "Use HashMap<NetQueryId, PendingAuthRequest> for tracking"
+          - "Add extensive integration tests"
+          
+      testing_approach:
+        - "Create MockNetQueryDispatcher for unit tests"
+        - "Test callback lifecycle thoroughly"
+        - "Test request cancellation scenarios"
+        
+      success_criteria:
+        - "No memory leaks in valgrind/sanitizers"
+        - "Integration tests pass with mock dispatcher"
+        - "Callbacks fire correctly for all response types"
+        
+      references:
+        - "crates/client_actor/src/lib.rs:346-372"
+        - "crates/client_actor/src/lib.rs:546-599"
+        
+    - id: "R4"
+      title: "State Machine Network Error Transitions"
+      category: "STATE_MACHINE"
+      severity: "HIGH"
+      probability: "MEDIUM"
+      impact: "HIGH"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Adding WaitingRetry and NetworkError states introduces complex state transitions.
+        Must handle all network error types (timeout, DC migration, flood wait, etc.) correctly.
+        
+      error_types:
+        - timeout: "Network timeout, retry with backoff"
+        - dc_migration: "DC changed, migrate to new DC"
+        - flood_wait: "Rate limited, wait specified seconds"
+        - server_error: "Server error, may be retryable"
+        - unauthorized: "Auth failed, reset to None"
+        
+      impact_analysis:
+        blocks: "Batch 2 (Network Integration)"
+        timeline_impact: "+1 day if state machine bugs arise"
+        downstream_effects: "Auth flow can get stuck in error states"
+        
+      mitigation_strategy:
+        primary: "Create state transition matrix and test exhaustively"
+        steps:
+          - "Document all state transitions in mermaid diagram"
+          - "Add unit tests for each error type"
+          - "Add integration tests for error recovery"
+          - "Use state machine property tests"
+          
+      testing_approach:
+        - "State transition matrix test (cover all transitions)"
+        - "Error injection tests"
+        - "Recovery flow tests"
+        
+      success_criteria:
+        - "All error types have defined state transitions"
+        - "No unreachable states in state machine"
+        - "Recovery tests pass for all error scenarios"
+        
+      references:
+        - "references/td/td/telegram/AuthManager.cpp:1338-1400"
+        
+    - id: "R5"
+      title: "TL Serialization Edge Cases"
+      category: "SERIALIZATION"
+      severity: "HIGH"
+      probability: "MEDIUM"
+      impact: "HIGH"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        TL serialization has complex edge cases:
+        - Flag-based optional fields
+        - Polymorphic types
+        - Padding alignment
+        - Bytes/string encoding
+        
+      edge_cases:
+        - "CodeSettings with logout_tokens vector (complex padding)"
+        - "SignInRequest with flags but no optional fields"
+        - "EmailVerification polymorphic dispatch"
+        - "Empty vs missing optional fields"
+        
+      impact_analysis:
+        blocks: "Batch 1 (TL Types)"
+        timeline_impact: "+0.5 day if serialization bugs found late"
+        downstream_effects: "Requests fail server validation"
+        
+      mitigation_strategy:
+        primary: "Property-based testing with proptest"
+        steps:
+          - "Add proptest for TL roundtrip (serialize -> deserialize -> compare)"
+          - "Test edge cases explicitly in unit tests"
+          - "Compare with TDLib test vectors if available"
+          
+      testing_approach:
+        - "Property tests: 1000 random inputs per type"
+        - "Unit tests for known edge cases"
+        - "Comparison with TDLib serialization output"
+        
+      success_criteria:
+        - "Property tests pass for all TL types"
+        - "Edge case unit tests pass"
+        - "No serialization panics in tests"
+        
+      references:
+        - "crates/types/src/tl.rs"
+        
+    # =============================================================================
+    # MEDIUM RISKS
+    # =============================================================================
+    
+    - id: "R6"
+      title: "3-4 Day Timeline Too Optimistic"
+      category: "TIMING"
+      severity: "MEDIUM"
+      probability: "MEDIUM"
+      impact: "MEDIUM"
+      status: "MITIGATED"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Original estimate of 3-4 days is optimistic given:
+        - CodeSettings/EmailVerification not accounted for
+        - Network integration complexity underestimated
+        - Test coverage gaps identified
+        
+      estimate_breakdown:
+        optimistic: "3-4 days (original plan)"
+        realistic: "4-5 days (adjusted for gaps)"
+        pessimistic: "5-7 days (if issues arise)"
+        
+      impact_analysis:
+        blocks: "None (schedule risk only)"
+        timeline_impact: "+1-3 days overall"
+        downstream_effects: "Later tasks delayed"
+        
+      mitigation_strategy:
+        primary: "Communicate 4-5 day estimate to stakeholders"
+        status: "DONE - Updated in plan_validation.md"
+        
+      contingency_plan:
+        if_overrun: "Reduce test coverage from 70% to 60% (within tolerance)"
+        
+      references:
+        - "specs/auth_manager_network_integration/plan_validation.md:4.1"
+        
+    - id: "R7"
+      title: "Test Coverage Gaps Identified"
+      category: "TEST_COVERAGE"
+      severity: "MEDIUM"
+      probability: "HIGH"
+      impact: "MEDIUM"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Plan has test coverage gaps:
+        - No CodeSettings serialization tests
+        - No EmailVerification polymorphism tests
+        - No TL constructor ID validation tests
+        - No DC migration error tests
+        - No FLOOD_WAIT error tests
+        
+      missing_tests:
+        - "CodeSettings serialization (all flag combinations)"
+        - "EmailVerification (3 variants)"
+        - "NetworkError variant coverage"
+        - "DC migration error handling"
+        - "FLOOD_WAIT retry logic"
+        
+      impact_analysis:
+        blocks: "Batch 3 (Testing)"
+        timeline_impact: "+0.5 day to add missing tests"
+        downstream_effects: "May not reach 70% coverage target"
+        
+      mitigation_strategy:
+        primary: "Add missing tests to Batch 3"
+        steps:
+          - "Add CodeSettings unit tests"
+          - "Add EmailVerification polymorphism tests"
+          - "Add TL constructor ID validation tests"
+          - "Add DC migration test scenario"
+          - "Add FLOOD_WAIT test scenario"
+          
+      success_criteria:
+        - "All missing tests added to test suite"
+        - "Coverage reaches 70% target"
+        
+      references:
+        - "specs/auth_manager_network_integration/plan_validation.md:3.1"
+        
+    - id: "R8"
+      title: "Missing Dependencies in Plan"
+      category: "DEPENDENCY"
+      severity: "MEDIUM"
+      probability: "LOW"
+      impact: "MEDIUM"
+      status: "MITIGATED"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Plan was missing explicit dependencies:
+        - `bytes` crate (for BytesMut)
+        - `async-trait` crate (for NetQueryCallback)
+        - `rustgram-auth` crate (for auth types)
+        
+      missing_dependencies:
+        - "bytes (workspace)"
+        - "async-trait (workspace)"
+        - "rustgram-auth"
+        
+      impact_analysis:
+        blocks: "None (documentation gap only)"
+        timeline_impact: "None (all crates exist)"
+        downstream_effects: "None"
+        
+      mitigation_strategy:
+        primary: "Document missing dependencies in dependency_matrix.md"
+        status: "DONE - Added to Cargo.toml in plan"
+        
+      references:
+        - "specs/auth_manager_network_integration/dependency_matrix_auth_manager.md:2"
+        
+    - id: "R9"
+      title: "Concurrent Auth Request Handling"
+      category: "STATE_MACHINE"
+      severity: "MEDIUM"
+      probability: "LOW"
+      impact: "MEDIUM"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        State machine must handle concurrent requests safely:
+        - Multiple send_code calls (user re-sends code)
+        - Multiple sign_in attempts (user retries code)
+        - log_out during in-flight auth request
+        
+      concurrency_scenarios:
+        - "User clicks 'Send Code' twice quickly"
+        - "User submits wrong code, retries immediately"
+        - "User clicks 'Log Out' while sign_in in flight"
+        
+      impact_analysis:
+        blocks: "Batch 2 (Network Integration)"
+        timeline_impact: "+0.5 day if concurrency bugs found"
+        downstream_effects: "Race conditions, state corruption"
+        
+      mitigation_strategy:
+        primary: "Use pending_requests HashMap for request tracking"
+        steps:
+          - "Store NetQueryId -> PendingAuthRequest mapping"
+          - "Cancel previous request before sending new one"
+          - "Add concurrency tests with multiple async tasks"
+          
+      testing_approach:
+        - "Integration test: 2 concurrent send_code calls"
+        - "Integration test: sign_in during in-flight send_code"
+        - "Integration test: log_out during in-flight sign_in"
+        
+      success_criteria:
+        - "Concurrency tests pass without panics"
+        - "State machine remains consistent"
+        - "Only one request in flight at a time per auth flow"
+        
+      references:
+        - "crates/auth_manager/src/lib.rs:200-203"
+        
+    - id: "R10"
+      title: "DC Migration During Auth"
+      category: "INTEGRATION"
+      severity: "MEDIUM"
+      probability: "LOW"
+      impact: "MEDIUM"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Telegram may migrate auth to different DC during authentication flow.
+        Error code 303 (RESTART_INIT) indicates DC migration.
+        
+      dc_migration_flow:
+        1. "send_code to DC 2"
+        2. "Receive error 303 with new_dc_id=4"
+        3. "Migrate to DC 4"
+        4. "Retry send_code to DC 4"
+        
+      impact_analysis:
+        blocks: "Batch 2 (Network Integration)"
+        timeline_impact: "+0.5 day if not handled"
+        downstream_effects: "Auth fails on DC migration"
+        
+      mitigation_strategy:
+        primary: "Implement DC migration in error handler"
+        steps:
+          - "Detect error code 303"
+          - "Extract new_dc_id from error"
+          - "Update NetQueryDispatcher main DC"
+          - "Retry request to new DC"
+          
+      testing_approach:
+        - "Mock NetQueryDispatcher returns 303 error"
+        - "Verify DC ID is updated"
+        - "Verify request is retried"
+        
+      success_criteria:
+        - "DC migration test passes"
+        - "Auth completes successfully after migration"
+        
+      references:
+        - "references/td/td/telegram/AuthManager.cpp:1370-1390"
+        
+    # =============================================================================
+    # LOW RISKS
+    # =============================================================================
+    
+    - id: "R11"
+      title: "Property Test Implementation Overhead"
+      category: "TESTING"
+      severity: "LOW"
+      probability: "LOW"
+      impact: "LOW"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        Property tests using proptest require setup:
+        - Strategy definitions for custom types
+        - Arbitraries for phone numbers, codes, etc.
+        - Test execution time considerations
+        
+      property_tests_needed:
+        - "TL serialization roundtrip"
+        - "Phone number validation"
+        - "CodeSettings flags"
+        
+      impact_analysis:
+        blocks: "Batch 3 (Testing)"
+        timeline_impact: "+0.25 day if strategies are complex"
+        downstream_effects: "None (quality improvement)"
+        
+      mitigation_strategy:
+        primary: "Start with simple property tests"
+        steps:
+          - "Use built-in strategies (string, int, bool)"
+          - "Add custom strategies only if needed"
+          - "Limit test cases to 1000 per run"
+          
+      success_criteria:
+        - "Property tests execute in < 30 seconds"
+        - "All property tests pass"
+        
+    - id: "R12"
+      title: "TDLib Reference Accuracy"
+      category: "REFERENCE"
+      severity: "LOW"
+      probability: "LOW"
+      impact: "LOW"
+      status: "OPEN"
+      created: "2026-01-19"
+      owner: "@analyst"
+      
+      description: |
+        TDLib reference code may have differences from actual Telegram behavior:
+        - TDLib version differences
+        - Internal API changes
+        - Platform-specific behavior
+        
+      reference_limitations:
+        - "TDLib version may not match current MTProto"
+        - "Internal APIs may differ from public APIs"
+        - "C++ patterns may not translate 1:1 to Rust"
+        
+      impact_analysis:
+        blocks: "None"
+        timeline_impact: "None (reference only)"
+        downstream_effects: "May need to adjust implementation based on real-world testing"
+        
+      mitigation_strategy:
+        primary: "Use TDLib as reference, not gospel"
+        steps:
+          - "Cross-reference with telegram_api.tl schema"
+          - "Test against real Telegram API if possible"
+          - "Be prepared to adjust based on actual behavior"
+          
+      success_criteria:
+        - "TL schema matches telegram_api.tl exactly"
+        - "Tests pass against mock dispatcher"
+        
+      references:
+        - "references/td/td/generate/scheme/telegram_api.tl"
+
+  # =============================================================================
+  # RISK SUMMARY
+  # =============================================================================
+  
+  risk_summary:
+    by_category:
+      UNRESOLVED_API:
+        count: 2
+        max_severity: "CRITICAL"
+        status: "Both OPEN, must mitigate before Batch 1"
+        
+      INTEGRATION:
+        count: 2
+        max_severity: "HIGH"
+        status: "Both OPEN, mitigations planned"
+        
+      STATE_MACHINE:
+        count: 2
+        max_severity: "HIGH"
+        status: "Both OPEN, test strategies defined"
+        
+      SERIALIZATION:
+        count: 1
+        max_severity: "HIGH"
+        status: "OPEN, property tests will mitigate"
+        
+      TIMING:
+        count: 1
+        max_severity: "MEDIUM"
+        status: "MITIGATED - estimate updated"
+        
+      TEST_COVERAGE:
+        count: 1
+        max_severity: "MEDIUM"
+        status: "OPEN, tests added to plan"
+        
+      DEPENDENCY:
+        count: 1
+        max_severity: "MEDIUM"
+        status: "MITIGATED - documented in matrix"
+        
+      TESTING:
+        count: 1
+        max_severity: "LOW"
+        status: "OPEN, low impact"
+        
+      REFERENCE:
+        count: 1
+        max_severity: "LOW"
+        status: "OPEN, low impact"
+        
+    by_severity:
+      CRITICAL:
+        count: 2
+        risks: ["R1", "R2"]
+        mitigation_status: "OPEN - must address before Batch 1"
+        
+      HIGH:
+        count: 3
+        risks: ["R3", "R4", "R5"]
+        mitigation_status: "OPEN - mitigations planned"
+        
+      MEDIUM:
+        count: 5
+        risks: ["R6", "R7", "R8", "R9", "R10"]
+        mitigation_status: "2 MITIGATED, 3 OPEN"
+        
+      LOW:
+        count: 2
+        risks: ["R11", "R12"]
+        mitigation_status: "OPEN - monitoring"
+        
+    by_status:
+      OPEN:
+        count: 10
+        risks: ["R1", "R2", "R3", "R4", "R5", "R7", "R9", "R10", "R11", "R12"]
+        
+      MITIGATED:
+        count: 2
+        risks: ["R6", "R8"]
+        
+      BLOCKER:
+        count: 2
+        risks: ["R1", "R2"]
+        
+  # =============================================================================
+  # MITIGATION TIMELINE
+  # =============================================================================
+  
+  mitigation_timeline:
+    phase_1:
+      name: "Before Batch 1 (Critical Risks)"
+      risks: ["R1", "R2"]
+      actions:
+        - "Implement CodeSettings type"
+        - "Implement EmailVerification type"
+        - "Add unit tests for both types"
+      deadline: "Batch 1 start"
+      
+    phase_2:
+      name: "Batch 1 (Serialization Risks)"
+      risks: ["R5"]
+      actions:
+        - "Add property tests for TL roundtrip"
+        - "Test edge cases explicitly"
+      deadline: "Batch 1 end"
+      
+    phase_3:
+      name: "Batch 2 (Integration Risks)"
+      risks: ["R3", "R4", "R9", "R10"]
+      actions:
+        - "Follow ClientActor pattern exactly"
+        - "Create state transition matrix"
+        - "Add concurrency tests"
+        - "Add DC migration test"
+      deadline: "Batch 2 end"
+      
+    phase_4:
+      name: "Batch 3 (Testing Risks)"
+      risks: ["R7", "R11"]
+      actions:
+        - "Add all missing tests"
+        - "Verify 70% coverage"
+        - "Run property tests"
+      deadline: "Batch 3 end"
+      
+    ongoing:
+      name: "Ongoing Monitoring"
+      risks: ["R12"]
+      actions:
+        - "Cross-reference with TDLib"
+        - "Validate against TL schema"
+      deadline: "Continuous"
+
+  # =============================================================================
+  # SUCCESS CRITERIA
+  # =============================================================================
+  
+  success_criteria:
+    risk_mitigation:
+      - "All CRITICAL risks (R1, R2) mitigated before Batch 1"
+      - "All HIGH risks (R3, R4, R5) mitigated during Batch 1-2"
+      - "All MEDIUM risks (R6-R10) mitigated or monitored"
+      - "All LOW risks (R11, R12) monitored"
+      
+    testing:
+      - "Property tests pass for all TL types"
+      - "State transition matrix tests pass"
+      - "Concurrency tests pass"
+      - "DC migration test passes"
+      - "Coverage >= 70%"
+      
+    quality:
+      - "No clippy warnings"
+      - "No production unwrap()"
+      - "All tests pass"
+      - "No memory leaks in sanitizers"
+
+# =============================================================================
+# APPENDIX: RISK ASSESSMENT METHODOLOGY
+# =============================================================================
+
+assessment_methodology:
+  severity_scale:
+    CRITICAL: "Blocks implementation, cannot proceed without mitigation"
+    HIGH: "Significant impact, requires immediate attention"
+    MEDIUM: "Moderate impact, can be mitigated with planning"
+    LOW: "Minor impact, monitoring sufficient"
+    
+  probability_scale:
+    HIGH: "> 70% chance of occurring"
+    MEDIUM: "30-70% chance of occurring"
+    LOW: "< 30% chance of occurring"
+    
+  impact_scale:
+    BLOCKER: "Cannot complete task"
+    HIGH: "+1-2 days timeline impact"
+    MEDIUM: "+0.5-1 day timeline impact"
+    LOW: "< 0.5 day timeline impact"
+    
+  risk_score: "severity × probability × impact"
+
+# =============================================================================
+# REVISION HISTORY
+# =============================================================================
+
+revision_history:
+  - version: "1.0"
+    date: "2026-01-19"
+    author: "@analyst"
+    changes:
+      - "Initial risk register created"
+      - "12 risks identified and categorized"
+      - "2 CRITICAL, 3 HIGH, 5 MEDIUM, 2 LOW"
+      - "Mitigation strategies defined"
+      - "Timeline adjusted to 4-5 days"

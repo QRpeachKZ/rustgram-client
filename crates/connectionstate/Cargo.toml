@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-connectionstate"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Connection state management for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "connection", "state"]
+categories = ["network-programming", "state-management"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }
+
+[lib]
+name = "rustgram_connectionstate"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

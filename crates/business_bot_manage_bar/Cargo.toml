@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-business-bot-manage-bar"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Business bot manage bar handling for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "business", "bot", "manage"]
+categories = ["data-structures"]
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_business_bot_manage_bar"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

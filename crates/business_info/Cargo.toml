@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-business-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Business info handling for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "business", "info"]
+categories = ["data-structures"]
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_business_info"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

@@ -1,0 +1,453 @@
+# Technical Specification: Actor Messaging Coordination
+# Epic: rustgram-client-540
+# Version: 1.0
+# Status: Phase 2 - Design
+
+## 1. Overview
+
+### 1.1 Purpose
+Complete implementation of TDLib-compatible actor messaging framework for rustgram-client, providing type-safe async message passing with supervisor support and zero-copy semantics where possible.
+
+### 1.2 Scope
+- Full actor lifecycle management
+- Type-safe message passing
+- Scheduler with multi-threaded support
+- Actor registry and discovery
+- Supervisor patterns for fault tolerance
+- Migration support between schedulers
+- Timeout management
+
+### 1.3 TDLib Reference Components
+Based on TDLib tdactor implementation (2646 lines across 13 files):
+- `Actor.h/cpp` - Base actor trait and lifecycle
+- `ActorId.h` - Type-safe actor identifiers
+- `ActorInfo.h` - Actor metadata and state
+- `Scheduler.h/cpp` - Event loop and message dispatch
+- `Event.h` - Message type system
+- `ActorContext.h` - Thread-local context management
+
+## 2. Module Structure
+
+```
+crates/actor/
+├── Cargo.toml
+├── src/
+│   ├── lib.rs              # Public API exports (300 LOC)
+│   ├── actor.rs            # Actor trait and lifecycle (400 LOC)
+│   ├── actor_id.rs         # ActorId<T> type-safe identifier (250 LOC)
+│   ├── actor_shared.rs     # ActorShared<T> for weak refs (200 LOC)
+│   ├── actor_own.rs        # ActorOwn<T> for ownership (150 LOC)
+│   ├── actor_ref.rs        # ActorRef enum for dynamic dispatch (180 LOC)
+│   ├── event.rs            # Event system and message types (350 LOC)
+│   ├── scheduler.rs        # Scheduler and event loop (500 LOC)
+│   ├── actor_info.rs       # Actor metadata (300 LOC)
+│   ├── registry.rs         # Actor registry for lookup (250 LOC)
+│   ├── supervisor.rs       # Supervisor strategies (350 LOC)
+│   ├── context.rs          # ActorContext for thread-local (150 LOC)
+│   ├── mailbox.rs          # Per-actor message queue (200 LOC)
+│   ├── timeout.rs          # Timeout management (150 LOC)
+│   └── error.rs            # Error types (100 LOC)
+├── tests/
+│   ├── integration_tests.rs
+│   └── concurrency_tests.rs
+└── examples/
+    ├── basic_actor.rs
+    └── ping_pong.rs
+```
+
+## 3. Core Trait Definitions
+
+### 3.1 Actor Trait
+```rust
+pub trait Actor: Send + 'static {
+    /// Called when actor is started
+    fn start_up(&mut self);
+    
+    /// Called when actor receives a wakeup signal
+    fn wakeup(&mut self);
+    
+    /// Called when actor is hung up on
+    fn hangup(&mut self);
+    
+    /// Called when actor should stop
+    fn tear_down(&mut self);
+    
+    /// Main event loop
+    fn loop(&mut self);
+    
+    /// Handle timeout expiration
+    fn timeout_expired(&mut self);
+    
+    /// Get actor ID (must be set by scheduler)
+    fn get_info(&self) -> &ActorInfo;
+}
+```
+
+### 3.2 Handler Trait
+```rust
+pub trait Handler<M: Message>: Actor {
+    fn handle(&mut self, message: M);
+}
+```
+
+### 3.3 Message Trait
+```rust
+pub trait Message: Send + 'static {
+    type Response;
+}
+```
+
+## 4. Data Structures
+
+### 4.1 ActorId<T>
+Type-safe actor identifier with phantom type parameter.
+```rust
+pub struct ActorId<T: Actor> {
+    id: u64,
+    scheduler_id: u32,
+    generation: u32,
+    _phantom: PhantomData<*const T>,
+}
+```
+
+### 4.2 ActorShared<T>
+Weak reference to actor (doesn't prevent destruction).
+```rust
+pub struct ActorShared<T: Actor> {
+    id: ActorId<T>,
+    token: u64,
+}
+```
+
+### 4.3 ActorOwn<T>
+Owning reference (sends hangup on drop).
+```rust
+pub struct ActorOwn<T: Actor> {
+    id: ActorId<T>,
+}
+```
+
+### 4.4 ActorInfo
+Metadata about actor state.
+```rust
+pub struct ActorInfo {
+    name: String,
+    state: ActorState,
+    scheduler_id: u32,
+    mailbox: Mailbox,
+    timeout: Option<Instant>,
+    context: Option<ActorContext>,
+}
+
+pub enum ActorState {
+    Starting,
+    Running,
+    Stopping,
+    Migrating(u32),
+    Dead,
+}
+```
+
+### 4.5 Event
+Message passing primitive.
+```rust
+pub enum Event {
+    Start,
+    Stop,
+    Yield,
+    Timeout,
+    Hangup,
+    Closure(Box<dyn FnOnce(&mut dyn Actor) + Send>),
+    Raw(u64),
+}
+```
+
+### 4.6 Scheduler
+Event loop for message processing.
+```rust
+pub struct Scheduler {
+    id: u32,
+    actor_registry: Arc<RwLock<Registry>>,
+    pending_actors: SegQueue<ActorInfo>,
+    ready_actors: LinkedList<ActorInfo>,
+    timeout_queue: BinaryHeap<TimeoutEntry>,
+    inbound_queue: mpsc::Receiver<EventFull>,
+    outbound_queues: Vec<mpsc::Sender<EventFull>>,
+}
+```
+
+## 5. Key Algorithms
+
+### 5.1 Message Dispatch
+```
+1. Message arrives via send_closure/send_lambda
+2. Determine target actor's scheduler
+3. If same scheduler:
+   - If actor ready: dispatch immediately
+   - Else: queue in mailbox
+4. If different scheduler:
+   - Add to outbound queue for that scheduler
+5. Scheduler runs event loop:
+   - Process inbound queue
+   - Process pending actors
+   - Process ready actors
+   - Process timeouts
+```
+
+### 5.2 Actor Lifecycle
+```
+Creation:
+1. create_actor<T>(name, args)
+2. Allocate ActorId with unique (id, generation)
+3. Create ActorInfo with state=Starting
+4. Add to pending_actors queue
+5. Send Event::Start to actor
+
+Startup:
+1. Scheduler picks actor from pending
+2. Calls actor.start_up()
+3. Transition to Running
+
+Running:
+1. Process events from mailbox
+2. Handle timeouts
+3. May yield, migrate, or stop
+
+Shutdown:
+1. Receive Event::Stop or Event::Hangup
+2. Call actor.tear_down()
+3. Remove from registry
+4. Transition to Dead
+```
+
+### 5.3 Restart Logic (Supervisor)
+```
+Supervisor strategies:
+
+RestartAll:
+1. Detect child failure
+2. Stop all children
+3. Restart all in reverse order
+
+RestartOne:
+1. Detect child failure
+2. Stop only failed child
+3. Restart that child
+
+Escalate:
+1. Detect child failure
+2. Send error to parent supervisor
+
+Restart limits:
+- max_retries: usize
+- within: Duration
+- backoff: Duration
+```
+
+### 5.4 Migration
+```
+1. Actor calls migrate(scheduler_id)
+2. Set state = Migrating(dest_id)
+3. Flush mailbox
+4. Transfer ActorInfo to dest scheduler
+5. Dest scheduler calls actor.on_finish_migrate()
+6. Transition to Running on dest
+```
+
+## 6. API Surface
+
+### 6.1 Actor Creation
+```rust
+pub fn create_actor<T, Args>(
+    name: &str,
+    args: Args,
+) -> ActorOwn<T>
+where
+    T: Actor + From<Args>,
+```
+
+### 6.2 Message Sending
+```rust
+pub fn send_closure<T, F, Args>(
+    actor_id: ActorId<T>,
+    func: F,
+    args: Args,
+)
+where
+    T: Actor,
+    F: FnOnce(&mut T, Args) + Send + 'static;
+
+pub fn send_lambda<F>(
+    actor_ref: ActorRef,
+    func: F,
+)
+where
+    F: FnOnce(&mut dyn Actor) + Send + 'static;
+```
+
+### 6.3 Actor Operations
+```rust
+pub fn stop_actor<T>(actor_id: ActorId<T>);
+pub fn migrate_actor<T>(actor_id: ActorId<T>, dest: u32);
+pub fn set_timeout_in<T>(actor_id: ActorId<T>, duration: Duration);
+pub fn cancel_timeout<T>(actor_id: ActorId<T>);
+```
+
+### 6.4 Supervisor Operations
+```rust
+pub fn spawn_with_supervisor<T, S>(
+    name: &str,
+    supervisor: ActorOwn<S>,
+    child: T,
+) -> ActorOwn<T>
+where
+    T: Actor,
+    S: Supervisor + Actor;
+```
+
+## 7. Thread Safety
+
+### 7.1 Concurrency Model
+- One scheduler per thread (thread-local)
+- Actors pinned to scheduler threads
+- Message passing via lock-free queues (MPSC)
+- Actor state mutation single-threaded
+
+### 7.2 Synchronization Primitives
+```toml
+[dependencies]
+tokio = { version = "1.35", features = ["sync", "rt", "time"] }
+parking_lot = { version = "0.12", features = ["arc_lock"] }
+crossbeam = { version = "0.8", features = ["queue"] }
+```
+
+### 7.3 Memory Ordering
+- ActorId increments: SeqCst (for global uniqueness)
+- Mailbox operations: Release/Acquire
+- Registry lookup: Relaxed (with Arc)
+
+## 8. Error Handling
+
+### 8.1 Error Types
+```rust
+pub enum ActorError {
+    ActorNotFound(ActorId<()>),
+    ActorNotRunning(ActorId<()>),
+    ActorDead(ActorId<()>),
+    SchedulerStopped,
+    MailboxFull,
+    MigrationFailed,
+    TimeoutExpired,
+}
+
+pub type Result<T> = std::result::Result<T, ActorError>;
+```
+
+### 8.2 Error Recovery
+- Send errors to sender's mailbox (hangup)
+- Supervisors handle child failures
+- Panics in actors caught by scheduler
+- Actor restart on panic (configurable)
+
+## 9. Testing Strategy
+
+### 9.1 Unit Tests (60% coverage target)
+- Actor lifecycle
+- Message dispatch
+- Timeout operations
+- Registry operations
+- Error handling
+
+### 9.2 Integration Tests (20% coverage target)
+- Multi-scheduler communication
+- Supervisor patterns
+- Migration
+- Concurrent message passing
+
+### 9.3 Concurrency Tests (15% coverage target)
+- Race condition detection
+- Deadlock prevention
+- Memory leaks
+- Stress testing
+
+### 9.4 Property-Based Tests (5% coverage target)
+- Actor ID uniqueness
+- Message ordering guarantees
+- State machine correctness
+
+## 10. Performance Considerations
+
+### 10.1 Allocation Reduction
+- Reuse Event objects via pool
+- Pre-allocate mailbox capacity
+- Avoid Box<dyn Fn> where possible
+
+### 10.2 Lock Contention
+- Use lock-free MPSC queues
+- Minimize registry lock duration
+- Thread-local scheduler instance
+
+### 10.3 Zero-Copy Optimization
+- Move large messages via Arc
+- Avoid serialization
+- Direct pointer passing when safe
+
+## 11. Migration from Stub
+
+### 11.1 Breaking Changes
+- `Actor::start()` -> `Actor::start_up()`
+- `Actor::id()` removed (use `actor_id()` free function)
+- `ActorShared` now requires valid token
+
+### 11.2 Compatibility Layer
+Provide temporary shims for existing code:
+```rust
+#[deprecated(since = "0.2.0", note = "Use start_up instead")]
+pub trait ActorLegacy {
+    fn start(&mut self) { self.start_up(); }
+}
+```
+
+## 12. Documentation Requirements
+
+### 12.1 API Documentation
+- All public types and functions
+- Examples for message passing
+- Supervisor pattern examples
+- Migration guide
+
+### 12.2 Architecture Documentation
+- Thread safety guarantees
+- Memory model
+- Performance characteristics
+- TDLib compatibility notes
+
+## 13. Deliverables
+
+### 13.1 Code Artifacts
+- 14 source files (approx. 3500 LOC)
+- 200+ unit tests
+- 20+ integration tests
+- 10+ concurrency tests
+
+### 13.2 Documentation
+- API docs with examples
+- Architecture decision record
+- TDLib compatibility matrix
+- Migration guide from stub
+
+### 13.3 Verification
+- cargo-fmt: clean
+- cargo-clippy: no warnings
+- cargo-test: all pass
+- Coverage: 75%+
+
+## 14. Success Criteria
+
+- [ ] All TDLib actor patterns implemented
+- [ ] Message passing latency < 10μs
+- [ ] Throughput > 1M messages/sec
+- [ ] Zero unsafe code (except primitives)
+- [ ] 75%+ test coverage
+- [ ] No memory leaks (valgrind clean)
+- [ ] Thread sanitizer clean

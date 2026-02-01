@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-star-subscription-pricing"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Star subscription pricing for Telegram Premium"
+
+[dependencies]
+# Local crates
+rustgram-star-amount = { path = "../star-amount" }
+
+# Serialization
+serde = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-giveaway-parameters"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+rustgram-types = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }

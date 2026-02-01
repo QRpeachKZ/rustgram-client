@@ -1,0 +1,17 @@
+[package]
+name = "rustgram-channel-recommendation-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

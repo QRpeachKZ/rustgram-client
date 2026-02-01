@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-premium"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rustgram-premium-gift-option = { path = "../premium_gift-option" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-user-id = { path = "../user-id" }
+rustgram-message-full-id = { path = "../message_full-id" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = [
+  "dep:serde",
+  "rustgram-premium-gift-option/serde",
+  "rustgram-user-id/serde",
+]

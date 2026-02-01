@@ -1,0 +1,52 @@
+tdlib_function,domain,call_count,critical_path,description
+check_authentication_code,Authentication,2,Yes,Verify 2FA code during login
+check_authentication_password,Authentication,1,Yes,Verify 2FA password
+resend_authentication_code,Authentication,1,No,Request new auth code via SMS
+recover_authentication_password,Authentication,1,No,Recover account with recovery code
+request_authentication_password_recovery,Authentication,1,No,Initiate password recovery flow
+register_user,Authentication,1,No,Complete registration with name
+request_qr_code_authentication,Authentication,1,No,Start QR code login flow
+set_authentication_phone_number,Authentication,1,Yes,Begin phone number auth
+log_out,Account,1,Yes,Log out from Telegram
+delete_account,Account,1,No,Delete Telegram account
+create_private_chat,Chat,1,Yes,Create private chat with user
+open_chat,Chat,2,Yes,Open chat for interaction
+close_chat,Chat,2,No,Close chat session
+join_chat,Chat,1,Yes,Join group/channel
+leave_chat,Chat,1,Yes,Leave chat
+get_message,Chat,1,Yes,Get single message by ID
+get_chat_history,Chat,1,Yes,Load chat message history
+delete_messages,Chat,1,Yes,Delete messages (revoke if enabled)
+view_messages,Chat,2,Yes,Mark messages as read
+send_message,Chat,2,Yes,Send text/media message
+edit_message_text,Chat,1,Yes,Edit sent message text
+send_chat_action,Chat,1,No,Send typing/recording action
+toggle_chat_is_pinned,Chat,1,No,Pin/unpin chat
+toggle_chat_is_marked_as_unread,Chat,2,No,Mark chat as unread
+set_chat_notification_settings,Chat,1,No,Configure chat notifications
+set_chat_draft_message,Chat,1,No,Save draft message
+set_message_sender_block_list,Chat,1,No,Block/unblock user
+download_file,File,2,Yes,Download file from Telegram
+cancel_download_file,File,1,No,Cancel active download
+search_chats,Search,1,Yes,Search local chats by query
+search_chats_on_server,Search,1,Yes,Search chats on server
+search_contacts,Search,1,Yes,Search contacts
+search_public_chats,Search,1,Yes,Search public groups/channels
+add_recently_found_chat,Search,2,No,Add to recently found
+clear_recently_found_chats,Search,1,No,Clear recent search history
+load_chats,ChatList,1,Yes,Load more chats in list
+add_chat_to_list,ChatList,1,No,Add chat to folder/list
+get_storage_statistics,Storage,1,No,Get storage usage info
+optimize_storage,Storage,1,No,Clean up storage cache
+delete_chat_folder,ChatFolder,1,No,Delete chat folder
+get_contacts,Query,1,Yes,Get contact list
+get_countries,Query,1,No,Get country list for phone codes
+get_me,Query,1,Yes,Get current user info
+get_basic_group_full_info,Query,1,Yes,Get full group info
+get_supergroup_full_info,Query,1,Yes,Get full channel info
+get_chat_sponsored_messages,Query,1,No,Get sponsored messages
+parse_markdown,Text,1,No,Parse markdown to entities
+get_markdown_text,Text,1,No,Convert to markdown
+set_option,Config,3,No,Set TDLib option
+set_tdlib_parameters,Config,1,No,Configure TDLib on init
+set_log_verbosity_level,Config,1,No,Set log level

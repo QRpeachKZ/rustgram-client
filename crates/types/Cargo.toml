@@ -1,0 +1,38 @@
+[package]
+name = "rustgram-types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Base types for Telegram MTProto client"
+
+[dependencies]
+# Serialization
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Byte handling
+bytes = "1.5"
+
+# Hex encoding
+hex = "0.4"
+
+# Base64 encoding
+base64 = "0.21"
+
+# Async runtime (for potential async features)
+tokio = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+# Property-based testing
+proptest = { workspace = true }

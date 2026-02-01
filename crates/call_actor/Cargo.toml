@@ -1,0 +1,14 @@
+[package]
+name = "rustgram-call-actor"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rustgram-call-id = { path = "../call-id, package = "rustgram-call-id" }
+rustgram-call-discard-reason = { path = "../call_discard-reason, package = "rustgram-call-discard-reason" }
+rustgram-types = { path = "../types" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

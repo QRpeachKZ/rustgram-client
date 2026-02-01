@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-story-full-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Story Full ID for Telegram MTProto client"
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-story-id = { path = "../story-id" }
+serde = { workspace = true, features = ["derive"] }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,35 @@
+[package]
+name = "rustgram-client-actor"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Client actor for Telegram MTProto client"
+
+[dependencies]
+# Workspace dependencies
+thiserror = { workspace = true }
+tracing = { workspace = true }
+tokio = { workspace = true }
+bytes = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+parking_lot = { workspace = true }
+async-trait = { workspace = true }
+
+# Internal dependencies
+rustgram-net = { path = "../net" }
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

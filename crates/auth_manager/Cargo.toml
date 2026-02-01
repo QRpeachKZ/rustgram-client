@@ -1,0 +1,33 @@
+[package]
+name = "rustgram-auth-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Authentication manager for Telegram MTProto"
+
+[dependencies]
+tokio = { workspace = true, features = ["sync", "time"] }
+serde = { workspace = true, features = ["derive"] }
+rustgram-types = { path = "../types" }
+rustgram-net = { path = "../net" }
+rustgram-auth = { path = "../auth" }
+rustgram-terms-of-service = { path = "../terms_of_service", features = ["serde"] }
+async-trait = "0.1"
+bytes = "1.5"
+thiserror = "2.0"
+tracing = "0.1"
+parking_lot = "0.12"
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "test-util"] }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

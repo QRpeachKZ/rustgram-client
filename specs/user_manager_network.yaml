@@ -1,0 +1,483 @@
+# UserManager Network Integration Specification
+
+## Metadata
+- **Epic ID**: rustgram-client-lhr
+- **Phase**: 2 - Analysis + Plan Validation + Spec/Design
+- **Created**: 2026-01-18
+- **Status**: DRAFT
+- **Priority**: P1 (High)
+
+## Overview
+Integrate UserManager with the network layer to enable fetching user information from Telegram servers via MTProto protocol.
+
+## Objectives
+1. Enable UserManager to fetch users via `users.getUsers` RPC call
+2. Enable UserManager to fetch full user info via `users.getUserFull` RPC call
+3. Implement TL serialization framework for user-related types
+4. Add network error handling and retry logic
+5. Implement LRU caching for fetched users (5000 user limit)
+6. Support batch fetching of multiple users
+
+## Current State Analysis
+
+### Existing UserManager (crates/user_manager/)
+**Capabilities:**
+- In-memory storage of User objects with HashMap<UserId, User>
+- Basic CRUD operations (add_user, get_user, remove_user)
+- Thread-safe access via Arc<RwLock<>>
+- "My ID" tracking for current user
+- Display name helper methods
+- Basic flag checks (is_bot, is_premium, is_deleted)
+
+**Limitations:**
+- No network integration
+- No TL serialization support
+- No caching strategy beyond in-memory HashMap
+- No error handling for network failures
+- No batch fetching support
+- Stub implementation (7% estimated coverage)
+
+### Existing Network Layer (crates/net/)
+**Capabilities:**
+- Full MTProto packet implementation
+- NetQuery system for RPC calls
+- Query dispatching and lifecycle management
+- DC (Data Center) management
+- Connection pooling and session management
+- Auth key management
+- Flood control and sequence dispatching
+- Network statistics
+
+**Relevant Types:**
+- `NetQuery` - RPC request wrapper
+- `NetQueryDispatcher` - Routes queries to sessions
+- `QueryError` - Error types for failed queries
+- `DcId` - Data Center identifier
+- `AuthFlag`, `GzipFlag` - Query configuration flags
+
+### Existing TL Framework (crates/types/)
+**Capabilities:**
+- TL serialization traits (TlSerialize, TlDeserialize)
+- Primitive TL types (TlInt, TlLong, TlString, TlBytes, TlBool)
+- Vector and collection types (TlVector, Maybe, TlDictionary)
+- Helper functions for TL binary format
+- Constructor ID tracking
+
+**Limitations:**
+- No User-specific TL types defined
+- No InputUser types (required for queries)
+- No UserFull types
+- Missing TL schema definitions for users.* namespace
+
+## Requirements
+
+### Functional Requirements
+
+#### FR1: TL Type Definitions
+- Define `InputUser` enum with variants:
+  - `InputUserEmpty` (0xb98886cf)
+  - `InputUserSelf` (0xf7c1b13f)
+  - `InputUser` (0xf21158c6) with user_id:long, access_hash:long
+  - `InputUserFromMessage` (0x1da448e2) with peer:InputPeer, msg_id:int, user_id:long
+
+#### FR2: RPC Query Methods
+- `get_users(user_ids: Vec<UserId>) -> Result<Vec<User>, NetworkError>`
+  - Accepts list of UserId
+  - Converts to InputUser with access_hash lookup
+  - Sends users.getUsers#d91a548 query
+  - Returns vector of User objects
+  
+- `get_full_user(user_id: UserId) -> Result<UserFull, NetworkError>`
+  - Accepts single UserId
+  - Converts to InputUser
+  - Sends users.getUserFull query
+  - Returns UserFull with extended info
+
+#### FR3: Access Hash Management
+- Store access_hash for each UserId
+- Update access_hash from incoming User objects
+- Validate access_hash before creating InputUser
+- Handle missing access_hash errors gracefully
+
+#### FR4: Error Handling
+- `NetworkError` enum with variants:
+  - `QueryFailed(QueryError)` - Network query failed
+  - `InvalidAccessHash` - Missing or invalid access hash
+  - `UserNotFound` - User ID not found on server
+  - `RateLimited` - Flood control triggered
+  - `SerializationError` - TL serialization failed
+  - `DeserializationError` - TL deserialization failed
+
+#### FR5: Caching Strategy
+- LRU cache with 5000 user limit
+- Cache key: UserId
+- Cache entry: User + UserFull (optional)
+- TTL: No explicit TTL (eviction only via LRU)
+- Cache warming on startup (optional)
+
+#### FR6: Batch Optimization
+- Support fetching up to 100 users per batch (Telegram limit)
+- Automatic batching for larger requests
+- Preserve order of results
+- Handle partial failures (some users succeed, some fail)
+
+### Non-Functional Requirements
+
+#### NFR1: Performance
+- Target: < 100ms latency for single user fetch (warm cache)
+- Target: < 500ms latency for batch fetch (100 users)
+- Cache hit rate: > 90% for active users
+
+#### NFR2: Reliability
+- Retry logic for transient failures (3 attempts)
+- Exponential backoff for rate limiting
+- Graceful degradation on network failures
+
+#### NFR3: Type Safety
+- No unwrap() in production code
+- Result<T, NetworkError> for all fallible operations
+- Proper error propagation with ? operator
+
+#### NFR4: Testing
+- Unit tests for TL serialization
+- Unit tests for error handling
+- Integration tests for network queries (mocked)
+- Test coverage target: 70%
+
+## Architecture
+
+### Component Diagram
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      UserManager                             │
+│  ┌─────────────┐  ┌─────────────┐  ┌────────────────────┐ │
+│  │ User Store  │  │  LRU Cache  │  │ Access Hash Store  │ │
+│  │ (HashMap)   │  │  (5000)     │  │  (HashMap)         │ │
+│  └─────────────┘  └─────────────┘  └────────────────────┘ │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           │ uses
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                 UserNetworkClient (NEW)                     │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────────┐  │
+│  │TL Serializer │  │TL Deserializer│  │ Query Builder    │  │
+│  └──────────────┘  └──────────────┘  └──────────────────┘  │
+└─────────────────────────────────────────────────────────────┘
+                           │
+                           │ sends
+                           ▼
+┌─────────────────────────────────────────────────────────────┐
+│                   NetQueryDispatcher                         │
+│                    (from net crate)                          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Flow
+1. Client calls `user_manager.get_users(user_ids)`
+2. UserManager checks cache for each user_id
+3. For uncached users:
+   - Look up access_hash from AccessHashStore
+   - Create InputUser objects
+   - Call UserNetworkClient::fetch_users()
+4. UserNetworkClient:
+   - Serializes users.getUsers query
+   - Creates NetQuery
+   - Sends to NetQueryDispatcher
+   - Awaits response
+   - Deserializes User objects
+   - Returns Result<Vec<User>, NetworkError>
+5. UserManager updates cache and User Store
+6. Returns complete results to client
+
+## Dependencies
+
+### External Dependencies (from Cargo.toml)
+- `rustgram-net` - Network query system
+- `rustgram-types` - TL types and serialization
+- `rustgram-user-id` - UserId type
+- `rustgram-access` - AccessHash type (needs verification)
+- `tokio` - Async runtime
+- `lru` - LRU cache implementation
+- `thiserror` - Error derive macros
+
+### Internal Dependencies
+| Module | Type | Source | Status |
+|--------|------|--------|--------|
+| UserId | Type | rustgram-types | ✓ EXISTS |
+| AccessHash | Type | rustgram-types | ✓ EXISTS |
+| NetQuery | Type | rustgram-net | ✓ EXISTS |
+| TlSerialize | Trait | rustgram-types | ✓ EXISTS |
+| TlDeserialize | Trait | rustgram-types | ✓ EXISTS |
+| InputUser | Type | NEEDS CREATION | ✗ MISSING |
+| User | Type | rustgram-user-manager | ✓ EXISTS (needs TL impl) |
+| UserFull | Type | NEEDS CREATION | ✗ MISSING |
+| NetworkError | Type | NEEDS CREATION | ✗ MISSING |
+
+## Implementation Phases
+
+### Phase 1: TL Serialization Framework (5-7 days)
+**Tasks:**
+1. Create `crates/input_user/` crate
+   - Define InputUser enum with 4 variants
+   - Implement TlSerialize, TlDeserialize
+   - Add constructor ID constants
+   - Write unit tests (20+ tests)
+
+2. Create `crates/user_full/` crate
+   - Define UserFull struct with fields:
+     - user: User
+     - about: String
+     - settings: PeerSettings
+     - phone_calls_available: bool
+     - phone_calls_private: bool
+     - can_pin_message: bool
+     - has_scheduled: bool
+     - video_calls_available: bool
+     - support: bool
+     - bot_info: BotInfo (optional)
+     - folder_id: FolderId (optional)
+   - Implement TlSerialize, TlDeserialize
+   - Write unit tests (30+ tests)
+
+3. Extend `crates/user_manager/`
+   - Add TlSerialize, TlDeserialize to User
+   - Update constructor ID: 0x8d742e2a (user#8d742e2a)
+   - Write serialization tests (15+ tests)
+
+**Deliverables:**
+- 3 new/updated crates
+- 65+ unit tests
+- TL serialization for user types
+
+**Acceptance:**
+- All TL types match TDLib schema
+- Serialization produces binary-compatible output
+- Deserialization handles all variants
+- Test coverage > 70%
+
+### Phase 2: Network Error Types (2-3 days)
+**Tasks:**
+1. Create `crates/network_error/` crate
+   - Define NetworkError enum with 6 variants
+   - Implement Display, Error, From traits
+   - Add conversion from QueryError
+   - Write unit tests (15+ tests)
+
+2. Update error handling in user_manager
+   - Replace panics with Result returns
+   - Add error context with thiserror
+   - Document error scenarios
+
+**Deliverables:**
+- 1 new crate
+- 15+ unit tests
+- Comprehensive error handling
+
+**Acceptance:**
+- All error paths tested
+- No unwrap() in production code
+- Clear error messages
+
+### Phase 3: TL Query Construction (3-4 days)
+**Tasks:**
+1. Create `crates/user_query_builder/` crate
+   - Define UserQueryBuilder struct
+   - Implement query construction methods:
+     - build_get_users(ids: Vec<InputUser>) -> Bytes
+     - build_get_full_user(id: InputUser) -> Bytes
+   - Add query validation
+   - Write unit tests (20+ tests)
+
+2. Create `crates/user_response_parser/` crate
+   - Define UserResponseParser
+   - Implement response parsing:
+     - parse_users(response: Bytes) -> Result<Vec<User>>
+     - parse_user_full(response: Bytes) -> Result<UserFull>
+   - Handle error responses
+   - Write unit tests (20+ tests)
+
+**Deliverables:**
+- 2 new crates
+- 40+ unit tests
+- Query construction/parsing logic
+
+**Acceptance:**
+- Queries match TDLib format
+- Response parsing handles all cases
+- Error responses properly parsed
+
+### Phase 4: Network Client Integration (5-7 days)
+**Tasks:**
+1. Create `crates/user_network_client/` crate
+   - Define UserNetworkClient struct
+   - Add fields:
+     - dispatcher: Arc<NetQueryDispatcher>
+     - dc_id: DcId
+     - timeout: Duration
+   - Implement methods:
+     - new(dispatcher, dc_id) -> Self
+     - fetch_users(query: Bytes) -> Result<Vec<User>>
+     - fetch_full_user(query: Bytes) -> Result<UserFull>
+   - Add retry logic (3 attempts)
+   - Add timeout handling
+   - Write unit tests (25+ tests, mocked)
+
+2. Update user_manager Cargo.toml
+   - Add dependency on user_network_client
+   - Add dependency on lru crate
+
+**Deliverables:**
+- 1 new crate
+- 25+ unit tests
+- Network client with retry logic
+
+**Acceptance:**
+- Mocked network calls work in tests
+- Retry logic tested
+- Timeout handling tested
+
+### Phase 5: User Fetching Methods (5-7 days)
+**Tasks:**
+1. Extend UserManager in user_manager/src/lib.rs
+   - Add field: network_client: Option<Arc<UserNetworkClient>>
+   - Add field: cache: Arc<Mutex<LruCache<UserId, User>>>
+   - Add field: access_hashes: Arc<RwLock<HashMap<UserId, AccessHash>>>
+   - Implement public methods:
+     - async fn get_users(&self, ids: Vec<UserId>) -> Result<Vec<User>, NetworkError>
+     - async fn get_full_user(&self, id: UserId) -> Result<UserFull, NetworkError>
+     - async fn fetch_users(&self, ids: Vec<UserId>) -> Result<Vec<User>, NetworkError>
+     - fn set_network_client(&self, client: Arc<UserNetworkClient>)
+   - Implement private helpers:
+     - build_input_users(&self, ids: Vec<UserId>) -> Result<Vec<InputUser>, NetworkError>
+     - update_cache(&self, users: Vec<User>)
+     - update_access_hashes(&self, users: &[User])
+   - Write unit tests (30+ tests)
+
+2. Add integration tests
+   - Test cache hits/misses
+   - Test batch fetching
+   - Test error handling
+   - Test concurrent access
+
+**Deliverables:**
+- Extended UserManager with 4 public methods
+- 30+ unit tests
+- 10+ integration tests
+
+**Acceptance:**
+- All methods return Result
+- Cache eviction works correctly
+- Batch fetching handles 100+ users
+- Concurrent access is safe
+
+### Phase 6: Caching Layer (3-4 days)
+**Tasks:**
+1. Implement LRU cache in user_manager
+   - Initialize with 5000 capacity
+   - Add cache lookup in get_users()
+   - Add cache update after successful fetch
+   - Add cache invalidation on user update
+   - Write cache tests (15+ tests)
+
+2. Implement access hash storage
+   - Store access_hash when User is added
+   - Update access_hash from server responses
+   - Look up access_hash for InputUser creation
+   - Handle missing access_hash gracefully
+   - Write tests (10+ tests)
+
+**Deliverables:**
+- LRU cache integrated
+- Access hash storage integrated
+- 25+ tests
+
+**Acceptance:**
+- Cache evicts oldest entries at 5000 limit
+- Access hash lookups succeed for known users
+- Missing access hash returns NetworkError::InvalidAccessHash
+
+### Phase 7: Testing and Documentation (4-5 days)
+**Tasks:**
+1. Write comprehensive tests
+   - Unit tests for all new methods (80+ tests)
+   - Integration tests with mocked network (15+ tests)
+   - Property-based tests for serialization (proptest)
+   - Concurrency tests for cache access
+
+2. Write documentation
+   - Add module-level documentation
+   - Add method docs with examples
+   - Add error handling documentation
+   - Add architecture diagram
+
+3. Performance testing
+   - Benchmark single user fetch
+   - Benchmark batch fetch (10, 50, 100 users)
+   - Benchmark cache performance
+   - Verify < 100ms target for cached reads
+
+**Deliverables:**
+- 120+ total tests
+- Complete API documentation
+- Performance benchmarks
+- Architecture documentation
+
+**Acceptance:**
+- Test coverage > 70%
+- All examples compile and run
+- Performance targets met
+- Documentation passes cargo doc
+
+## Success Criteria
+
+### Functional
+- [ ] UserManager can fetch users from network
+- [ ] UserManager can fetch full user info from network
+- [ ] Batch fetching supports 100+ users
+- [ ] Cache reduces redundant network calls
+- [ ] All error cases handled gracefully
+
+### Quality
+- [ ] 70% test coverage minimum
+- [ ] Zero clippy warnings
+- [ ] No unwrap() in production code
+- [ ] All public APIs documented
+
+### Performance
+- [ ] Cached user reads < 100ms
+- [ ] Batch fetch (100 users) < 500ms
+- [ ] Cache hit rate > 90% for active users
+- [ ] Memory usage < 50MB for 5000 cached users
+
+### Reliability
+- [ ] Retry logic handles transient failures
+- [ ] Rate limiting causes exponential backoff
+- [ ] Network failures don't crash the process
+- [ ] Cache corruption is prevented
+
+## Risk Mitigation
+
+| Risk | Impact | Mitigation |
+|------|--------|------------|
+| TL schema mismatch | HIGH | Validate against TDLib reference, add tests |
+| Access hash missing | MEDIUM | Store hash on first user fetch, validate before use |
+| Cache eviction during read | LOW | Use Arc<Mutex<>> for cache, clone on read |
+| Network timeout | MEDIUM | Implement retry logic, exponential backoff |
+| Rate limiting | MEDIUM | Handle FloodWaitError, back off exponentially |
+| Concurrent access | HIGH | Use proper synchronization, test with loom |
+| Memory leak | LOW | LRU cache ensures bounded memory |
+| TDLib protocol change | HIGH | Version TL types, add deprecation warnings |
+
+## Open Questions
+1. Should UserFull be cached separately or alongside User?
+2. Should cache be persisted to disk?
+3. Should we preload "my" user on startup?
+4. What's the optimal batch size for fetching? (TDLib uses 100)
+5. Should we implement prefetching for likely-to-be-accessed users?
+
+## References
+- TDLib UserManager: references/td/td/telegram/UserManager.h
+- TL Schema: references/td/td/generate/scheme/telegram_api.tl
+- MTProto Query: references/td/td/mtproto/MtprotoQuery.h
+- NetQuery: crates/net/src/query.rs

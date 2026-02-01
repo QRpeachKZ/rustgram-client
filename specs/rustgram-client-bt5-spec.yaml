@@ -1,0 +1,106 @@
+spec:
+  epic: rustgram-client-bt5
+  title: "TDLib Migration Epic 34/47 - 8 Simple Modules (Batch 5)"
+  version: 0.1.0
+  created: "2026-01-14T21:30:00Z"
+  language: rust
+  complexity: simple
+  batch_size: 8 modules (320 LOC estimated)
+
+modules:
+  - name: input_group_call
+    type: "enum (2 variants)"
+    tdlib_variants: [Link, Message]
+    estimated_loc: 150-250
+    estimated_tests: 30-40
+
+  - name: input_invoice
+    type: "enum (3 variants)"
+    tdlib_variants: [Message, Name, Telegram]
+    estimated_loc: 200-300
+    estimated_tests: 35-45
+    dependencies:
+      - TelegramPaymentPurpose (to be verified)
+
+  - name: json_value
+    type: "enum (6 variants)"
+    tdlib_variants: [Null, Boolean, Number, String, Array, Object]
+    estimated_loc: 300-450
+    estimated_tests: 45-60
+    note: "Recursive type - Array contains Vec<JsonValue>"
+
+  - name: labeled_price_part
+    type: "struct"
+    fields: [label: String, amount: i64]
+    estimated_loc: 150-200
+    estimated_tests: 30-40
+
+  - name: location
+    type: "struct"
+    fields: [latitude: f64, longitude: f64, horizontal_accuracy: f64]
+    estimated_loc: 150-200
+    estimated_tests: 30-40
+
+  - name: log
+    type: "multiple types"
+    types: [LogVerbosityLevel, LogTags, LogStream enum]
+    estimated_loc: 250-350
+    estimated_tests: 35-50
+
+  - name: logging
+    type: "utility wrapper"
+    estimated_loc: 100-200
+    estimated_tests: 20-30
+    note: "Optional - may be part of log module"
+
+  - name: media_area_coordinates
+    type: "struct"
+    fields: [x, y, width, height, rotation_angle, radius: f64]
+    estimated_loc: 200-300
+    estimated_tests: 35-45
+    validation: "Clamping to 0-100, rotation normalized to 0-360"
+
+total_estimated:
+  loc: 1500-2250
+  tests: 260-310
+
+success_criteria:
+  code_quality:
+    max_clippy_warnings: 0
+    production_unwrap_calls: 0
+    max_cyclomatic_complexity: 15
+
+  test_coverage:
+    min_tests_per_module: 30
+    total_tests_min: 240
+    test_pass_rate: 100
+
+  documentation:
+    public_api_docs_percent: 100
+    examples_required: true
+
+  tdlib_alignment:
+    api_compatibility: "strict"
+    naming_convention: "exact_match"
+
+risks:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    description: "TelegramPaymentPurpose type may not exist in rustgram"
+    module: input_invoice
+    mitigation: "Create stub if missing; verify in Phase 2.5"
+    impact: LOW
+
+  - id: R2
+    type: RECURSIVE_TYPE
+    description: "JsonValue Array variant contains vector<JsonValue>"
+    module: json_value
+    mitigation: "Use Box or standard recursive enum pattern"
+    impact: LOW
+
+  - id: R3
+    type: VALIDATION_LOGIC
+    description: "MediaAreaCoordinates has clamping and normalization logic"
+    module: media_area_coordinates
+    mitigation: "Port validation from TDLib C++ implementation"
+    impact: LOW

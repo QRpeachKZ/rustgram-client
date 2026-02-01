@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-story-content-type"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Story content type enumeration for Telegram client"
+repository = "https://github.com/yourusername/rustgram-client"
+
+[dependencies]
+rustgram-types = { path = "../types" }

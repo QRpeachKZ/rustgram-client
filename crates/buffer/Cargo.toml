@@ -1,0 +1,27 @@
+[package]
+name = "rustgram-buffer"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Buffer types for rustgram-client"
+keywords = ["telegram", "mtproto", "buffer"]
+categories = ["data-structures"]
+
+[features]
+default = []
+
+[dependencies]
+bytes = { workspace = true }
+
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true

@@ -1,0 +1,17 @@
+[package]
+name = "rustgram-file-reference-manager"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rustgram-file-id = { path = "../file_id" }
+rustgram-file-source-id = { path = "../file_source-id" }
+rustgram-message-full-id = { path = "../message_full-id" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-types = { path = "../types" }
+rustgram-quick-reply-message-full-id = { path = "../quick_reply_message_full-id" }
+rustgram-background-id = { path = "../background-id" }
+
+[dev-dependencies]
+rstest = "0.23"
+serde_json = "1.0"

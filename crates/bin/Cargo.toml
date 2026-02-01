@@ -1,0 +1,36 @@
+[package]
+name = "rustgram-client"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Telegram CLI client built on rustgram-client library"
+
+[[bin]]
+name = "rustgram-client"
+path = "src/main.rs"
+
+[dependencies]
+# Core runtime
+tokio = { workspace = true }
+anyhow = "1"
+
+# rustgram-client components
+rustgram-net = { path = "../net" }
+rustgram-types = { path = "../types" }
+rustgram-auth = { path = "../auth" }
+rustgram-auth-manager = { path = "../auth_manager" }
+rustgram-dialog-manager = { path = "../dialog_manager" }
+rustgram-user-manager = { path = "../user_manager" }
+rustgram-messages-manager = { path = "../messages_manager" }
+rustgram-storage = { path = "../storage" }
+
+# Logging
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+
+# Environment
+dotenv = "0.15"

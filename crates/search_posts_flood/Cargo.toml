@@ -1,0 +1,34 @@
+[package]
+name = "rustgram-search-posts-flood"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Flood control for public post search in Telegram MTProto client"
+keywords = ["telegram", "mtproto", "search", "flood", "rate-limit"]
+categories = ["data-structures"]
+
+[dependencies]
+# Internal dependencies
+rustgram-types = { path = "../types" }
+
+# External dependencies
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+[dev-dependencies]
+# Property-based testing
+proptest = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde"]
+
+[package.metadata.docs.rs]
+all-features = true

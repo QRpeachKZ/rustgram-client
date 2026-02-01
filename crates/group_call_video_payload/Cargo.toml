@@ -1,0 +1,25 @@
+[package]
+name = "rustgram-group-call-video-payload"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Group call video payload handling for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "video", "group-call", "webrtc"]
+categories = ["data-structures", "network-programming"]
+
+[dependencies]
+thiserror = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_group_call_video_payload"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

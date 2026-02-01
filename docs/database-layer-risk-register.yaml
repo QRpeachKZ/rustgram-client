@@ -1,0 +1,667 @@
+# Database Layer Risk Register
+# Epic: rustgram-client-a7u
+# Phase: 1B - Database Layer (Persistence)
+# Date: 2026-01-23
+# Last Updated: 2026-01-23
+
+# Risk Management Strategy
+# - OPEN: Active risk, requires mitigation
+# - MITIGATED: Risk acknowledged, mitigation in place
+# - BLOCKER: Risk that could stop Phase 1B execution
+# - CLOSED: Risk no longer applicable
+
+risk_register:
+  version: "1.0"
+  total_risks: 21
+  open_risks: 8
+  mitigated_risks: 10
+  blocker_risks: 0
+  closed_risks: 3
+
+risks:
+  # ============================================================================
+  # TECHNICAL RISKS
+  # ============================================================================
+  
+  - id: "P2-R1"
+    type: "TECHNICAL"
+    category: "SCHEMA"
+    status: "OPEN"
+    title: "BLOB Schema Flexibility"
+    description: "Using BLOB for TL types may complicate queries and migrations"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    tdlib_reference: "TDLib uses BufferSlice (similar to BLOB)"
+    affected_batches: ["B1", "B2", "B3", "B4"]
+    
+    symptoms:
+      - "Cannot query message content without deserializing"
+      - "Schema migrations may require data migration"
+      - "Debugging requires hex dump tools"
+      
+    mitigation_strategy: "BLOB provides version tolerance; TDLib uses this pattern successfully"
+    contingency_plan: "Add extracted columns (text, date) for common queries"
+    owner: "dev-rust"
+    due_date: "B1-T2"
+    
+  - id: "P2-R2"
+    type: "TECHNICAL"
+    category: "SERIALIZATION"
+    status: "MITIGATED"
+    title: "Bincode Version Compatibility"
+    description: "Bincode format may break across versions"
+    impact: "HIGH"
+    probability: "LOW"
+    
+    affected_batches: ["B1", "B2", "B3", "B4"]
+    
+    symptoms:
+      - "Old databases cannot deserialize after bincode upgrade"
+      - "Migration fails with ParseError"
+      
+    mitigation_strategy: "Version BLOB header (u8 schema_version) before data"
+    implemented: "Specified in specs/database-layer.yaml"
+    owner: "dev-rust"
+    due_date: "B1-T1"
+
+  - id: "P2-R3"
+    type: "TECHNICAL"
+    category: "MIGRATION"
+    status: "OPEN"
+    title: "Migration Conflicts"
+    description: "Multiple migration versions may conflict in parallel development"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3", "B4"]
+    
+    symptoms:
+      - "Migration version collision across databases"
+      - "Failed rollback due to inter-DB dependencies"
+      
+    mitigation_strategy: "Each database has independent version sequence (V1-VN per DB)"
+    contingency_plan: "Use migration prefix: message_V1, user_V1, etc."
+    owner: "dev-rust"
+    due_date: "B1-T3"
+
+  - id: "P2-R4"
+    type: "TECHNICAL"
+    category: "FTS_SEARCH"
+    status: "MITIGATED"
+    title: "FTS5 Scope Deferred"
+    description: "Full-text search not available in Phase 1B"
+    impact: "LOW"
+    probability: "N/A"
+    
+    affected_batches: ["B1"]
+    
+    symptoms:
+      - "Slow message search with LIKE queries"
+      - "Cannot search in multiple languages efficiently"
+      
+    mitigation_strategy: "Defer FTS5 to Phase 2; use LIKE with text column"
+    implemented: "Confirmed in docs/database-layer-clarification-qa.md Q2"
+    owner: "analyst"
+    due_date: "N/A"
+
+  - id: "P2-R5"
+    type: "TECHNICAL"
+    category: "PERFORMANCE"
+    status: "OPEN"
+    title: "Query Performance < 10ms Target"
+    description: "SQLite queries may exceed 10ms P99 target"
+    impact: "HIGH"
+    probability: "LOW"
+    
+    affected_batches: ["B1", "B2", "B3", "B4", "B5"]
+    
+    symptoms:
+      - "get_message() takes >10ms on 100K row database"
+      - "Index queries are slow"
+      
+    measurement_criteria:
+      - "P99 latency < 10ms for single entity queries"
+      - "100K row database test"
+      - "Benchmark with criterion crate"
+      
+    mitigation_strategy: "Proper indexing, WAL mode, query optimization"
+    contingency_plan: "Add composite indexes, denormalize hot paths"
+    owner: "tester"
+    due_date: "B5-T3"
+    test_requirement: "Benchmarks in B1-T5, B2-T4, B3-T4, B4-T4"
+
+  - id: "P2-R6"
+    type: "TECHNICAL"
+    category: "TL_TYPES"
+    status: "MITIGATED"
+    title: "TL Types Not Generated"
+    description: "Some TL types may not be generated yet"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3", "B4"]
+    
+    symptoms:
+      - "Compilation error: TL type not found"
+      - "Cannot serialize unknown type"
+      
+    mitigation_strategy: "Use Bytes/Vec<u8> for unknown TL types in Phase 1"
+    implemented: "Specified BLOB pattern in schema"
+    owner: "dev-rust"
+    due_date: "B1-T1"
+
+  - id: "P2-R7"
+    type: "TECHNICAL"
+    category: "ID_ENCODING"
+    status: "OPEN"
+    title: "DialogId Encoding Errors"
+    description: "DialogId::to_encoded() may fail for invalid IDs"
+    impact: "MEDIUM"
+    probability: "LOW"
+    
+    affected_batches: ["B1", "B2", "B3", "B4"]
+    
+    symptoms:
+      - "StorageError::InvalidParameter on valid DialogId"
+      - "from_encoded() returns Err for valid values"
+      
+    mitigation_strategy: "Validate ID encoding/decoding in unit tests"
+    test_requirement: "Add encoding tests for all ID types"
+    owner: "dev-rust"
+    due_date: "B1-T2"
+
+  # ============================================================================
+  # INTEGRATION RISKS
+  # ============================================================================
+  
+  - id: "P2-R8"
+    type: "INTEGRATION"
+    category: "ACTOR_PATTERN"
+    status: "MITIGATED"
+    title: "Actor Synchronous Database Calls"
+    description: "Actors calling synchronous database may block event loop"
+    impact: "MEDIUM"
+    probability: "LOW"
+    
+    affected_batches: ["B1-T4", "B2-T4", "B3-T4", "B4-T4"]
+    
+    symptoms:
+      - "Actor hangs during database operation"
+      - "Timeout errors in actor mailbox"
+      
+    mitigation_strategy: "TDLib pattern: sync calls on actor thread are OK"
+    tdlib_reference: "TDLib MessageDbSyncInterface is synchronous"
+    implemented: "DialogDb follows this pattern successfully"
+    owner: "dev-rust"
+    due_date: "B1-T4"
+
+  - id: "P2-R9"
+    type: "INTEGRATION"
+    category: "MANAGER_COUPLING"
+    status: "OPEN"
+    title: "Tight Manager-Database Coupling"
+    description: "Managers directly coupled to concrete DbSync types"
+    impact: "LOW"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1-T4", "B2-T4", "B3-T4", "B4-T4"]
+    
+    symptoms:
+      - "Cannot swap database implementation for testing"
+      - "Manager tests require real database"
+      
+    mitigation_strategy: "Use trait objects (Box<dyn DbInterface>) if flexibility needed"
+    contingency_plan: "Acceptable coupling for Phase 1B; defer abstraction"
+    owner: "dev-rust"
+    due_date: "B1-T4"
+
+  - id: "P2-R10"
+    type: "INTEGRATION"
+    category: "OPTION_DB"
+    status: "MITIGATED"
+    title: "Option<DbSync> Pattern Complexity"
+    description: "Managers must handle None database case"
+    impact: "LOW"
+    probability: "N/A"
+    
+    affected_batches: ["B1-T4", "B2-T4", "B3-T4", "B4-T4"]
+    
+    symptoms:
+      - "Panic on unwrap() of None database"
+      - "In-memory mode not tested"
+      
+    mitigation_strategy: "Follow DialogDb pattern: gracefully handle None"
+    implemented: "Specified in plan.yaml B1-T4, B2-T4, B3-T4, B4-T4"
+    owner: "dev-rust"
+    due_date: "B1-T4"
+
+  - id: "P2-R11"
+    type: "INTEGRATION"
+    category: "TDDB_COORDINATION"
+    status: "OPEN"
+    title: "TdDb Initialization Order"
+    description: "TdDb must initialize 5 databases in correct order"
+    impact: "HIGH"
+    probability: "LOW"
+    
+    affected_batches: ["B5"]
+    
+    symptoms:
+      - "Database not found error during TdDb::open()"
+      - "Migration fails due to missing dependency"
+      
+    mitigation_strategy: "Sequential initialization with error propagation"
+    initialization_order:
+      1. "Open SQLite connection"
+      2. "Run migrations for each database"
+      3. "Create DbSync instances"
+      4. "Construct TdDb with all instances"
+      
+    owner: "dev-rust"
+    due_date: "B5-T1"
+
+  # ============================================================================
+  # SCHEDULE RISKS
+  # ============================================================================
+  
+  - id: "P2-R12"
+    type: "SCHEDULE"
+    category: "ESTIMATE"
+    status: "MITIGATED"
+    title: "192h Estimate Accuracy"
+    description: "Effort estimates may be too optimistic"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3", "B4", "B5"]
+    
+    estimate_breakdown:
+      schema_design: 26  # B1-T1, B2-T1, B3-T1, B4-T1
+      implementation: 116  # B1-T2-4, B2-T2-4, B3-T2-4, B4-T2-4
+      migrations: 26  # B1-T3, B2-T3, B3-T3, B4-T3
+      coordinator: 28  # B5-T1-4
+      testing: 60  # Per-batch tests
+      
+    mitigation_strategy: "Parallel execution of B1-B3 reduces calendar time"
+    buffer: "20% buffer built into estimate"
+    owner: "project-manager"
+    due_date: "Continuous"
+
+  - id: "P2-R13"
+    type: "SCHEDULE"
+    category: "PARALLEL_EXECUTION"
+    status: "MITIGATED"
+    title: "Parallel Batch Execution Coordination"
+    description: "B1-B3 running in parallel may cause merge conflicts"
+    impact: "LOW"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3"]
+    
+    symptoms:
+      - "Git merge conflicts in storage/src/lib.rs"
+      - "Migration version conflicts"
+      
+    mitigation_strategy: "Separate modules (message/, user/, chat/) minimize conflicts"
+    implemented: "Module structure in plan.yaml prevents conflicts"
+    owner: "dev-rust"
+    due_date: "B1-T1"
+
+  - id: "P2-R14"
+    type: "SCHEDULE"
+    category: "TEST_FIXTURES"
+    status: "OPEN"
+    title: "Corruption Test Fixtures Not Available"
+    description: "Need corrupted database files for testing"
+    impact: "MEDIUM"
+    probability: "HIGH"
+    
+    affected_batches: ["B5-T4"]
+    
+    symptoms:
+      - "Cannot test corruption recovery"
+      - "Test coverage < 70%"
+      
+    fixture_requirements:
+      - name: "corrupted_wal.db"
+        description: "WAL file with invalid checksum"
+        creation: "Modify last 4 bytes of -wal file"
+      - name: "corrupted_header.db"
+        description: "Database header with invalid magic"
+        creation: "Modify first 16 bytes of .db file"
+      - name: "partial_page.db"
+        description: "Database with corrupted page"
+        creation: "Modify bytes 4096-8192 of .db file"
+        
+    mitigation_strategy: "Create fixtures as part of B5-T4 task"
+    owner: "tester"
+    due_date: "B5-T4"
+
+  # ============================================================================
+  # DATA RISKS
+  # ============================================================================
+  
+  - id: "P2-R15"
+    type: "DATA"
+    category: "CORRUPTION_DETECTION"
+    status: "OPEN"
+    title: "Silent Corruption"
+    description: "Database corruption may not be detected immediately"
+    impact: "HIGH"
+    probability: "LOW"
+    
+    affected_batches: ["B5-T3"]
+    
+    symptoms:
+      - "Queries succeed but return wrong data"
+      - "Checksum mismatch only detected on PRAGMA integrity_check"
+      
+    detection_methods:
+      - "rusqlite error on query (obvious corruption)"
+      - "PRAGMA integrity_check on open (expensive)"
+      - "Application-level checksums (future)"
+      
+    mitigation_strategy: "Run integrity_check on TdDb::open() in debug mode"
+    contingency_plan: "Log corruption, return DatabaseCorrupted error"
+    owner: "dev-rust"
+    due_date: "B5-T3"
+
+  - id: "P2-R16"
+    type: "DATA"
+    category: "MIGRATION_LOSS"
+    status: "MITIGATED"
+    title: "Data Loss During Migration"
+    description: "Forward-only migrations may lose data on failure"
+    impact: "HIGH"
+    probability: "LOW"
+    
+    affected_batches: ["B1-T3", "B2-T3", "B3-T3", "B4-T3"]
+    
+    symptoms:
+      - "Migration fails midway, database in inconsistent state"
+      - "No rollback mechanism"
+      
+    mitigation_strategy: "TDLib pattern: recreate database on severe failure"
+    tdlib_reference: "TDLib drops and recreates databases"
+    implemented: "Rebuild method specified in B5-T3"
+    owner: "dev-rust"
+    due_date: "B1-T3"
+
+  - id: "P2-R17"
+    type: "DATA"
+    category: "TTL_EXPIRY"
+    status: "OPEN"
+    title: "TTL Message Cleanup Not Implemented"
+    description: "Messages with ttl_expires_at are not automatically deleted"
+    impact: "LOW"
+    probability: "N/A"
+    
+    affected_batches: ["B1"]
+    
+    symptoms:
+      - "Expired messages remain in database"
+      - "Database grows unbounded"
+      
+    mitigation_strategy: "Defer TTL cleanup to MessagesManager task (Phase 2)"
+    contingency_plan: "Manual VACUUM or cleanup query"
+    owner: "dev-rust"
+    due_date: "Phase 2"
+
+  # ============================================================================
+  # TESTING RISKS
+  # ============================================================================
+  
+  - id: "P2-R18"
+    type: "TESTING"
+    category: "COVERAGE_TARGET"
+    status: "OPEN"
+    title: "70% Coverage Target Not Met"
+    description: "Test coverage may fall below 70% target"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3", "B4", "B5"]
+    
+    target_metrics:
+      storage_src_message: 80
+      storage_src_user: 75
+      storage_src_chat: 75
+      storage_src_file: 75
+      overall: 70
+      
+    symptoms:
+      - "cargo llvm-cov reports < 70% coverage"
+      - "Error handling paths not tested"
+      
+    mitigation_strategy: "Add tests for error paths, edge cases"
+    test_requirements:
+      - "Test all StorageError variants"
+      - "Test migration rollback scenarios"
+      - "Test corruption recovery"
+      
+    owner: "tester"
+    due_date: "Each batch completion"
+
+  - id: "P2-R19"
+    type: "TESTING"
+    category: "INTEGRATION_TESTS"
+    status: "OPEN"
+    title: "Manager Integration Tests Not Written"
+    description: "Integration tests may be skipped due to time pressure"
+    impact: "MEDIUM"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1-T4", "B2-T4", "B3-T4", "B4-T4"]
+    
+    symptoms:
+      - "Manager persists to database incorrectly"
+      - "Data loss in manager-database roundtrip"
+      
+    mitigation_strategy: "Make integration tests acceptance criteria for batch"
+    implemented: "Specified in plan.yaml B1-T5, B2-T4, B3-T4, B4-T4"
+    owner: "tester"
+    due_date: "Each batch completion"
+
+  - id: "P2-R20"
+    type: "TESTING"
+    category: "PERFORMANCE_TESTS"
+    status: "OPEN"
+    title: "Performance Benchmarks Not Run"
+    description: "Performance targets not validated"
+    impact: "HIGH"
+    probability: "MEDIUM"
+    
+    affected_batches: ["B1", "B2", "B3", "B4", "B5"]
+    
+    performance_targets:
+      single_query: "10ms"
+      batch_query: "100ms"
+      migration: "1s"
+      
+    symptoms:
+      - "No benchmark data collected"
+      - "Performance regression undetected"
+      
+    mitigation_strategy: "Add criterion benchmarks to each batch"
+    test_requirement: "Run benchmarks on 100K row database"
+    owner: "tester"
+    due_date: "B5 completion"
+
+  # ============================================================================
+  # BLOCKER RISKS
+  # ============================================================================
+  
+  - id: "P2-BLOCKER-1"
+    type: "BLOCKER"
+    category: "RUSQLITE_BUNDLE"
+    status: "CLOSED"
+    title: "rusqlite bundled feature required"
+    description: "rusqlite must use bundled SQLite for consistency"
+    impact: "CRITICAL"
+    probability: "N/A"
+    
+    affected_batches: ["All"]
+    
+    resolution: "Already in storage/Cargo.toml: rusqlite = { version = '0.32', features = ['bundled'] }"
+    verified: "DialogDb compiles successfully"
+    owner: "dev-rust"
+    closed_date: "2026-01-23"
+
+  # ============================================================================
+  # CLOSED RISKS
+  # ============================================================================
+  
+  - id: "P2-CLOSED-1"
+    type: "SCOPE"
+    category: "DATABASE_SCOPE"
+    status: "CLOSED"
+    title: "Database scope unclear"
+    description: "Unclear which databases to implement in Phase 1B"
+    impact: "HIGH"
+    probability: "N/A"
+    
+    resolution: "Clarified in docs/database-layer-clarification-qa.md Q1: 4 core databases"
+    owner: "analyst"
+    closed_date: "2026-01-23"
+
+  - id: "P2-CLOSED-2"
+    type: "SCOPE"
+    category: "FTS5_SCOPE"
+    status: "CLOSED"
+    title: "FTS5 scope unclear"
+    description: "Unclear whether FTS5 is required in Phase 1B"
+    impact: "MEDIUM"
+    probability: "N/A"
+    
+    resolution: "Clarified in docs/database-layer-clarification-qa.md Q2: Defer FTS5 to Phase 2"
+    owner: "analyst"
+    closed_date: "2026-01-23"
+
+# ============================================================================
+# RISK SUMMARY BY TYPE
+# ============================================================================
+
+risk_summary:
+  technical:
+    total: 7
+    open: 4
+    mitigated: 3
+    blocker: 0
+    
+  integration:
+    total: 4
+    open: 2
+    mitigated: 2
+    blocker: 0
+    
+  schedule:
+    total: 3
+    open: 2
+    mitigated: 1
+    blocker: 0
+    
+  data:
+    total: 3
+    open: 2
+    mitigated: 1
+    blocker: 0
+    
+  testing:
+    total: 3
+    open: 3
+    mitigated: 0
+    blocker: 0
+    
+  blocker:
+    total: 1
+    open: 0
+    mitigated: 0
+    closed: 1
+    
+  closed:
+    total: 3
+
+# ============================================================================
+# RISK METRICS
+# ============================================================================
+
+metrics:
+  total_risk_count: 21
+  high_impact_risks: 4
+  medium_impact_risks: 11
+  low_impact_risks: 5
+  critical_impact_risks: 1
+  
+  open_high_probability: 1
+  open_medium_probability: 6
+  open_low_probability: 1
+  
+  overall_risk_level: "MEDIUM"
+  risk_score: 42  # Weighted sum of impact × probability
+  
+  trend: "IMPROVING"  # 3 risks closed, 10 mitigated
+
+# ============================================================================
+# MITIGATION SUMMARY
+# ============================================================================
+
+mitigation_strategies:
+  pattern_reuse:
+    description: "Follow existing DialogDb pattern"
+    covers: 8
+    risks: ["P2-R1", "P2-R2", "P2-R6", "P2-R8", "P2-R10", "P2-R16", "P2-CLOSED-1"]
+    
+  tdlib_alignment:
+    description: "Match TDLib behavior"
+    covers: 3
+    risks: ["P2-R1", "P2-R8", "P2-R16"]
+    
+  phase_deferral:
+    description: "Defer to Phase 2"
+    covers: 3
+    risks: ["P2-R4", "P2-R17"]
+    
+  testing:
+    description: "Add tests and benchmarks"
+    covers: 5
+    risks: ["P2-R5", "P2-R7", "P2-R14", "P2-R18", "P2-R20"]
+
+# ============================================================================
+# ESCALATION PATH
+# ============================================================================
+
+escalation:
+  level_1:
+    trigger: "Low/medium impact risk"
+    owner: "dev-rust"
+    action: "Implement mitigation, document in comments"
+    
+  level_2:
+    trigger: "High impact risk OR 2+ related risks"
+    owner: "analyst"
+    action: "Review in daily standup, update risk register"
+    
+  level_3:
+    trigger: "BLOCKER risk OR schedule impact > 1 week"
+    owner: "project-manager"
+    action: "Epic review, re-plan if necessary"
+
+# ============================================================================
+# NEXT STEPS
+# ============================================================================
+
+next_steps:
+  immediate:
+    - "Create corruption test fixtures (P2-R14)"
+    - "Set up performance benchmark infrastructure (P2-R5, P2-R20)"
+    - "Validate TL type availability (P2-R6)"
+    
+  this_week:
+    - "Start B1 (MessageDb) as reference implementation"
+    - "Monitor parallel execution of B1-B3 for conflicts (P2-R13)"
+    
+  this_phase:
+    - "Track 70% coverage target (P2-R18)"
+    - "Validate <10ms performance target (P2-R5)"
+    - "Complete all 4 databases + TdDb coordinator"

@@ -1,0 +1,16 @@
+[package]
+name = "rustgram-document"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-file-id = { path = "../file_id" }
+serde = { workspace = true }
+
+[dev-dependencies]
+rstest = { workspace = true }
+serde_json = { workspace = true }

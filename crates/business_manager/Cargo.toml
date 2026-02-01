@@ -1,0 +1,29 @@
+[package]
+name = "rustgram-business-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-business-connected-bot = { path = "../business_connected-bot" }
+rustgram-business-chat-link = { path = "../business_chat-link" }
+rustgram-business-away-message = { path = "../business_away-message" }
+rustgram-business-greeting-message = { path = "../business_greeting-message" }
+rustgram-business-intro = { path = "../business-intro" }
+rustgram-input-business-chat-link = { path = "../input_business_chat-link" }
+rustgram-formatted-text = { path = "../formatted-text" }
+serde = { workspace = true, optional = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+serde = ["dep:serde"]
+default = []

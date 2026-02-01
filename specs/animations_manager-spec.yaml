@@ -1,0 +1,644 @@
+spec:
+  module: animations_manager
+  version: 0.1.0
+  created: 2025-01-14T10:00:00Z
+  updated: 2025-01-14T10:00:00Z
+  language: rust
+  complexity: high
+  estimated_loc: 1700
+  test_target: 70
+  is_state_machine: true
+
+overview: |
+  AnimationsManager manages GIF animations in Telegram.
+  
+  Key responsibilities:
+  - Store and retrieve animation metadata (duration, dimensions, thumbnails)
+  - Manage saved animations (user's favorite GIFs)
+  - Handle animation search parameters
+  - Provide animations for message sending
+  - Track file sources for saved animations
+  
+  State machine:
+  - Saved animations loading: NotLoaded -> Loading -> Loaded
+  - Hash-based sync with server (get_saved_animations_hash)
+
+plan:
+  - item: Comprehend and Analyze TDLib Implementation
+  - item: Implement Animation Type and Storage
+  - item: Implement Saved Animations State Machine
+  - item: Implement Animation Search Parameters
+  - item: Implement Network Query Handlers
+  - item: Implement File Source Tracking
+  - item: Write Comprehensive Tests and Documentation
+  - item: Review and Verify Module Compliance
+
+success_criteria:
+  code_quality:
+    max_clippy_warnings: 0
+    production_unwrap_calls: 0
+    max_cyclomatic_complexity: 15
+  
+  test_coverage:
+    min_tests: 70
+    min_line_coverage: 80
+    recommended_tests: 80
+  
+  documentation:
+    public_api_docs_percent: 100
+    examples_required: true
+  
+  tdlib_alignment:
+    api_compatibility: strict
+
+dependency_matrix:
+  # Core Types - Already Verified
+  - type: FileId
+    source: rustgram-file-id
+    constructor: new(id, remote_id), empty()
+    location: crates/file_id/src/lib.rs:89-90
+    verified: true
+    status: FOUND
+  
+  - type: Dimensions
+    source: rustgram-dimensions
+    constructor: from_wh(width, height)
+    location: crates/dimensions/src/lib.rs:73
+    verified: true
+    status: FOUND
+  
+  - type: FileSourceId
+    source: rustgram-file-source-id
+    constructor: new(id)
+    location: crates/file_source_id/src/lib.rs:57
+    verified: true
+    status: FOUND
+  
+  # Thumbnail Types - Already Verified (Stubs)
+  - type: PhotoSize
+    source: rustgram-photo-size
+    constructor: new(type_: String)
+    location: crates/photo_size/src/lib.rs:19
+    verified: true
+    status: STUB
+    notes: Stub implementation, TODO: full implementation
+  
+  - type: AnimationSize
+    source: rustgram-animation-size
+    constructor: new()
+    location: crates/animation_size/src/lib.rs:23
+    verified: true
+    status: STUB
+    notes: Minimal stub, needs dimensions and file_id fields
+  
+  # Secret Chat Support - Already Verified
+  - type: SecretInputMedia
+    source: rustgram-secret-input-media
+    constructor: new(input_file, decrypted_media), empty()
+    location: crates/secret_input_media/src/lib.rs:568
+    verified: true
+    status: FOUND
+  
+  # TL Types - Need Stubs
+  - type: InputDocument
+    source: TL STUB REQUIRED
+    constructor: N/A
+    location: crates/animations_manager/src/tl.rs
+    verified: false
+    status: STUB_NEEDED
+    notes: |
+      TL stub needed for InputDocument with variants:
+      - inputDocumentEmpty
+      - inputDocument
+      Create in tl.rs module
+  
+  - type: SavedGifs
+    source: TL STUB REQUIRED
+    constructor: N/A
+    location: crates/animations_manager/src/tl.rs
+    verified: false
+    status: STUB_NEEDED
+    notes: |
+      TL stub needed for SavedGifs with variants:
+      - messages_savedGifsNotModified
+      - messages_savedGifs
+      Create in tl.rs module
+
+public_types:
+  Animation:
+    description: Animation metadata structure
+    fields:
+      - name: file_id
+        type: FileId
+        description: Animation file identifier
+      - name: file_name
+        type: String
+        description: Original file name
+      - name: mime_type
+        type: String
+        description: MIME type (e.g., "video/mp4", "image/gif")
+      - name: duration
+        type: i32
+        description: Duration in seconds (clamped to >= 0)
+      - name: dimensions
+        type: Dimensions
+        description: Width × height in pixels
+      - name: minithumbnail
+        type: String
+        description: JPEG minithumbnail data
+      - name: thumbnail
+        type: PhotoSize
+        description: Static thumbnail preview
+      - name: animated_thumbnail
+        type: AnimationSize
+        description: Animated MPEG-4 thumbnail
+      - name: has_stickers
+        type: bool
+        description: Whether attached stickers exist
+      - name: sticker_file_ids
+        type: Vec<FileId>
+        description: Associated sticker file IDs
+  
+  SavedAnimationsState:
+    description: Saved animations loading state
+    variants:
+      - name: NotLoaded
+        description: Initial state, not yet loaded
+      - name: Loading
+        description: Currently loading from server/database
+      - name: Loaded
+        description: Successfully loaded, ready for access
+  
+  AnimationSearchParameters:
+    description: Animation search configuration
+    fields:
+      - name: emojis
+        type: Vec<String>
+        description: Emoji list for search hints
+      - name: provider
+        type: String
+        description: Search provider name
+      - name: is_emojis_inited
+        type: bool
+        description: Whether emoji list is initialized
+      - name: is_provider_inited
+        type: bool
+        description: Whether provider is initialized
+
+public_methods:
+  # Animation Management
+  - name: create_animation
+    signature: |
+      fn create_animation(
+          &mut self,
+          file_id: FileId,
+          minithumbnail: String,
+          thumbnail: PhotoSize,
+          animated_thumbnail: AnimationSize,
+          has_stickers: bool,
+          sticker_file_ids: Vec<FileId>,
+          file_name: String,
+          mime_type: String,
+          duration: i32,
+          dimensions: Dimensions,
+          replace: bool,
+      ) -> Result<(), Error>
+    description: Create or update an animation
+    returns: Result indicating success or error
+  
+  - name: get_animation
+    signature: |
+      fn get_animation(&self, file_id: FileId) -> Option<&Animation>
+    description: Get animation by file ID
+    returns: Animation reference if found
+  
+  - name: get_animation_duration
+    signature: |
+      fn get_animation_duration(&self, file_id: FileId) -> i32
+    description: Get animation duration
+    returns: Duration in seconds
+  
+  - name: get_animation_object
+    signature: |
+      fn get_animation_object(&self, file_id: FileId) -> AnimationObject
+    description: Convert to TDLib API object
+    returns: Animation object for API response
+  
+  # Thumbnail Management
+  - name: get_animation_thumbnail_file_id
+    signature: |
+      fn get_animation_thumbnail_file_id(&self, file_id: FileId) -> FileId
+    description: Get static thumbnail file ID
+    returns: Thumbnail file ID
+  
+  - name: get_animation_animated_thumbnail_file_id
+    signature: |
+      fn get_animation_animated_thumbnail_file_id(&self, file_id: FileId) -> FileId
+    description: Get animated thumbnail file ID
+    returns: Animated thumbnail file ID
+  
+  - name: delete_animation_thumbnail
+    signature: |
+      fn delete_animation_thumbnail(&mut self, file_id: FileId)
+    description: Clear thumbnail data for an animation
+  
+  # Duplication and Merging
+  - name: dup_animation
+    signature: |
+      fn dup_animation(&mut self, new_id: FileId, old_id: FileId) -> FileId
+    description: Duplicate animation to new file ID
+    returns: New animation file ID
+  
+  - name: merge_animations
+    signature: |
+      fn merge_animations(&mut self, new_id: FileId, old_id: FileId)
+    description: Merge two animations (for file deduplication)
+  
+  # Saved Animations - State Machine
+  - name: get_saved_animations
+    signature: |
+      fn get_saved_animations(&mut self) -> Result<Vec<FileId>, Error>
+    description: Get list of saved animation IDs (loads if needed)
+    returns: Vector of saved animation file IDs
+    state_transition: NotLoaded -> Loading -> Loaded
+  
+  - name: load_saved_animations
+    signature: |
+      fn load_saved_animations(&mut self) -> Result<Vec<FileId>, Error>
+    description: Load saved animations from database or server
+    returns: Vector of saved animation file IDs
+    state_transition: NotLoaded -> Loading -> Loaded
+  
+  - name: reload_saved_animations
+    signature: |
+      fn reload_saved_animations(&mut self, force: bool)
+    description: Force reload from server
+    state_transition: Loaded -> Loading -> Loaded
+  
+  - name: repair_saved_animations
+    signature: |
+      fn repair_saved_animations(&mut self) -> Result<(), Error>
+    description: Repair saved animations after hash mismatch
+    returns: Success or error
+  
+  - name: add_saved_animation
+    signature: |
+      fn add_saved_animation(&mut self, input_file: &InputFile) -> Result<(), Error>
+    description: Add animation to saved favorites
+    returns: Success or error
+  
+  - name: add_saved_animation_by_id
+    signature: |
+      fn add_saved_animation_by_id(&mut self, animation_id: FileId)
+    description: Add animation by ID (no server sync)
+  
+  - name: remove_saved_animation
+    signature: |
+      fn remove_saved_animation(&mut self, input_file: &InputFile) -> Result<(), Error>
+    description: Remove animation from favorites
+    returns: Success or error
+  
+  # Network Query Handlers
+  - name: on_get_saved_animations
+    signature: |
+      fn on_get_saved_animations(&mut self, is_repair: bool, saved_gifs: SavedGifs)
+    description: Handle saved animations response from server
+  
+  - name: on_get_saved_animations_failed
+    signature: |
+      fn on_get_saved_animations_failed(&mut self, is_repair: bool, error: Error)
+    description: Handle saved animations query failure
+    state_transition: Loading -> NotLoaded
+  
+  - name: send_save_gif_query
+    signature: |
+      fn send_save_gif_query(&mut self, animation_id: FileId, unsave: bool) -> Result<(), Error>
+    description: Send messages.saveGif query to server
+    returns: Success or error
+  
+  # Animation Search Parameters
+  - name: on_update_animation_search_emojis
+    signature: |
+      fn on_update_animation_search_emojis(&mut self)
+    description: Handle emoji search parameter update
+  
+  - name: on_update_animation_search_provider
+    signature: |
+      fn on_update_animation_search_provider(&mut self)
+    description: Handle provider search parameter update
+  
+  - name: get_animation_search_parameters
+    signature: |
+      fn get_animation_search_parameters(&self) -> Option<AnimationSearchParameters>
+    description: Get current animation search parameters
+    returns: Search parameters if initialized
+  
+  # File Source Tracking
+  - name: get_saved_animations_file_source_id
+    signature: |
+      fn get_saved_animations_file_source_id(&mut self) -> FileSourceId
+    description: Get file source ID for saved animations
+    returns: File source ID for reference tracking
+  
+  # Input Media for Messages
+  - name: get_input_media
+    signature: |
+      fn get_input_media(&self, file_id: FileId, input_file: InputFile, input_thumbnail: InputFile, has_spoiler: bool) -> Result<InputMedia, Error>
+    description: Convert animation to InputMedia for sending
+    returns: InputMedia for message sending
+  
+  - name: get_secret_input_media
+    signature: |
+      fn get_secret_input_media(&self, animation_file_id: FileId, input_file: InputEncryptedFile, caption: String, thumbnail: BufferSlice, layer: i32) -> SecretInputMedia
+    description: Convert animation to SecretInputMedia for secret chats
+    returns: SecretInputMedia for secret chat sending
+  
+  # State and Updates
+  - name: get_current_state
+    signature: |
+      fn get_current_state(&self) -> Vec<Update>
+    description: Get current state updates for client
+    returns: Vector of state updates
+  
+  - name: get_saved_animations_hash
+    signature: |
+      fn get_saved_animations_hash(&self) -> i64
+    description: Calculate hash for server sync
+    returns: Hash of current saved animations list
+
+state_machine:
+  name: SavedAnimationsState
+  description: Loading state for saved animations
+  states:
+    NotLoaded:
+      description: Initial state, no data loaded
+      transitions:
+        - event: load_saved_animations() called
+          target: Loading
+          action: Query database or server
+        - event: get_saved_animations() called
+          target: Loading
+          action: Trigger load operation
+    
+    Loading:
+      description: Fetching data from database or server
+      transitions:
+        - event: Database load succeeded
+          target: Loaded
+          action: Update saved_animation_ids_, send update
+        - event: Server query succeeded
+          target: Loaded
+          action: Update saved_animation_ids_, save to database
+        - event: Query failed
+          target: NotLoaded
+          action: Set next_load_time_, fail promises
+    
+    Loaded:
+      description: Data available for access
+      transitions:
+        - event: reload_saved_animations(force=true)
+          target: Loading
+          action: Query server with hash
+        - event: reload_saved_animations() after timeout
+          target: Loading
+          action: Query server with hash
+        - event: add_saved_animation() / remove_saved_animation()
+          target: Loaded
+          action: Update list, send query, send update
+      stable: true
+
+network_queries:
+  GetSavedGifsQuery:
+    tl_type: messages.getSavedGifs
+    tl_constructor: messages_getSavedGifs#5a364c3d
+    params:
+      - name: hash
+        type: int64
+        description: Hash for incremental updates
+    response_type: messages.SavedGifs
+    handler: on_get_saved_animations
+    on_error: on_get_saved_animations_failed
+    description: Fetch saved animations from server
+  
+  SaveGifQuery:
+    tl_type: messages.saveGif
+    tl_constructor: messages_saveGif#327a30cb
+    params:
+      - name: id
+        type: InputDocument
+        description: Animation document reference
+      - name: unsave
+        type: bool
+        description: true to remove, false to add
+    response_type: Bool
+    handler: Promise callback
+    on_error: Retry with file reference repair
+    description: Add or remove animation from favorites
+
+tl_stubs:
+  InputDocument:
+    description: Document reference for uploaded files
+    variants:
+      - name: Empty
+        tl_name: inputDocumentEmpty
+        constructor_id: 0x0
+        fields: []
+      - name: Document
+        tl_name: inputDocument
+        constructor_id: 0x0
+        fields:
+          - name: id
+            type: i64
+          - name: access_hash
+            type: i64
+          - name: file_reference
+            type: bytes
+    usage: Referencing animations in messages.saveGif
+  
+  SavedGifs:
+    description: Saved animations response
+    variants:
+      - name: NotModified
+        tl_name: messages_savedGifsNotModified
+        constructor_id: 0x0
+        fields: []
+      - name: SavedGifs
+        tl_name: messages_savedGifs
+        constructor_id: 0x0
+        fields:
+          - name: hash
+            type: i64
+          - name: gifs
+            type: Vector<Document>
+            description: Vector of animation documents
+    usage: Response from messages.getSavedGifs
+
+file_source_tracking:
+  description: |
+    AnimationsManager tracks file sources for saved animations to enable
+    file reference repair when remote files become invalid.
+  
+  implementation:
+    - Maintain saved_animation_file_ids_: Vec<FileId> including thumbnails
+    - Get unique FileSourceId from FileReferenceManager
+    - Update file source when saved animations change
+    - Call FileManager::change_files_source() on updates
+
+risk_register:
+  - id: R1
+    type: MISSING_DEPENDENCY
+    dependency: PhotoSize full implementation
+    mitigation: Use existing stub, TODO in comments
+    impact: LOW
+    status: MITIGATED
+    notes: Stub is sufficient for current needs
+  
+  - id: R2
+    type: MISSING_DEPENDENCY
+    dependency: AnimationSize fields
+    mitigation: Extend existing stub with dimensions and file_id
+    impact: LOW
+    status: MITIGATED
+    notes: Current stub has file_id, needs dimensions
+  
+  - id: R3
+    type: TL_STUB_REQUIRED
+    dependency: InputDocument, SavedGifs
+    mitigation: Create tl.rs with stub enums
+    impact: MEDIUM
+    status: TODO
+    notes: Stubs needed for network query types
+  
+  - id: R4
+    type: STATE_COMPLEXITY
+    dependency: Saved animations loading state
+    mitigation: Clear state machine documentation, comprehensive tests
+    impact: MEDIUM
+    status: MITIGATED
+  
+  - id: R5
+    type: SERIALIZATION
+    dependency: LogEvent for database persistence
+    mitigation: Implement store/parse methods for AnimationListLogEvent
+    impact: MEDIUM
+    status: TODO
+    notes: TDLib uses custom binary serialization
+  
+  - id: R6
+    type: FILE_REFERENCE
+    dependency: File reference repair on saveGif failure
+    mitigation: Follow TDLib pattern with FileReferenceManager
+    impact: LOW
+    status: MITIGATED
+    notes: Pattern well-established in TDLib
+  
+  - id: R7
+    type: THREAD_SAFETY
+    dependency: Concurrent state access
+    mitigation: Use tokio::sync::Mutex or std::sync::RwLock
+    impact: MEDIUM
+    status: MITIGATED
+    notes: Actor pattern with message passing preferred
+
+reference:
+  tdlib_header: references/td/td/telegram/AnimationsManager.h
+  tdlib_impl: references/td/td/telegram/AnimationsManager.cpp
+  tdlib_document: https://core.telegram.org/tdlib/docs/classtd_1_1animations__manager.html
+
+test_plan:
+  unit_tests:
+    # Animation Type Tests (15 tests)
+    - test_animation_new_valid
+    - test_animation_new_clamped_duration
+    - test_animation_equality
+    - test_animation_clone
+    - test_animation_file_name
+    - test_animation_mime_type
+    - test_animation_duration
+    - test_animation_dimensions
+    - test_animation_minithumbnail
+    - test_animation_thumbnail
+    - test_animation_animated_thumbnail
+    - test_animation_has_stickers
+    - test_animation_sticker_file_ids
+    - test_animation_empty
+    - test_animation_serialization
+    
+    # State Machine Tests (12 tests)
+    - test_state_initial_not_loaded
+    - test_state_transition_to_loading
+    - test_state_transition_to_loaded
+    - test_state_reload_from_loaded
+    - test_state_load_failure
+    - test_state_repair_success
+    - test_state_repair_failure
+    - test_state_concurrent_load
+    - test_state_get_while_loading
+    - test_state_add_not_loaded
+    - test_state_remove_loaded
+    - test_state_reload_timeout
+    
+    # Saved Animations Tests (18 tests)
+    - test_get_saved_animations_empty
+    - test_get_saved_animations_loaded
+    - test_get_saved_animations_loads_first
+    - test_add_saved_animation_success
+    - test_add_saved_animation_limit
+    - test_add_saved_animation_duplicate
+    - test_add_saved_animation_not_mp4
+    - test_add_saved_animation_web
+    - test_add_saved_animation_by_id
+    - test_remove_saved_animation_success
+    - test_remove_saved_animation_not_found
+    - test_reload_saved_animations_hash_match
+    - test_reload_saved_animations_hash_mismatch
+    - test_repair_saved_animations_success
+    - test_repair_saved_animations_failure
+    - test_saved_animations_limit_update
+    - test_saved_animations_persistence
+    - test_saved_animations_update_sent
+    
+    # Animation Search Tests (10 tests)
+    - test_search_emojis_init
+    - test_search_provider_init
+    - test_search_parameters_get
+    - test_search_parameters_update_emojis
+    - test_search_parameters_update_provider
+    - test_search_parameters_not_inited
+    - test_search_update_sent
+    - test_search_emojis_split
+    - test_search_bot_skip
+    - test_search_parameters_both_inited
+    
+    # File Source Tests (8 tests)
+    - test_file_source_id_created
+    - test_file_source_id_persistent
+    - test_file_source_update_on_add
+    - test_file_source_update_on_remove
+    - test_file_source_includes_thumbnails
+    - test_file_source_change_files_source
+    - test_file_source_empty_saved
+    - test_file_source_after_reload
+    
+    # Input Media Tests (7 tests)
+    - test_get_input_media_existing
+    - test_get_input_media_uploaded
+    - test_get_input_media_url
+    - test_get_input_media_encrypted_none
+    - test_get_secret_input_media_valid
+    - test_get_secret_input_media_no_thumbnail
+    - test_get_secret_input_media_encrypted
+    
+    # Integration Tests (10 tests)
+    - test_full_load_add_remove_cycle
+    - test_server_sync_flow
+    - test_database_fallback_flow
+    - test_hash_calculation
+    - test_dup_animation_preserves_data
+    - test_merge_animations_files
+    - test_animation_search_hints_flow
+    - test_concurrent_operations
+    - test_error_recovery_flow
+    - test_state_consistency
+
+  total_tests: 80

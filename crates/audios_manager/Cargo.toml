@@ -1,0 +1,19 @@
+[package]
+name = "rustgram-audios-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+rustgram-file-id = { path = "../file_id" }
+rustgram-photo-size = { path = "../photo-size" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

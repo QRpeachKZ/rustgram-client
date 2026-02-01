@@ -1,0 +1,470 @@
+# Risk Register: DialogManager Network Integration
+**Epic**: rustgram-client-4gl
+**Version**: 1.0
+**Date**: 2026-01-19
+**Phase**: 2 - Analysis + Spec
+
+---
+
+## Risk Categories
+
+1. **API** - Public API design and compatibility risks
+2. **SECURITY** - Authentication, authorization, and data protection
+3. **PERFORMANCE** - Latency, throughput, and resource usage
+4. **TESTING** - Test coverage, mock quality, and validation
+5. **INTEGRATION** - Cross-crate dependencies and external services
+
+---
+
+## Risk Items
+
+### R-001: Async Architecture Mismatch
+**Category**: API  
+**Status**: MITIGATED  
+**Probability**: Medium  
+**Impact**: High
+
+**Description**:
+The `rustgram-net` crate uses callback-based `NetQuery` pattern with `ActorQueryCallback`, while DialogManager needs to expose async/await methods. Bridging these patterns may introduce complexity.
+
+**Mitigation Strategy**:
+- Use `tokio::sync::oneshot` channels to bridge callbacks with async/await
+- Create `NetworkClient` wrapper that hides callback complexity
+- Document the pattern clearly in module-level docs
+- Add unit tests for callback integration
+
+**Contingency Plan**:
+If oneshot pattern proves too complex, consider refactoring to use ` futures::channel::mpsc` or implement async `NetQueryDispatcher` wrapper.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 1
+
+---
+
+### R-002: TL Schema Coverage Unknown
+**Category**: API  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+The full TL schema for `messages.getDialogs` and related dialog operations is not fully documented. May discover missing fields during implementation.
+
+**Mitigation Strategy**:
+- Start with minimal schema (basic fields only)
+- Reference TDLib source code in `references/td/`
+- Use `serde` with `#[serde(default)]` for extensibility
+- Add comprehensive integration tests
+- Document gaps as TODOs
+
+**Contingency Plan**:
+If critical fields are missing, extend TL types incrementally based on test failures. Maintain backward compatibility with `Option<T>` fields.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 2
+
+---
+
+### R-003: Authentication State Management
+**Category**: SECURITY  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: High
+
+**Description**:
+Dialog operations require `AuthFlag::On`. If authentication state is not properly checked, operations may fail silently or leak unauthenticated requests.
+
+**Mitigation Strategy**:
+- Always use `AuthFlag::On` for dialog operations
+- Add auth state check before network operations
+- Map 401/404 errors to `DialogError::AuthRequired`
+- Document authentication requirements in API docs
+- Add test for unauthenticated request handling
+
+**Contingency Plan**:
+If auth state is unavailable, return `DialogError::AuthRequired` instead of making network request. Let caller handle re-authentication.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 3
+
+---
+
+### R-004: Cache Coherency Issues
+**Category**: PERFORMANCE  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+Cached dialog data may become stale when dialogs are updated externally (e.g., new messages, title changes from another client). TTL-based cache may return outdated data.
+
+**Mitigation Strategy**:
+- Use short TTL (1-5 minutes) for dialog list
+- Invalidate cache on update operations
+- Provide explicit `reload_dialog()` method
+- Document cache behavior clearly
+- Add cache hit rate metrics
+
+**Contingency Plan**:
+If cache coherency becomes problematic, reduce TTL to 30 seconds or implement push-based invalidation using update notifications (future work).
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 6
+
+---
+
+### R-005: Network Timeout Handling
+**Category**: PERFORMANCE  
+**Status**: MITIGATED  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+Network requests may timeout or hang indefinitely without proper timeout configuration. This could cause DialogManager to block indefinitely.
+
+**Mitigation Strategy**:
+- Set default timeout to 30 seconds
+- Use `tokio::time::timeout()` for all async operations
+- Map timeout errors to `DialogError::Timeout`
+- Add configurable timeout per operation
+- Test timeout behavior with mocked delays
+
+**Contingency Plan**:
+If timeouts are too frequent, increase default to 60 seconds or implement adaptive timeout based on response time percentiles.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 7
+
+---
+
+### R-006: Rate Limiting
+**Category**: PERFORMANCE  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Low
+
+**Description**:
+Telegram API may return 429 (Too Many Requests) errors if too many dialog operations are performed quickly. Current implementation lacks rate limiting.
+
+**Mitigation Strategy**:
+- Detect 429 errors and map to `DialogError::RateLimited`
+- Extract retry-after delay from error response
+- Implement exponential backoff for retries
+- Document rate limits for callers
+- Add metrics for rate limit hits
+
+**Contingency Plan**:
+If rate limiting is frequent, implement token bucket rate limiter in `NetworkClient` with configurable rate (e.g., 10 requests/second).
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 7
+
+---
+
+### R-007: Mock Network Quality
+**Category**: TESTING  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+Mock `NetQueryDispatcher` may not accurately simulate real network behavior (delays, errors, partial responses). Tests may pass but production code fails.
+
+**Mitigation Strategy**:
+- Implement `MockDispatcher` with realistic behavior:
+  - Configurable delays
+  - Error injection
+  - Response simulation
+- Add property-based tests for pagination logic
+- Test error paths explicitly
+- Document mock limitations
+
+**Contingency Plan**:
+If mocks prove insufficient, add integration tests with real Telegram test server (if available) or record/replay framework.
+
+**Owner**: @tester  
+**Due Date**: Phase 4, Step 8
+
+---
+
+### R-008: Test Coverage Gap
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: High  
+**Impact**: High
+
+**Description**:
+Current coverage is 26%, target is 70%. Need to add 44% coverage (12+ new tests) to meet success criteria. Complex async code is harder to test.
+
+**Mitigation Strategy**:
+- Write tests before implementation (TDD)
+- Focus on error paths and edge cases
+- Use `tokio-test` for async testing
+- Add coverage report to CI
+- Document uncovered code
+
+**Contingency Plan**:
+If 70% is not achievable, prioritize coverage for:
+1. Network integration paths
+2. Error handling
+3. Cache logic
+4. Pagination logic
+
+**Owner**: @tester  
+**Due Date**: Phase 4, Step 8
+
+---
+
+### R-009: Dependency Version Conflicts
+**Category**: INTEGRATION  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+Adding `rustgram-net` dependency may introduce version conflicts with existing dependencies or workspace constraints.
+
+**Mitigation Strategy**:
+- Use workspace dependency versions
+- Verify no circular dependencies
+- Test workspace build after adding dependency
+- Update Cargo.lock carefully
+- Document version requirements
+
+**Contingency Plan**:
+If version conflicts occur, update workspace versions or use `cargo update -p <crate>` to resolve.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 1
+
+---
+
+### R-010: Callback Memory Leaks
+**Category**: PERFORMANCE  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: High
+
+**Description**:
+Using callbacks with `Arc` and closures may lead to memory leaks if references are not properly cleaned up after query completion.
+
+**Mitigation Strategy**:
+- Use weak references where appropriate
+- Ensure callbacks are dropped after oneshot send
+- Add memory leak tests with long-running operations
+- Monitor memory usage in tests
+- Document callback lifecycle
+
+**Contingency Plan**:
+If memory leaks are detected, refactor to use `std::rc::Rc` where ownership is clearer or implement explicit callback cleanup.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 1
+
+---
+
+### R-011: Pagination Edge Cases
+**Category**: API  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Low
+
+**Description**:
+Pagination logic may have edge cases (empty results, last page, offset overflow) that are not handled correctly. Could cause infinite loops or missing data.
+
+**Mitigation Strategy**:
+- Add explicit tests for pagination edge cases
+- Document pagination behavior clearly
+- Use `Option<DialogPagination>` for end of list
+- Add pagination validation (e.g., max limit 100)
+- Test with various page sizes
+
+**Contingency Plan**:
+If pagination bugs are found, add more comprehensive tests and possibly simplify pagination API (e.g., remove offset_peer if not needed).
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 3
+
+---
+
+### R-012: Error Context Loss
+**Category**: API  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+Converting `QueryError` to `DialogError` may lose important context (e.g., DC ID, query ID, TL constructor) that would help debugging.
+
+**Mitigation Strategy**:
+- Include original error in `DialogError::NetworkError`
+- Add structured logging for all errors
+- Preserve error codes and messages
+- Add error context fields to variants
+- Document error mapping
+
+**Contingency Plan**:
+If debugging is difficult, add `#[source]` attribute to `DialogError` variants to preserve error chain with `anyhow` context.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 7
+
+---
+
+### R-013: Concurrent Cache Access
+**Category**: PERFORMANCE  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+Concurrent reads/writes to cache may cause race conditions or deadlocks if `parking_lot::Mutex` is used incorrectly.
+
+**Mitigation Strategy**:
+- Use `Arc<parking_lot::Mutex<T>>` for shared cache
+- Keep lock durations short
+- Avoid nested locks
+- Add concurrency tests
+- Document thread safety guarantees
+
+**Contingency Plan**:
+If deadlocks occur, refactor to use `tokio::sync::RwLock` for better async support or restructure cache to minimize locking.
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 6
+
+---
+
+### R-014: TL Serialization Failures
+**Category**: INTEGRATION  
+**Status**: MITIGATED  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+TL serialization/deserialization may fail due to schema mismatches or version differences, causing runtime panics if not handled properly.
+
+**Mitigation Strategy**:
+- Use `serde` with robust error handling
+- Add `Result` types for all serialization
+- Test with real TL data if available
+- Add explicit tests for malformed data
+- Document TL version requirements
+
+**Contingency Plan**:
+If serialization is fragile, add schema validation layer or use more permissive deserialization (e.g., `serde_json::from_value` with defaults).
+
+**Owner**: @dev-rust  
+**Due Date**: Phase 3, Step 2
+
+---
+
+### R-015: Integration Test Reliability
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Low
+
+**Description**:
+Integration tests with mocked network may not catch all integration bugs. Tests may be flaky if mocks are not realistic.
+
+**Mitigation Strategy**:
+- Use realistic mock responses
+- Add timing assertions (not just correctness)
+- Test concurrent operations
+- Add stress tests for cache
+- Document test assumptions
+
+**Contingency Plan**:
+If tests prove unreliable, add recording/replay framework using real network traffic (with sanitization) or increase test timeout.
+
+**Owner**: @tester  
+**Due Date**: Phase 4, Step 8
+
+---
+
+## Risk Summary
+
+### By Category
+
+| Category | Total | Open | Mitigated | Blocker |
+|----------|-------|------|-----------|---------|
+| API | 4 | 2 | 2 | 0 |
+| SECURITY | 1 | 0 | 1 | 0 |
+| PERFORMANCE | 4 | 2 | 2 | 0 |
+| TESTING | 3 | 2 | 1 | 0 |
+| INTEGRATION | 3 | 1 | 2 | 0 |
+| **Total** | **15** | **7** | **8** | **0** |
+
+### By Status
+
+- **OPEN**: 7 risks require active monitoring
+- **MITIGATED**: 8 risks have mitigation strategies in place
+- **BLOCKER**: 0 blocking risks identified
+
+### By Impact
+
+| Impact | Count | Risks |
+|--------|-------|-------|
+| High | 5 | R-001, R-003, R-008, R-010, R-012 |
+| Medium | 8 | R-002, R-004, R-005, R-007, R-009, R-013, R-014, R-015 |
+| Low | 2 | R-006, R-011 |
+
+### Top 5 Priority Risks
+
+1. **R-008**: Test Coverage Gap (High Impact, High Probability)
+2. **R-001**: Async Architecture Mismatch (High Impact, Medium Probability)
+3. **R-003**: Authentication State Management (High Impact, Low Probability)
+4. **R-010**: Callback Memory Leaks (High Impact, Low Probability)
+5. **R-002**: TL Schema Coverage Unknown (Medium Impact, Medium Probability)
+
+---
+
+## Risk Mitigation Timeline
+
+### Phase 3: Development
+- **Week 1**: Mitigate R-001 (async pattern), R-009 (dependencies), R-010 (memory leaks)
+- **Week 2**: Mitigate R-002 (TL schema), R-014 (serialization), R-011 (pagination)
+- **Week 3**: Mitigate R-003 (auth), R-005 (timeouts), R-004 (cache), R-013 (concurrency)
+- **Week 4**: Mitigate R-006 (rate limiting), R-012 (error context)
+
+### Phase 4: Testing
+- **Week 5**: Mitigate R-007 (mock quality), R-008 (test coverage), R-015 (test reliability)
+
+### Phase 5: Review
+- **Week 6**: Review all mitigations, update risk status
+
+---
+
+## Risk Review Process
+
+1. **Weekly Risk Review**: Assess OPEN risks, update status if mitigated
+2. **New Risk Identification**: Add new risks as discovered during implementation
+3. **Impact Reassessment**: Update impact/probability based on new information
+4. **Mitigation Tracking**: Track completion of mitigation strategies
+5. **Escalation**: Escalate to BLOCKER if risk becomes critical
+
+---
+
+## Risk Acceptance Criteria
+
+A risk is considered **MITIGATED** when:
+- ✅ Mitigation strategy is implemented
+- ✅ Tests verify the mitigation works
+- ✅ Code review confirms the approach
+- ✅ Documentation is updated
+
+A risk is considered **ACCEPTED** when:
+- ✅ Impact is acceptable (Low or documented)
+- ✅ Probability is acceptable (Low or monitored)
+- ✅ Contingency plan exists
+- ✅ Stakeholder approval obtained
+
+---
+
+**Document Status**: ✅ Complete
+**Total Risks**: 15
+**Open Risks**: 7
+**Mitigated Risks**: 8
+**Blocker Risks**: 0
+**Ready for Phase 2.5**: Yes

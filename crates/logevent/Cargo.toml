@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-logevent"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+# Workspace
+tokio = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+tracing = { workspace = true }
+
+# Serialization/Bytes
+bytes = "1.5"
+byteorder = "1.5"
+
+[dev-dependencies]
+proptest = { workspace = true }

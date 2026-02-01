@@ -1,0 +1,975 @@
+# Test Coverage Audit - Risk Register
+# Task: rustgram-client-o7z
+# Phase: Phase 2 - Spec/Design
+# Date: 2025-01-17
+
+metadata:
+  title: "Test Coverage Audit Risk Register"
+  version: "1.0"
+  last_updated: "2025-01-17"
+  methodology: "Based on FMEA (Failure Mode and Effects Analysis)"
+
+risk_categories:
+  - TECHNICAL
+  - PROCESS
+  - RESOURCE
+  - SCHEDULE
+  - QUALITY
+
+---
+
+## TECHNICAL RISKS
+
+risks:
+  - id: "TECH-001"
+    category: "TECHNICAL"
+    title: "Cargo workspace exceeds memory limits during coverage generation"
+    description: |
+      Running cargo-llvm-cov on all 398 crates simultaneously may exceed 
+      available memory, causing the tool to crash or hang indefinitely.
+    probability: "MEDIUM"  # 40-60%
+    impact: "HIGH"        # Blocks entire audit
+    severity: "HIGH"
+    
+    triggers:
+      - "Workspace with 398 crates"
+      - "Limited RAM (<16GB)"
+      - "Debug symbols enabled"
+    
+    mitigation_strategies:
+      primary:
+        - "Use batch processing (25-30 crates per batch)"
+        - "Run with --package flags instead of --workspace"
+        - "Monitor memory usage during first batch"
+      secondary:
+        - "Use tarpaulin as fallback (lower memory footprint)"
+        - "Exclude non-essential crates from initial run"
+        - "Run on high-memory CI instance (32GB+ RAM)"
+      
+      contingency:
+        - "If memory crash occurs, reduce batch size to 15 crates"
+        - "Split problematic batches further"
+        - "Generate coverage per-crate and aggregate manually"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "TECH-002"
+    category: "TECHNICAL"
+    title: "Coverage tool conflicts with workspace features"
+    description: |
+      cargo-llvm-cov or tarpaulin may not work correctly with workspace 
+      feature flags, conditional compilation, or proc macros used in 
+      the codebase.
+    probability: "MEDIUM"  # 30-50%
+    impact: "MEDIUM"       # Inaccurate coverage data
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Workspace feature dependencies"
+      - "Proc macro usage (serde, prost)"
+      - "Conditional compilation based on features"
+    
+    mitigation_strategies:
+      primary:
+        - "Test both tools on small subset first (5-10 crates)"
+        - "Validate coverage counts against manual inspection"
+        - "Check tool compatibility with workspace resolver v2"
+      secondary:
+        - "Use both tools and cross-verify results"
+        - "Report bugs to tool repositories if issues found"
+        - "Fall back to manual coverage assessment for problematic crates"
+      
+      contingency:
+        - "If tools fail completely, use manual test inspection"
+        - "Count test lines vs implementation lines"
+        - "Document tool limitations in final report"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "TECH-003"
+    category: "TECHNICAL"
+    title: "Actor framework message passing tests inadequate"
+    description: |
+      The actor framework is stub-based with minimal implementation. 
+      Existing tests may not adequately verify message passing correctness,
+      type safety, or concurrent behavior.
+    probability: "HIGH"     # 70-80%
+    impact: "HIGH"          # Core architecture risk
+    severity: "CRITICAL"
+    
+    triggers:
+      - "Stub-based actor implementation"
+      - "Minimal existing actor tests"
+      - "Complex async message passing patterns"
+    
+    mitigation_strategies:
+      primary:
+        - "Dedicated actor validation batch (Batch 14)"
+        - "Create comprehensive actor test suite before audit"
+        - "Use property-based testing for message passing"
+      secondary:
+        - "Reference TDLib actor patterns for test coverage"
+        - "Add concurrent stress tests (1000+ messages)"
+        - "Test message ordering guarantees"
+      
+      contingency:
+        - "If tests are inadequate, document gaps clearly"
+        - "Recommend actor framework rewrite before production use"
+        - "Flag as critical issue in audit report"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+  - id: "TECH-004"
+    category: "TECHNICAL"
+    title: "Cryptographic module test gaps"
+    description: |
+      Cryptography modules (crypto crate, auth_manager) require 
+      property-based testing and known-answer tests. Existing 
+      tests may not catch edge cases or implementation bugs.
+    probability: "MEDIUM"  # 40-60%
+    impact: "CRITICAL"     # Security vulnerability
+    severity: "CRITICAL"
+    
+    triggers:
+      - "Complex crypto algorithms (AES-IGE, SHA2, etc.)"
+      - "Need for TDLib compatibility"
+      - "Property-based testing not widely used"
+    
+    mitigation_strategies:
+      primary:
+        - "Cross-validate with TDLib crypto implementations"
+        - "Use proptest for property-based testing"
+        - "Add known-answer test vectors"
+      secondary:
+        - "Compare output with reference implementations"
+        - "Test edge cases (empty input, max size, etc.)"
+        - "Fuzz crypto APIs"
+      
+      contingency:
+        - "If tests fail, flag as security-critical bug"
+        - "Recommend crypto audit before production use"
+        - "Document which algorithms are validated vs unvalidated"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+  - id: "TECH-005"
+    category: "TECHNICAL"
+    title: "Some crates fail to compile in isolation"
+    description: |
+      Certain crates may depend on workspace feature resolution or 
+      implicit dependencies. Testing them individually (without --workspace)
+      may cause compilation failures.
+    probability: "MEDIUM"  # 30-50%
+    impact: "MEDIUM"       # Cannot test individual crates
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Workspace feature flags"
+      - "Implicit dependencies"
+      - "Build scripts that assume workspace context"
+    
+    mitigation_strategies:
+      primary:
+        - "Use --workspace for initial audit"
+        - "Note problematic crates in inventory"
+        - "Test with both --package and --workspace"
+      secondary:
+        - "Fix build scripts if possible"
+        - "Create feature flag documentation"
+        - "Report compilation issues as bugs"
+      
+      contingency:
+        - "If crate cannot be tested individually, mark as 'workspace-only'"
+        - "Document compilation requirements"
+        - "Recommend refactoring to improve testability"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+---
+
+## PROCESS RISKS
+
+risks:
+  - id: "PROC-001"
+    category: "PROCESS"
+    title: "Batch execution strategy not validated"
+    description: |
+      The plan assumes batches can be executed in a specific order,
+      but this hasn't been tested. Dependencies may be more complex
+      than anticipated.
+    probability: "MEDIUM"  # 40-60%
+    impact: "MEDIUM"       # Rework required
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Complex dependency graph"
+      - "Unvalidated execution order"
+      - "Potential circular dependencies"
+    
+    mitigation_strategies:
+      primary:
+        - "Create dependency graph during inventory phase"
+        - "Validate execution order before running coverage"
+        - "Test with first few batches before full execution"
+      secondary:
+        - "Use dependency analysis tool (cargo-depgraph)"
+        - "Document any circular dependencies found"
+        - "Adjust batch boundaries if needed"
+      
+      contingency:
+        - "If dependency issues found, pause and re-plan batches"
+        - "Document actual dependencies in final report"
+        - "Update plan.yaml with corrected order"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "PROC-002"
+    category: "PROCESS"
+    title: "Coverage thresholds may be unrealistic"
+    description: |
+      The plan sets tiered coverage targets (70% critical, 60% manager, etc.),
+      but these may not be achievable given current code state or may be
+      too low for actual safety needs.
+    probability: "MEDIUM"  # 30-50%
+    impact: "LOW"          # Adjust targets if needed
+    severity: "LOW"
+    
+    triggers:
+      - "Unknown current coverage levels"
+      - "Arbitrary threshold selection"
+      - "Different complexity levels within categories"
+    
+    mitigation_strategies:
+      primary:
+        - "Run pilot coverage on 10 crates to gauge current state"
+        - "Adjust thresholds based on pilot results"
+        - "Use industry benchmarks for comparison"
+      secondary:
+        - "Document rationale for each threshold"
+        - "Note which crates exceed vs fall short"
+        - "Recommend thresholds for future phases"
+      
+      contingency:
+        - "If thresholds are too high, document as aspirational"
+        - "If thresholds are too low, flag in recommendations"
+        - "Create 'baseline' vs 'target' distinction"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "PROC-003"
+    category: "PROCESS"
+    title: "Custom aggregation scripts not implemented"
+    description: |
+      The plan relies on custom scripts (inventory-crates.sh, aggregate-coverage.py)
+      that don't exist yet. These must be implemented before execution.
+    probability: "HIGH"     # 100% - scripts don't exist
+    impact: "MEDIUM"        # Manual work required
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Scripts mentioned but not implemented"
+      - "Complex aggregation logic required"
+      - "Unknown data formats"
+    
+    mitigation_strategies:
+      primary:
+        - "Implement inventory script in Phase 2 (this phase)"
+        - "Design aggregation script before execution"
+        - "Test scripts on small sample"
+      secondary:
+        - "Use existing tools (cargo-llvm-cov report formats)"
+        - "Leverage jq for JSON processing"
+        - "Document script requirements clearly"
+      
+      contingency:
+        - "If scripts fail, use manual aggregation"
+        - "Document manual process"
+        - "Prioritize script implementation in Phase 3"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+  - id: "PROC-004"
+    category: "PROCESS"
+    title: "Inconsistent test quality across crates"
+    description: |
+      Different developers may have written tests with varying quality.
+      Some tests may be meaningful while others are trivial placeholders.
+    probability: "HIGH"     # 80-90%
+    impact: "MEDIUM"        "Coverage numbers may be misleading"
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Multiple contributors over time"
+      - "No test style guide"
+      - "Pressure to increase coverage metrics"
+    
+    mitigation_strategies:
+      primary:
+        - "Manual inspection of test quality during audit"
+        - "Document test patterns (good vs bad)"
+        - "Flag crates with trivial tests"
+      secondary:
+        - "Check for assertion-less tests"
+        - "Look for test mocks that aren't validated"
+        - "Review test naming conventions"
+      
+      contingency:
+        - "If quality is low, report 'effective coverage' vs 'nominal coverage'"
+        - "Recommend test quality standards in report"
+        - "Exclude trivial tests from coverage calculations"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "PROC-005"
+    category: "PROCESS"
+    title: "Module categorization may be inaccurate"
+    description: |
+      The plan categorizes crates into critical/manager/type/stub, but
+      some crates may be miscategorized. A 'type' crate might have
+      complex logic, or a 'manager' might be a simple stub.
+    probability: "MEDIUM"  # 40-60%
+    impact: "LOW"          "Adjustment during execution"
+    severity: "LOW"
+    
+    triggers:
+      - "Categorization based on naming only"
+      - "No manual inspection of crate contents"
+      - "Unexpected crate implementations"
+    
+    mitigation_strategies:
+      primary:
+        - "Validate categorization during inventory phase"
+        - "Sample random crates from each category"
+        - "Adjust categories if needed"
+      secondary:
+        - "Document categorization criteria"
+        - "Note edge cases and exceptions"
+        - "Allow for recategorization during audit"
+      
+      contingency:
+        - "If miscategorization found, document and adjust"
+        - "Create 'uncertain' category for ambiguous crates"
+        - "Report categorization accuracy in final report"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+---
+
+## RESOURCE RISKS
+
+risks:
+  - id: "RES-001"
+    category: "RESOURCE"
+    title: "Insufficient compute resources for coverage generation"
+    description: |
+      Generating coverage for 398 crates requires significant CPU and memory.
+      Limited resources may extend execution time or cause failures.
+    probability: "MEDIUM"  # 30-50%
+    impact: "MEDIUM"       "Slower execution or failures
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Local machine with limited specs"
+      - "CI resource limits"
+      - "Parallel execution demands"
+    
+    mitigation_strategies:
+      primary:
+        - "Run on high-memory machine (16GB+ RAM, 8+ CPU cores)"
+        - "Use sequential batch execution instead of parallel"
+        - "Schedule during off-hours if using shared resources"
+      secondary:
+        - "Use CI with higher resource limits"
+        - "Optimize batch sizes for available resources"
+        - "Monitor resource usage during execution"
+      
+      contingency:
+        - "If resources insufficient, reduce parallelization"
+        - "Extend timeline for sequential execution"
+        - "Use cloud instance with more resources"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "RES-002"
+    category: "RESOURCE"
+    title: "Tool installation or compatibility issues"
+    description: |
+      cargo-llvm-cov or tarpaulin may not install correctly on the
+      target system due to Rust version, OS, or dependency conflicts.
+    probability: "LOW"      # 10-20%
+    impact: "MEDIUM"        "Cannot execute audit
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Old Rust version (<1.75)"
+      - "Unusual OS or architecture"
+      - "Proxy or firewall blocking downloads"
+    
+    mitigation_strategies:
+      primary:
+        - "Validate tool installation before Phase 3"
+        - "Test tool execution on sample crate"
+        - "Document installation issues"
+      secondary:
+        - "Use alternative tools (tarpaulin if llvm-cov fails)"
+        - "Use Rust container with pre-installed tools"
+        - "Document version requirements"
+      
+      contingency:
+        - "If tools cannot install, use manual coverage assessment"
+        - "Report tool incompatibility as blocking issue"
+        - "Recommend environment fixes"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "RES-003"
+    category: "RESOURCE"
+    title: "Time estimate may be optimistic"
+    description: |
+      The plan estimates ~18 hours for the entire audit, but this may
+      not account for troubleshooting, script development, or unexpected issues.
+    probability: "MEDIUM"  # 40-60%
+    impact: "LOW"          "Extended timeline
+    severity: "LOW"
+    
+    triggers:
+      - "Unvalidated time estimates"
+      - "Complex dependency resolution"
+      - "Tool issues requiring debugging"
+    
+    mitigation_strategies:
+      primary:
+        - "Add 50% buffer to time estimates (27 hours total)"
+        - "Track actual time per batch during execution"
+        - "Adjust remaining batches based on actuals"
+      secondary:
+        - "Break work into smaller sessions"
+        - "Document time per task for future estimates"
+        - "Use time tracking for accurate data"
+      
+      contingency:
+        - "If running behind, defer non-critical batches"
+        - "Prioritize critical modules over stubs"
+        - "Document extended timeline in final report"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "RES-004"
+    category: "RESOURCE"
+    title: "Python dependencies for aggregation scripts"
+    description: |
+      The aggregation script requires Python libraries (pandas, jinja2)
+      that may not be installed or may conflict with system Python.
+    probability: "LOW"      # 10-20%
+    impact: "LOW"           "Easy to fix
+    severity: "LOW"
+    
+    triggers:
+      - "No Python environment setup"
+      - "Missing libraries"
+      - "Version conflicts"
+    
+    mitigation_strategies:
+      primary:
+        - "Use Python venv for isolation"
+        - "Document library requirements in requirements.txt"
+        - "Test script execution before Phase 3"
+      secondary:
+        - "Use alternative tools (jq for JSON, shell for text)"
+        - "Write script in Rust instead of Python"
+        - "Use containerized Python environment"
+      
+      contingency:
+        - "If Python setup fails, use manual aggregation"
+        - "Document manual process"
+        - "Simplify aggregation requirements"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "RES-005"
+    category: "RESOURCE"
+    title: "Expert knowledge gaps in actor framework or MTProto"
+    description: |
+      The auditor may lack deep knowledge of the actor framework or
+      MTProto protocol, leading to incomplete coverage assessment.
+    probability: "MEDIUM"  # 30-50%
+    impact: "MEDIUM"       "Missed test requirements
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Custom actor framework implementation"
+      - "Complex MTProto protocol"
+      - "Undocumented behavior"
+    
+    mitigation_strategies:
+      primary:
+        - "Research TDLib actor implementation"
+        - "Consult MTProtocol specification"
+        - "Ask domain experts for review"
+      secondary:
+        - "Document assumptions during audit"
+        - "Flag areas requiring deeper expertise"
+        - "Reference external resources"
+      
+      contingency:
+        - "If knowledge gap identified, flag in report"
+        - "Recommend expert review of critical modules"
+        - "Document unknowns as future investigation items"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+---
+
+## SCHEDULE RISKS
+
+risks:
+  - id: "SCHED-001"
+    category: "SCHEDULE"
+    title: "Batch execution takes longer than estimated"
+    description: |
+      Individual batches may take longer than estimated due to
+      compilation time, test execution time, or tool issues.
+    probability: "MEDIUM"  # 40-60%
+    impact: "LOW"          "Extended timeline
+    severity: "LOW"
+    
+    triggers:
+      - "Large crates with long compile times"
+      - "Slow test execution"
+      - "Tool performance issues"
+    
+    mitigation_strategies:
+      primary:
+        - "Track time per batch"
+        - "Adjust estimates after first batch"
+        - "Use faster hardware if available"
+      secondary:
+        - "Run batches overnight or weekend"
+        - "Prioritize critical batches first"
+        - "Defer stub batches if time constrained"
+      
+      contingency:
+        - "If running behind, consolidate stub batches"
+        - "Reduce scope to critical modules only"
+        - "Document partial completion status"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+  - id: "SCHED-002"
+    category: "SCHEDULE"
+    title: "Unplanned interruptions or context switching"
+    description: |
+      Other tasks, meetings, or issues may interrupt the audit,
+      breaking flow and extending timeline.
+    probability: "MEDIUM"  # 50-60%
+    impact: "LOW"          "Minor delay
+    severity: "LOW"
+    
+    triggers:
+      - "Competing priorities"
+      - "Production issues"
+      - "Meetings or other commitments"
+    
+    mitigation_strategies:
+      primary:
+        - "Schedule dedicated blocks for audit work"
+        - "Communicate audit schedule to team"
+        - "Use time-blocking to minimize interruptions"
+      secondary:
+        - "Break work into checkpointable units"
+        - "Save progress after each batch"
+        - "Document resumption procedures"
+      
+      contingency:
+        - "If interrupted, document pause point"
+        - "Resume at next batch boundary"
+        - "Adjust timeline based on actual availability"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "SCHED-003"
+    category: "SCHEDULE"
+    title: "Tool debugging extends timeline"
+    description: |
+      Issues with cargo-llvm-cov, tarpaulin, or custom scripts
+      may require debugging, extending execution time.
+    probability: "MEDIUM"  # 30-50%
+    impact: "MEDIUM"       "Significant delay possible
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Tool bugs or limitations"
+      - "Environment-specific issues"
+      - "Script errors"
+    
+    mitigation_strategies:
+      primary:
+        - "Validate tools before starting audit"
+        - "Test on small sample first"
+        - "Have fallback tools ready"
+      secondary:
+        - "Document tool issues for reference"
+        - "Check tool repositories for known issues"
+        - "Use simpler alternatives if needed"
+      
+      contingency:
+        - "If tool debugging takes too long, switch to alternative"
+        - "Report tool issues as blocking bugs"
+        - "Proceed with manual methods if tools fail"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+---
+
+## QUALITY RISKS
+
+risks:
+  - id: "QUAL-001"
+    category: "QUALITY"
+    title: "Coverage data may be inaccurate"
+    description: |
+      Coverage tools may miscount lines, exclude unexecuted code,
+      or include non-production code, skewing results.
+    probability: "MEDIUM"  # 30-50%
+    impact: "HIGH"         "Incorrect conclusions
+    severity: "HIGH"
+    
+    triggers:
+      - "Tool limitations"
+      - "Debug-only code included"
+      - "Generated code not excluded"
+    
+    mitigation_strategies:
+      primary:
+        - "Cross-verify with two tools (llvm-cov + tarpaulin)"
+        - "Manually inspect sample coverage reports"
+        - "Exclude test code, build code, generated code"
+      secondary:
+        - "Document tool exclusion patterns"
+        - "Check for double-counting or missed lines"
+        - "Validate coverage counts against manual inspection"
+      
+      contingency:
+        - "If data is inaccurate, report as 'estimated coverage'"
+        - "Document tool limitations in report"
+        - "Recommend manual validation for critical modules"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+  - id: "QUAL-002"
+    category: "QUALITY"
+    title: "Test quality not assessed, only quantity"
+    description: |
+      Coverage measures lines executed, not test effectiveness.
+      A crate with 100% coverage may still have poor tests.
+    probability: "HIGH"     # 90-100%
+    impact: "MEDIUM"        "Misleading audit results
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Coverage tools measure execution, not quality"
+      - "No automated test quality assessment"
+      - "Subjective judgment required"
+    
+    mitigation_strategies:
+      primary:
+        - "Manual inspection of test code during audit"
+        - "Document test quality patterns (good vs bad)"
+        - "Flag crates with trivial or meaningless tests"
+      secondary:
+        - "Check for assertion-less tests"
+        - "Look for test mocks without validation"
+        - "Review test naming and documentation"
+      
+      contingency:
+        - "Report both 'coverage' and 'test quality' assessments"
+        - "Recommend test quality standards"
+        - "Use mutation testing if time permits (future work)"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "QUAL-003"
+    category: "QUALITY"
+    title: "Integration test gaps not addressed"
+    description: |
+      The audit focuses on unit tests, but integration tests are
+      critical for actor-based architecture. Gaps may be missed.
+    probability: "HIGH"     # 80-90%
+    impact: "HIGH"          "Missing test requirements
+    severity: "HIGH"
+    
+    triggers:
+      - "Only 4 integration test files exist"
+      - "Unit tests don't validate interactions"
+      - "Actor message passing requires integration tests"
+    
+    mitigation_strategies:
+      primary:
+        - "Dedicated section on integration test gaps"
+        - "Recommend specific integration tests for critical paths"
+        - "Document which interactions need testing"
+      secondary:
+        - "Identify actor-to-actor communication patterns"
+        - "Map state mutation flows requiring integration tests"
+        - "Reference TDLib integration test patterns"
+      
+      contingency:
+        - "If integration gaps are large, flag as critical issue"
+        - "Prioritize integration test recommendations in roadmap"
+        - "Create dedicated integration test plan as follow-up"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "QUAL-004"
+    category: "QUALITY"
+    title: "Report may not provide actionable recommendations"
+    description: |
+      The audit may identify gaps but fail to provide clear,
+    probability: "MEDIUM"  # 40-60%
+    impact: "MEDIUM"       "Limited utility of audit
+    severity: "MEDIUM"
+    
+    triggers:
+      - "Complex dependencies unclear"
+      - "No effort estimates for test implementation"
+      - "Missing prioritization framework"
+    
+    mitigation_strategies:
+      primary:
+        - "Include dedicated roadmap with effort estimates"
+        - "Prioritize by criticality and dependencies"
+        - "Provide specific test patterns for each module type"
+      secondary:
+        - "Consult with developers on feasibility"
+        - "Reference TDLib test coverage for benchmarks"
+        - "Include sample test code for common patterns"
+      
+      contingency:
+        - "If recommendations are unclear, flag as limitation"
+        - "Schedule follow-up workshop to discuss roadmap"
+        - "Create test implementation guide as separate deliverable"
+    
+    owner: "Agent Analyst"
+    status: "MITIGATED"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Weekly"
+
+  - id: "QUAL-005"
+    category: "QUALITY"
+    title: "Audit may not catch all untested critical paths"
+    description: |
+      Coverage tools measure code execution, but may miss specific
+      critical paths that require manual review to identify.
+    probability: "MEDIUM"  # 40-60%
+    impact: "HIGH"         "Security or correctness issues
+    severity: "HIGH"
+    
+    triggers:
+      - "Complex state machines"
+      - "Error handling paths"
+      - "Edge cases in crypto or network code"
+    
+    mitigation_strategies:
+      primary:
+        - "Manual code review for critical modules"
+        - "Focus on error handling and edge cases"
+        - "Document uncovered critical paths"
+      secondary:
+        - "Use control flow analysis tools"
+        - "Check for panic branches not tested"
+        - "Review Result and Option handling"
+      
+      contingency:
+        - "If gaps found, flag as security-critical"
+        - "Recommend targeted testing for missed paths"
+        - "Create dedicated 'critical path' test plan"
+    
+    owner: "Agent Analyst"
+    status: "OPEN"
+    last_reviewed: "2025-01-17"
+    review_frequency: "Daily"
+
+---
+
+## RISK SUMMARY
+
+### Critical Risks (Require Immediate Attention)
+
+| ID | Category | Title | Status | Priority |
+|----|----------|-------|--------|----------|
+| TECH-003 | TECHNICAL | Actor framework message passing tests inadequate | MITIGATED | P0 |
+| TECH-004 | TECHNICAL | Cryptographic module test gaps | OPEN | P0 |
+| QUAL-001 | QUALITY | Coverage data may be inaccurate | OPEN | P0 |
+| QUAL-003 | QUALITY | Integration test gaps not addressed | MITIGATED | P0 |
+| QUAL-005 | QUALITY | Audit may not catch all untested critical paths | OPEN | P0 |
+
+### High Priority Risks
+
+| ID | Category | Title | Status | Priority |
+|----|----------|-------|--------|----------|
+| TECH-001 | TECHNICAL | Cargo workspace exceeds memory limits | OPEN | P1 |
+| TECH-002 | TECHNICAL | Coverage tool conflicts with workspace features | OPEN | P1 |
+| PROC-003 | PROCESS | Custom aggregation scripts not implemented | MITIGATED | P1 |
+| PROC-004 | PROCESS | Inconsistent test quality across crates | OPEN | P1 |
+
+### Medium Priority Risks
+
+| ID | Category | Title | Status | Priority |
+|----|----------|-------|--------|----------|
+| TECH-005 | TECHNICAL | Some crates fail to compile in isolation | OPEN | P2 |
+| PROC-001 | PROCESS | Batch execution strategy not validated | MITIGATED | P2 |
+| PROC-002 | PROCESS | Coverage thresholds may be unrealistic | OPEN | P2 |
+| RES-001 | RESOURCE | Insufficient compute resources | OPEN | P2 |
+| RES-003 | RESOURCE | Time estimate may be optimistic | OPEN | P2 |
+| RES-005 | RESOURCE | Expert knowledge gaps | OPEN | P2 |
+| SCHED-003 | SCHEDULE | Tool debugging extends timeline | MITIGATED | P2 |
+| QUAL-002 | QUALITY | Test quality not assessed | MITIGATED | P2 |
+| QUAL-004 | QUALITY | Report may not provide actionable recommendations | MITIGATED | P2 |
+
+### Low Priority Risks
+
+| ID | Category | Title | Status | Priority |
+|----|----------|-------|--------|----------|
+| PROC-005 | PROCESS | Module categorization may be inaccurate | MITIGATED | P3 |
+| RES-002 | RESOURCE | Tool installation or compatibility issues | OPEN | P3 |
+| RES-004 | RESOURCE | Python dependencies for aggregation scripts | MITIGATED | P3 |
+| SCHED-001 | SCHEDULE | Batch execution takes longer than estimated | OPEN | P3 |
+| SCHED-002 | SCHEDULE | Unplanned interruptions | MITIGATED | P3 |
+
+---
+
+## RISK METRICS
+
+### Risk Distribution by Category
+
+- **TECHNICAL**: 5 risks (2 CRITICAL, 2 HIGH, 1 MEDIUM)
+- **PROCESS**: 5 risks (0 CRITICAL, 2 HIGH, 3 MEDIUM)
+- **RESOURCE**: 5 risks (0 CRITICAL, 0 HIGH, 5 MEDIUM)
+- **SCHEDULE**: 3 risks (0 CRITICAL, 0 HIGH, 3 MEDIUM)
+- **QUALITY**: 5 risks (3 CRITICAL, 1 HIGH, 1 MEDIUM)
+
+### Risk Status Distribution
+
+- **OPEN**: 12 risks
+- **MITIGATED**: 13 risks
+- **BLOCKER**: 0 risks
+
+### Overall Risk Assessment
+
+**Current Risk Level**: **MEDIUM**
+
+**Rationale**:
+- 5 CRITICAL risks identified, but 2 are mitigated
+- No BLOCKER risks (project can proceed)
+- Most risks have clear mitigation strategies
+- Remaining OPEN risks are monitorable during execution
+
+**Recommendation**: Proceed with Phase 3 execution while monitoring OPEN risks daily.
+
+---
+
+## MITIGATION ACTION ITEMS
+
+### Before Phase 3 Execution
+
+1. **[P0]** Implement comprehensive actor test suite
+2. **[P0]** Add property-based tests for crypto modules
+3. **[P0]** Implement inventory and aggregation scripts
+4. **[P0]** Validate coverage tools on sample crates
+5. **[P1]** Test batch execution order
+6. **[P1]** Create test quality assessment checklist
+
+### During Phase 3 Execution
+
+1. **[P0]** Monitor memory usage during first batch
+2. **[P0]** Manual code review of critical modules
+3. **[P0]** Document integration test gaps
+4. **[P1]** Track actual time per batch
+5. **[P1]** Validate coverage data accuracy
+6. **[P2]** Document any miscategorizations
+
+### After Phase 3 Completion
+
+1. **[P0]** Create actionable roadmap with effort estimates
+2. **[P0]** Flag all critical untested modules
+3. **[P1]** Document tool limitations
+4. **[P1]** Recommend test quality standards
+5. **[P2]** Update risk register with lessons learned
+
+---
+
+## REVIEW SCHEDULE
+
+- **Daily**: Review CRITICAL and HIGH priority risks
+- **Weekly**: Review all OPEN risks, update status
+- **End of Phase**: Comprehensive risk review, document lessons learned
+
+---
+
+**Document Version**: 1.0  
+**Last Updated**: 2025-01-17  
+**Next Review**: 2025-01-24  
+**Maintainer**: Agent Analyst (Phase 2)

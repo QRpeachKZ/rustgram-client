@@ -1,0 +1,11 @@
+[package]
+name = "rustgram-file-load-manager"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+rustgram-resource-manager = { path = "../resource_manager" }
+thiserror.workspace = true
+
+[dev-dependencies]
+rstest.workspace = true

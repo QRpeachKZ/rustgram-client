@@ -1,0 +1,22 @@
+[package]
+name = "rustgram-message-types"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_message_types"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-message-content-type = { path = "../message_content-type" }
+rustgram-formatted-text = { path = "../formatted-text" }
+serde = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }

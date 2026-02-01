@@ -1,0 +1,482 @@
+# Technical Specification: Beads Issue Tracker Integration
+**Epic**: rustgram-client-bd-integration
+**Version**: 1.0
+**Status**: Phase 2 - Analysis + Spec
+
+## Overview
+
+Create a native Rust crate (`rustgram-issue-tracker`) that provides type-safe interfaces to the Beads (bd) issue tracking system. The crate will wrap Beads CLI commands and provide direct SQLite access for high-performance operations.
+
+**Key Requirements**:
+1. **Beads Compatibility**: Full compatibility with Beads v0.46.0 database schema
+2. **Actor Integration**: Message-based API compatible with `rustgram-actor` framework
+3. **Type Safety**: Strong typing for all Beads entities (Issue, Dependency, Label)
+4. **Zero Unwrap**: No `unwrap()`/`expect()` in production code
+5. **Test Coverage**: 75%+ coverage target
+
+## Module Structure
+
+```
+crates/issue_tracker/
+├── Cargo.toml
+├── README.md
+└── src/
+    ├── lib.rs              # Public API re-exports
+    ├── error.rs            # Error types
+    ├── types.rs            # Core data types (Issue, Status, Priority, etc.)
+    ├── database.rs         # SQLite connection and queries
+    ├── cli.rs              # Beads CLI command wrappers (fallback)
+    ├── operations.rs       # High-level CRUD operations
+    └── actor.rs            # Actor message types and handlers
+```
+
+## Public API Design
+
+### Core Types
+
+```rust
+// src/types.rs
+
+use serde::{Deserialize, Serialize};
+
+/// Issue identifier (e.g., "rustgram-client-abc")
+#[derive(Debug, Clone, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub struct IssueId(String);
+
+impl IssueId {
+    pub fn new(id: impl Into<String>) -> Result<Self, Error>;
+    pub fn as_str(&self) -> &str;
+}
+
+/// Issue status matching Beads schema
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum IssueStatus {
+    Open,
+    InProgress,
+    Closed,
+    Blocked,
+}
+
+/// Priority level (0-4, matching Beads constraint)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum Priority {
+    P0 = 0,
+    P1 = 1,
+    P2 = 2,
+    P3 = 3,
+    P4 = 4,
+}
+
+/// Issue type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum IssueType {
+    Task,
+    Epic,
+    Gate,
+}
+
+/// Dependency relationship type
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum DependencyType {
+    ParentChild,
+    Blocks,
+    DiscoveredFrom,
+    Related,
+}
+
+/// Complete issue representation
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Issue {
+    pub id: IssueId,
+    pub title: String,
+    pub description: String,
+    pub status: IssueStatus,
+    pub priority: Priority,
+    pub issue_type: IssueType,
+    pub labels: Vec<String>,
+    pub assignee: Option<String>,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+    pub updated_at: chrono::DateTime<chrono::Utc>,
+    pub closed_at: Option<chrono::DateTime<chrono::Utc>>,
+}
+
+/// Dependency relationship
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Dependency {
+    pub issue_id: IssueId,
+    pub depends_on_id: IssueId,
+    pub dependency_type: DependencyType,
+    pub created_at: chrono::DateTime<chrono::Utc>,
+}
+```
+
+### Database API
+
+```rust
+// src/database.rs
+
+use rusqlite::{Connection, Result as SqliteResult};
+use std::path::Path;
+
+pub struct IssueDatabase {
+    conn: Connection,
+}
+
+impl IssueDatabase {
+    /// Open Beads database at default location (.beads/beads.db)
+    pub fn open() -> Result<Self, Error>;
+    
+    /// Open database at custom path
+    pub fn open_with_path<P: AsRef<Path>>(path: P) -> Result<Self, Error>;
+    
+    /// Create issue
+    pub fn create_issue(&self, issue: &Issue) -> Result<IssueId, Error>;
+    
+    /// Get issue by ID
+    pub fn get_issue(&self, id: &IssueId) -> Result<Option<Issue>, Error>;
+    
+    /// List issues with optional filters
+    pub fn list_issues(&self, filter: &IssueFilter) -> Result<Vec<Issue>, Error>;
+    
+    /// Update issue fields
+    pub fn update_issue(&self, id: &IssueId, updates: &IssueUpdate) -> Result<(), Error>;
+    
+    /// Close issue
+    pub fn close_issue(&self, id: &IssueId, reason: &str) -> Result<(), Error>;
+    
+    /// Add dependency
+    pub fn add_dependency(
+        &self,
+        issue_id: &IssueId,
+        depends_on: &IssueId,
+        dep_type: DependencyType,
+    ) -> Result<(), Error>;
+    
+    /// Get dependencies for issue
+    pub fn get_dependencies(&self, id: &IssueId) -> Result<Vec<Dependency>, Error>;
+    
+    /// Check if issue is blocked by unclosed dependencies
+    pub fn is_blocked(&self, id: &IssueId) -> Result<bool, Error>;
+    
+    /// Add label to issue
+    pub fn add_label(&self, id: &IssueId, label: &str) -> Result<(), Error>;
+    
+    /// Remove label from issue
+    pub fn remove_label(&self, id: &IssueId, label: &str) -> Result<(), Error>;
+}
+
+/// Filter for listing issues
+#[derive(Debug, Clone, Default)]
+pub struct IssueFilter {
+    pub status: Option<IssueStatus>,
+    pub priority: Option<Priority>,
+    pub issue_type: Option<IssueType>,
+    pub assignee: Option<String>,
+    pub labels: Vec<String>,
+    pub parent_id: Option<IssueId>,
+}
+
+/// Issue update (partial)
+#[derive(Debug, Clone, Default)]
+pub struct IssueUpdate {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub status: Option<IssueStatus>,
+    pub priority: Option<Priority>,
+    pub assignee: Option<String>,
+    pub notes: Option<String>,
+}
+```
+
+### High-Level Operations
+
+```rust
+// src/operations.rs
+
+use crate::{database::IssueDatabase, types::*};
+
+pub struct IssueTracker {
+    db: IssueDatabase,
+}
+
+impl IssueTracker {
+    pub fn new() -> Result<Self, Error>;
+    
+    /// Create epic with all workflow tasks
+    pub fn create_epic_workflow(
+        &self,
+        title: &str,
+        description: &str,
+        priority: Priority,
+        labels: Vec<String>,
+    ) -> Result<(IssueId, Vec<IssueId>), Error>;
+    
+    /// Get next ready task for a workflow step
+    pub fn get_ready_task(&self, step_label: &str) -> Result<Option<Issue>, Error>;
+    
+    /// Mark task as in-progress
+    pub fn start_task(&self, id: &IssueId) -> Result<(), Error>;
+    
+    /// Complete task with notes
+    pub fn complete_task(&self, id: &IssueId, notes: &str) -> Result<(), Error>;
+    
+    /// Block task with reason
+    pub fn block_task(&self, id: &IssueId, reason: &str) -> Result<(), Error>;
+    
+    /// Create discovered issue during task execution
+    pub fn create_discovered(
+        &self,
+        parent_id: &IssueId,
+        title: &str,
+        description: &str,
+    ) -> Result<IssueId, Error>;
+    
+    /// Generate progress report for epic
+    pub fn epic_progress(&self, epic_id: &IssueId) -> Result<EpicProgress, Error>;
+}
+
+#[derive(Debug, Clone)]
+pub struct EpicProgress {
+    pub epic_id: IssueId,
+    pub total_tasks: usize,
+    pub completed_tasks: usize,
+    pub blocked_tasks: usize,
+    pub in_progress_tasks: usize,
+    pub pending_tasks: usize,
+}
+```
+
+### Actor Integration
+
+```rust
+// src/actor.rs
+
+use rustgram_actor::{ActorMessage, ActorId};
+
+/// Messages for IssueTracker actor
+#[derive(Debug, Clone)]
+pub enum IssueTrackerMessage {
+    CreateIssue(Box<CreateIssueReq>),
+    GetIssue(IssueId, ActorId<Issue>),
+    ListIssues(IssueFilter, ActorId<Vec<Issue>>),
+    UpdateIssue(IssueId, Box<IssueUpdate>, ActorId<Result<(), Error>>),
+    CloseIssue(IssueId, String, ActorId<Result<(), Error>>),
+    AddDependency(AddDepReq, ActorId<Result<(), Error>>),
+    GetDependencies(IssueId, ActorId<Vec<Dependency>>),
+    StartTask(IssueId, ActorId<Result<(), Error>>),
+    CompleteTask(IssueId, String, ActorId<Result<(), Error>>),
+}
+
+#[derive(Debug, Clone)]
+pub struct CreateIssueReq {
+    pub title: String,
+    pub description: String,
+    pub priority: Priority,
+    pub issue_type: IssueType,
+    pub labels: Vec<String>,
+    pub parent_id: Option<IssueId>,
+}
+
+#[derive(Debug, Clone)]
+pub struct AddDepReq {
+    pub issue_id: IssueId,
+    pub depends_on: IssueId,
+    pub dep_type: DependencyType,
+}
+
+/// Issue tracker actor
+pub struct IssueTrackerActor {
+    tracker: IssueTracker,
+}
+
+impl rustgram_actor::Actor for IssueTrackerActor {
+    type Message = IssueTrackerMessage;
+    
+    fn handle(&mut self, msg: Self::Message) -> impl std::future::Future<Output = ()>;
+}
+```
+
+## Error Handling
+
+```rust
+// src/error.rs
+
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    #[error("Database error: {0}")]
+    Database(#[from] rusqlite::Error),
+    
+    #[error("Invalid issue ID format: {0}")]
+    InvalidIssueId(String),
+    
+    #[error("Issue not found: {0}")]
+    IssueNotFound(IssueId),
+    
+    #[error("Dependency would create cycle")]
+    CircularDependency,
+    
+    #[error("Cannot close issue with open dependencies")]
+    OpenDependencies,
+    
+    #[error("Priority out of range (0-4): {0}")]
+    InvalidPriority(i32),
+    
+    #[error("Serialization error: {0}")]
+    Serialization(#[from] serde_json::Error),
+    
+    #[error("CLI error: {0}")]
+    Cli(String),
+}
+
+pub type Result<T> = std::result::Result<T, Error>;
+```
+
+## Dependencies
+
+### External Dependencies
+
+```toml
+[dependencies]
+# Workspace dependencies
+rustgram-types = { path = "../types" }
+rustgram-actor = { path = "../actor" }
+tokio = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+# Database
+rusqlite = { version = "0.32", features = ["bundled", "chrono"] }
+
+# Time handling
+chrono = { version = "0.4", features = ["serde"] }
+
+[dev-dependencies]
+tokio-test = "0.4"
+tempfile = "3.12"
+```
+
+### Internal Dependencies
+
+- `rustgram-types`: Base types (Error, Result)
+- `rustgram-actor`: Actor framework for message passing
+
+## Beads Schema Mapping
+
+### Issues Table
+
+| Beads Column | Rust Type | Notes |
+|--------------|-----------|-------|
+| id | `IssueId` | Primary key, TEXT format |
+| title | `String` | Max 500 chars (CHECK constraint) |
+| description | `String` | Default '' |
+| notes | `String` | Default '' |
+| status | `IssueStatus` | Enum: open/in_progress/closed/blocked |
+| priority | `Priority` | 0-4 (CHECK constraint) |
+| issue_type | `IssueType` | task/epic/gate |
+| assignee | `Option<String>` | |
+| created_at | `chrono::DateTime<Utc>` | |
+| updated_at | `chrono::DateTime<Utc>` | |
+| closed_at | `Option<chrono::DateTime<Utc>>` | Required if closed |
+
+### Dependencies Table
+
+| Beads Column | Rust Type | Notes |
+|--------------|-----------|-------|
+| issue_id | `IssueId` | FK to issues |
+| depends_on_id | `IssueId` | FK to issues |
+| type | `DependencyType` | parent-child/blocks/etc |
+| created_at | `chrono::DateTime<Utc>` | |
+| created_by | `String` | |
+
+### Labels Table
+
+| Beads Column | Rust Type | Notes |
+|--------------|-----------|-------|
+| issue_id | `IssueId` | FK to issues |
+| label | `String` | Composite PK with issue_id |
+
+## Test Strategy
+
+### Unit Tests (Target: 50+ tests)
+
+1. **Type Tests** (`types.rs`): 15 tests
+   - IssueId validation
+   - Status/Priority/Type conversions
+   - Serialization/deserialization
+
+2. **Database Tests** (`database.rs`): 20 tests
+   - CRUD operations
+   - Filtering and querying
+   - Dependency cycle detection
+   - Transaction rollback on error
+
+3. **Operations Tests** (`operations.rs`): 15 tests
+   - Epic workflow creation
+   - Ready task detection
+   - Progress reporting
+   - Discovered issue creation
+
+### Integration Tests (Target: 15+ tests)
+
+1. **CLI Fallback**: Test bd CLI commands when database unavailable
+2. **Concurrent Access**: Multiple threads accessing database
+3. **Migration**: Beads database version compatibility
+
+### Coverage Target: 75%
+
+## Implementation Phases
+
+1. **Phase 1: Core Types** (2-3 hours)
+   - Implement all enums and structs
+   - Add serde serialization
+   - Unit tests for type conversions
+
+2. **Phase 2: Database Layer** (4-6 hours)
+   - SQLite connection wrapper
+   - CRUD queries
+   - Filtering and joins
+   - Transaction support
+
+3. **Phase 3: CRUD Operations** (3-4 hours)
+   - High-level IssueTracker API
+   - Validation logic
+   - Error handling
+
+4. **Phase 4: Dependencies/Labels** (2-3 hours)
+   - Dependency management
+   - Cycle detection
+   - Label operations
+
+5. **Phase 5: Actor Integration** (3-4 hours)
+   - Message types
+   - Actor handler implementation
+   - Async response channels
+
+## Success Criteria
+
+- [ ] 75+ tests total (50 unit + 15 integration + 10 doc)
+- [ ] 75%+ code coverage
+- [ ] 0 clippy warnings
+- [ ] 0 unwrap()/expect() in production code
+- [ ] Full Beads schema compatibility
+- [ ] Actor integration working
+- [ ] README with examples
+- [ ] All public API documented
+
+## Known Limitations
+
+1. **Read-Only during bd sync**: Database may be locked during `bd sync`
+2. **Schema version**: Beads v0.46.0 only (migration strategy TBD)
+3. **No daemon integration**: Does not interact with bd daemon
+4. **JSONL import**: Does not support JSONL import/export (CLI required)
+
+## Future Enhancements
+
+- Async database API (using `sqlx` or `tokio-rusqlite`)
+- Multi-repo support (beads-307)
+- Webhook/event support for real-time updates
+- GraphQL query interface

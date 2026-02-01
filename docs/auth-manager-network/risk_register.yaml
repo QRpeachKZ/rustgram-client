@@ -1,0 +1,499 @@
+# Risk Register: AuthManager Network Integration
+**Epic**: rustgram-client-ff7.2
+**Version**: 1.0
+**Date**: 2026-01-20
+**Phase**: 2 - Analysis & Spec
+
+---
+
+## Risk Categories
+
+1. **TESTING** - Test coverage, mock quality, and validation
+2. **INTEGRATION** - Cross-crate dependencies and callback patterns
+3. **SECURITY** - Authentication state and data protection
+4. **PERFORMANCE** - Timeout handling and retry behavior
+5. **API** - Public API stability and error handling
+
+---
+
+## Risk Items
+
+### R-AM001: Test Coverage Gap
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: High  
+**Impact**: High
+
+**Description**:
+Current coverage is 7%, target is 70%. Need to add 63% coverage (15+ new tests) to meet success criteria. Complex callback-based async code is harder to test than synchronous code.
+
+**Current State**:
+- 15 existing tests (basic state operations, validation)
+- 0 tests for network methods (`send_code`, `sign_in`, `send_log_out`)
+- 0 tests for callback implementations
+- 0 integration tests
+
+**Mitigation Strategy**:
+- Write tests before implementation (TDD)
+- Focus on network method coverage first (critical paths)
+- Use `MockNetQueryDispatcher` for controlled testing
+- Add coverage report to CI pipeline
+- Prioritize error paths and edge cases
+- Use `tokio-test` for async testing utilities
+
+**Contingency Plan**:
+If 70% is not achievable:
+1. Prioritize coverage for network methods (must have 80%+)
+2. Prioritize callback integration paths (must have 80%+)
+3. State query methods can have lower coverage (50%+ acceptable)
+4. Document any uncovered code with TODOs
+
+**Owner**: @tester  
+**Due Date**: Phase 4, Step 1
+
+---
+
+### R-AM002: Callback Test Complexity
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+Testing `NetQueryCallback` implementations requires simulating async callback execution, timing, and state mutations. Callbacks execute in separate async context, making test assertions difficult.
+
+**Affected Code**:
+- `AuthQueryCallback` (lines 1246-1270)
+- `SignInQueryCallback` (lines 1274-1297)
+- `LogOutQueryCallback` (lines 1300-1320)
+
+**Mitigation Strategy**:
+- Create `MockNetQueryDispatcher` that calls callbacks synchronously in tests
+- Use `tokio::sync::oneshot` channels for callback result verification
+- Add explicit timing assertions (not just correctness)
+- Test callback error paths explicitly
+- Use `Arc::clone` pattern to verify state mutations
+
+**Contingency Plan**:
+If callback tests prove too complex:
+1. Extract callback logic into separate testable functions
+2. Use integration tests instead of unit tests for callback verification
+3. Add tracing logs to verify callback execution in tests
+
+**Owner**: @tester  
+**Due Date**: Phase 3, Step 2
+
+---
+
+### R-AM003: TL Response Mocking
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+Mocking TL responses requires creating valid `Bytes` with properly serialized TL data. Malformed mock data will cause deserialization errors, making tests unreliable.
+
+**Affected Types**:
+- `SentCode` (from `send_code` response)
+- `Authorization` (from `sign_in` response)
+- `LoggedOut` (from `send_log_out` response)
+
+**Mitigation Strategy**:
+- Use real `TlSerialize` for mock data creation
+- Verify mock data structure with `TlDeserialize` before use
+- Add fixture data for common response types
+- Test with both valid and malformed responses
+- Document mock data format
+
+**Contingency Plan**:
+If TL mocking proves fragile:
+1. Use integration tests with mock dispatcher that returns success/error without TL data
+2. Focus on testing state transitions rather than TL parsing
+3. Rely on `rustgram-types` tests for TL validation
+
+**Owner**: @tester  
+**Due Date**: Phase 3, Step 1
+
+---
+
+### R-AM004: State Machine Test Gaps
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: Medium  
+**Impact**: Medium
+
+**Description**:
+Current tests only cover individual state queries (`is_waiting`, `is_authorized`, etc.). No tests cover state transition sequences or invalid transitions.
+
+**Current Coverage**:
+- State query methods: ✅ Tested (lines 107-183 in state.rs)
+- State transitions: ❌ Not tested
+- Invalid transitions: ❌ Not tested
+- Retry state: ❌ Not tested
+
+**Mitigation Strategy**:
+- Add tests for all valid state transition paths
+- Add tests for invalid transitions (should fail)
+- Test retry state transitions (WaitingRetry → WaitCode/WaitPassword)
+- Test error state recovery
+- Visualize state machine with mermaid in test docs
+
+**Contingency Plan**:
+If state machine testing is too complex:
+1. Add state transition validation to `set_state()` method
+2. Use property-based testing for transition validation
+3. Document all valid transitions in code comments
+
+**Owner**: @tester  
+**Due Date**: Phase 3, Step 3
+
+---
+
+### R-AM005: Retry Logic Testing
+**Category**: TESTING  
+**Status**: OPEN  
+**Probability**: Low  
+**Impact**: Medium
+
+**Description**:
+Retry logic uses exponential backoff with async `tokio::time::sleep`. Testing retry behavior requires mocking time or using long delays.
+
+**Affected Code**:
+- `handle_error_response()` (lines 1190-1222)
+- Exponential backoff calculation (line 1193)
+- `tokio::time::sleep` spawn (line 1213)
+
+**Mitigation Strategy**:
+- Use `tokio::time::pause()` for controlled time advancement
+- Test retry count limits (0, 1, 2, 3, 4+ attempts)
+- Test exponential backoff calculation (1s, 2s, 4s, 8s)
+- Verify max retry limit is enforced
+- Test state transitions during retry
+
+**Contingency Plan**:
+If time mocking is unreliable:
+1. Extract backoff calculation to separate function (testable)
+2. Use short delays in tests (100ms instead of 1s)
+3. Document retry behavior without explicit timing tests
+
+**Owner**: @tester  
+**Due Date**: Phase 3, Step 4
+
+---
+
+## Risk Summary
+
+### By Category
+
+| Category | Total | Open | Mitigated | Blocker |
+|----------|-------|------|-----------|---------|
+| TESTING | 5 | 5 | 0 | 0 |
+| INTEGRATION | 0 | 0 | 0 | 0 |
+| SECURITY | 0 | 0 | 0 | 0 |
+| PERFORMANCE | 0 | 0 | 0 | 0 |
+| API | 0 | 0 | 0 | 0 |
+| **Total** | **5** | **5** | **0** | **0** |
+
+### By Status
+
+- **OPEN**: 5 risks require active mitigation
+- **MITIGATED**: 0 risks have mitigation strategies implemented
+- **BLOCKER**: 0 blocking risks identified
+
+### By Impact
+
+| Impact | Count | Risks |
+|--------|-------|-------|
+| High | 1 | R-AM001 (Test Coverage Gap) |
+| Medium | 4 | R-AM002, R-AM003, R-AM004, R-AM005 |
+
+### Top 3 Priority Risks
+
+1. **R-AM001**: Test Coverage Gap (High Impact, High Probability) - PRIMARY RISK
+2. **R-AM002**: Callback Test Complexity (Medium Impact, Medium Probability)
+3. **R-AM003**: TL Response Mocking (Medium Impact, Medium Probability)
+
+---
+
+## Risk Mitigation Timeline
+
+### Phase 3: Development
+
+| Week | Risks | Activities |
+|------|-------|------------|
+| Week 1 | R-AM003 | Create MockNetQueryDispatcher with TL mock data |
+| Week 1 | R-AM002 | Implement callback test infrastructure |
+| Week 2 | R-AM002, R-AM003 | Write network method tests |
+| Week 2 | R-AM004 | Write state machine tests |
+| Week 3 | R-AM005 | Write retry logic tests |
+| Week 3 | R-AM001 | Verify coverage metrics |
+
+### Phase 4: Testing
+
+| Week | Risks | Activities |
+|------|-------|------------|
+| Week 4 | R-AM001 | Run coverage analysis, fill gaps |
+| Week 4 | All | Finalize all tests, verify pass rate |
+
+---
+
+## Risk Mitigation Strategies
+
+### R-AM001: Test Coverage Gap
+
+**Implementation Plan**:
+
+1. **Phase 3.1: Foundation** (0.5 day)
+   - [ ] Create `MockNetQueryDispatcher` with configurable responses
+   - [ ] Add test fixtures for common scenarios
+   - [ ] Set up coverage reporting in CI
+
+2. **Phase 3.2: Network Method Tests** (1 day)
+   - [ ] Test `send_code()` success path (line 876-948)
+   - [ ] Test `send_code()` error paths (invalid phone, network error)
+   - [ ] Test `sign_in()` success path (line 951-1040)
+   - [ ] Test `sign_in()` error paths (wrong code, 2FA required)
+   - [ ] Test `send_log_out()` success path (line 1043-1096)
+   - [ ] Test `send_log_out()` error paths
+
+3. **Phase 3.3: Callback Tests** (0.5 day)
+   - [ ] Test `AuthQueryCallback` state transitions (line 1246-1270)
+   - [ ] Test `SignInQueryCallback` state transitions (line 1274-1297)
+   - [ ] Test `LogOutQueryCallback` state transitions (line 1300-1320)
+
+4. **Phase 3.4: State Machine Tests** (0.5 day)
+   - [ ] Test all valid state transitions
+   - [ ] Test invalid transitions (should fail)
+   - [ ] Test retry state behavior
+   - [ ] Test error recovery
+
+5. **Phase 4: Coverage Validation** (0.5 day)
+   - [ ] Run `cargo llvm-cov -p auth_manager --html`
+   - [ ] Verify ≥70% line coverage
+   - [ ] Add tests for uncovered lines
+   - [ ] Generate final coverage report
+
+**Success Criteria**:
+- ✅ 15+ new tests added
+- ✅ Coverage ≥ 70%
+- ✅ All network methods tested
+- ✅ All callbacks tested
+- ✅ State transitions fully tested
+
+---
+
+### R-AM002: Callback Test Complexity
+
+**Implementation Plan**:
+
+1. **Create Mock Infrastructure** (0.5 day)
+   ```rust
+   struct MockNetQueryDispatcher {
+       responses: Arc<Mutex<HashMap<NetQueryId, Result<Bytes, QueryError>>>>,
+       callback_invoked: Arc<Mutex<HashMap<NetQueryId, bool>>>,
+   }
+   
+   impl MockNetQueryDispatcher {
+       fn mock_response(&self, query_id: NetQueryId, response: Result<Bytes, QueryError>) {
+           self.responses.lock().insert(query_id, response);
+       }
+       
+       fn was_callback_invoked(&self, query_id: NetQueryId) -> bool {
+           *self.callback_invoked.lock().get(&query_id).unwrap_or(&false)
+       }
+   }
+   ```
+
+2. **Test Callback Execution** (0.5 day)
+   - [ ] Test callback is invoked on query completion
+   - [ ] Test callback receives correct query result
+   - [ ] Test callback updates state correctly
+   - [ ] Test callback error handling
+
+3. **Test Callback State Mutations** (0.5 day)
+   - [ ] Test `AuthQueryCallback` sets `phone_code_hash`
+   - [ ] Test `AuthQueryCallback` transitions to `WaitCode`
+   - [ ] Test `SignInQueryCallback` sets `user_id`
+   - [ ] Test `SignInQueryCallback` transitions to `Ok`
+   - [ ] Test `LogOutQueryCallback` transitions to `Closing`
+
+**Success Criteria**:
+- ✅ Callbacks are testable with mock dispatcher
+- ✅ All callback state mutations tested
+- ✅ Callback error paths tested
+
+---
+
+### R-AM003: TL Response Mocking
+
+**Implementation Plan**:
+
+1. **Create TL Fixtures** (0.5 day)
+   ```rust
+   mod fixtures {
+       use rustgram_types::*;
+       
+       pub fn sent_code_response() -> Bytes {
+           // Serialize valid SentCode response
+       }
+       
+       pub fn authorization_success_response(user_id: i64) -> Bytes {
+           // Serialize Authorization::Success response
+       }
+       
+       pub fn authorization_password_needed_response() -> Bytes {
+           // Serialize Authorization with 2FA flag
+       }
+       
+       pub fn logged_out_response() -> Bytes {
+           // Serialize LoggedOut response
+       }
+       
+       pub fn query_error(code: i32, message: &str) -> Bytes {
+           // Serialize QueryError
+       }
+   }
+   ```
+
+2. **Verify Fixture Validity** (0.5 day)
+   - [ ] Deserialize and verify `sent_code_response()`
+   - [ ] Deserialize and verify `authorization_success_response()`
+   - [ ] Deserialize and verify `authorization_password_needed_response()`
+   - [ ] Deserialize and verify `logged_out_response()`
+
+3. **Test with Fixtures** (0.5 day)
+   - [ ] Test `send_code()` with valid `SentCode` response
+   - [ ] Test `sign_in()` with `Authorization::Success`
+   - [ ] Test `sign_in()` with 2FA required
+   - [ ] Test `log_out()` with `LoggedOut`
+
+**Success Criteria**:
+- ✅ All fixture responses deserialize correctly
+- ✅ Network methods work with fixture data
+- ✅ Malformed responses handled gracefully
+
+---
+
+### R-AM004: State Machine Test Gaps
+
+**Implementation Plan**:
+
+1. **Map All Valid Transitions** (0.5 day)
+   ```mermaid
+   None → WaitPhoneNumber → WaitCode → WaitPassword → Ok → LoggingOut → Closing
+   WaitCode → NetworkError → WaitingRetry → WaitCode
+   WaitPassword → NetworkError → WaitingRetry → WaitPassword
+   ```
+
+2. **Test Valid Transitions** (0.5 day)
+   - [ ] Test `None` → `WaitPhoneNumber` → `WaitCode` → `Ok`
+   - [ ] Test `None` → `WaitPhoneNumber` → `WaitCode` → `WaitPassword` → `Ok`
+   - [ ] Test `Ok` → `LoggingOut` → `Closing`
+   - [ ] Test `WaitCode` → `NetworkError` → `WaitingRetry` → `WaitCode`
+
+3. **Test Invalid Transitions** (0.5 day)
+   - [ ] Test `set_code()` from `None` (should fail)
+   - [ ] Test `log_out()` from `None` (should fail)
+   - [ ] Test `check_password()` from `WaitCode` (should fail)
+
+4. **Test Retry Behavior** (0.5 day)
+   - [ ] Test retry count increments correctly
+   - [ ] Test exponential backoff calculation
+   - [ ] Test max retry limit enforced
+   - [ ] Test `WaitingRetry` transitions back to previous state
+
+**Success Criteria**:
+- ✅ All valid transitions tested
+- ✅ All invalid transitions tested
+- ✅ Retry behavior fully tested
+
+---
+
+### R-AM005: Retry Logic Testing
+
+**Implementation Plan**:
+
+1. **Extract Backoff Calculation** (0.5 day)
+   ```rust
+   #[cfg(test)]
+   fn calculate_retry_delay(retry_count: u32) -> Duration {
+       BASE_RETRY_DELAY * 2u32.pow(retry_count)
+   }
+   
+   #[cfg(test)]
+   mod tests {
+       #[test]
+       fn test_retry_delay_calculation() {
+           assert_eq!(calculate_retry_delay(0), Duration::from_secs(1));
+           assert_eq!(calculate_retry_delay(1), Duration::from_secs(2));
+           assert_eq!(calculate_retry_delay(2), Duration::from_secs(4));
+           assert_eq!(calculate_retry_delay(3), Duration::from_secs(8));
+       }
+   }
+   ```
+
+2. **Test Retry Limits** (0.5 day)
+   - [ ] Test retry at limit (3 attempts)
+   - [ ] Test retry beyond limit (4+ attempts should fail)
+   - [ ] Test retry count increments
+
+3. **Test State Transitions** (0.5 day)
+   - [ ] Test `NetworkError` → `WaitingRetry` transition
+   - [ ] Test `WaitingRetry` → `WaitCode` transition
+   - [ ] Test `WaitingRetry` → `WaitPassword` transition
+
+**Success Criteria**:
+- ✅ Retry delay calculation tested
+- ✅ Retry limits enforced
+- ✅ Retry state transitions tested
+
+---
+
+## Risk Acceptance Criteria
+
+A risk is considered **MITIGATED** when:
+- ✅ Mitigation strategy is implemented
+- ✅ Tests verify the mitigation works
+- ✅ Code review confirms the approach
+- ✅ Coverage report shows adequate coverage
+
+A risk is considered **ACCEPTED** when:
+- ✅ Impact is acceptable (Low or documented)
+- ✅ Probability is acceptable (Low or monitored)
+- ✅ Contingency plan exists
+- ✅ Stakeholder approval obtained
+
+---
+
+## Risk Review Process
+
+1. **Weekly Risk Review**: Assess OPEN risks during standup
+2. **New Risk Identification**: Add new risks as discovered during testing
+3. **Impact Reassessment**: Update impact/probability based on test results
+4. **Mitigation Tracking**: Track completion of test implementation
+5. **Escalation**: Escalate to BLOCKER if risk threatens epic success
+
+---
+
+## Risk Comparison: AuthManager vs DialogManager
+
+| Aspect | DialogManager | AuthManager |
+|--------|---------------|-------------|
+| **Primary Risk** | TL Schema Coverage (R-002) | Test Coverage Gap (R-AM001) |
+| **Callback Risk** | Async bridge complexity (R-001) | Callback test complexity (R-AM002) |
+| **Testing Risk** | Cache coherency (R-004) | State machine gaps (R-AM004) |
+| **Open Risks** | 7 (out of 15) | 5 (out of 5) |
+| **Mitigated Risks** | 8 (out of 15) | 0 (out of 5) |
+| **Blocker Risks** | 0 | 0 |
+
+**Key Difference**: AuthManager risks are focused on testing (all 5 risks are TESTING category), while DialogManager had broader risks across API, SECURITY, PERFORMANCE, and INTEGRATION categories.
+
+---
+
+**Document Status**: ✅ Complete  
+**Total Risks**: 5  
+**Open Risks**: 5  
+**Mitigated Risks**: 0  
+**Blocker Risks**: 0  
+**Ready for Phase 2.5**: Yes

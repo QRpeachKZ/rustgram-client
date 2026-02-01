@@ -1,0 +1,226 @@
+# Risk Register: user_type Module
+# Version: 1.0.0
+# Date: 2026-01-17
+# Epic: rustgram-client-bz7
+
+metadata:
+  module: "user_type"
+  complexity: "simple"
+  estimated_effort: "4-6 hours"
+  risk_level: "LOW"
+  total_risks: 6
+
+risks:
+  # API Risks
+  - id: "R1"
+    type: "UNRESOLVED_API"
+    title: "String field prevents Copy trait"
+    description: |
+      The Bot variant contains a `String` field (inline_query_placeholder), which
+      prevents the UserType enum from deriving Copy. This is inconsistent with
+      similar enums like EmojiGroupType and MessageContentType which are Copy.
+    status: "MITIGATED"
+    probability: "HIGH"
+    impact: "LOW"
+    severity: "LOW"
+    mitigation:
+      - "Remove Copy from derives - it's semantically incorrect for String"
+      - "Document clearly in module docs why UserType is not Copy"
+      - "Consider using &'static str for placeholder if strings are always static"
+      - "Alternative: Box<String> would still prevent Copy, no benefit"
+    owner: "developer"
+    due_date: "2026-01-17"
+    decision: |
+      DECISION: Remove Copy derive. Using String is correct for runtime data.
+      Documentation will explain the design choice.
+
+  - id: "R2"
+    type: "UNRESOLVED_API"
+    title: "from_td_api_name() cannot construct Bot variant"
+    description: |
+      The conversion method from_td_api_name(&str) -> Option<Self> cannot
+      construct the Bot variant because it requires 11 fields. This creates
+      an asymmetric API where 3 variants can be constructed from string, but
+      Bot cannot.
+    status: "MITIGATED"
+    probability: "HIGH"
+    impact: "LOW"
+    severity: "LOW"
+    mitigation:
+      - "Return None for 'userTypeBot' in from_td_api_name()"
+      - "Document clearly that Bot must be constructed directly"
+      - "Provide a builder pattern or convenience constructor if needed (Phase 2+)"
+      - "Alternative: Accept Option<UserType> where None indicates 'need more data'"
+    owner: "developer"
+    due_date: "2026-01-17"
+    decision: |
+      DECISION: from_td_api_name() returns None for 'userTypeBot'.
+      Add TODO comment for potential builder pattern in future.
+
+  - id: "R3"
+    type: "UNRESOLVED_API"
+    title: "Ergonomics of 11-field Bot constructor"
+    description: |
+      Constructing UserType::Bot requires all 11 fields simultaneously:
+      UserType::Bot { can_be_edited, can_join_groups, can_read_all_group_messages,
+      has_main_web_app, has_topics, is_inline, inline_query_placeholder,
+      need_location, can_connect_to_business, can_be_added_to_attachment_menu,
+      active_user_count }
+      This is verbose and error-prone.
+    status: "OPEN"
+    probability: "MEDIUM"
+    impact: "MEDIUM"
+    severity: "LOW"
+    mitigation:
+      - "Accept verbose constructor for MVP (Phase 1)"
+      - "Add builder pattern in Phase 2 if real usage shows pain points"
+      - "Provide UserType::bot_with_defaults() convenience constructor"
+      - "Use struct update syntax for partial modifications: UserType::Bot { ..base, active_user_count: 100 }"
+    owner: "developer"
+    due_date: "2026-01-18"
+    note: "Defer builder pattern until actual usage proves necessity"
+
+  # Dependency Risks
+  - id: "R4"
+    type: "DEPENDENCY"
+    title: "Serde serialization of Bot variant"
+    description: |
+      Serde must correctly serialize/deserialize the Bot variant with all 11 fields.
+      The tagged enum representation must be compatible with TDLib's JSON format.
+    status: "MITIGATED"
+    probability: "LOW"
+    impact: "LOW"
+    severity: "LOW"
+    mitigation:
+      - "Use serde's default enum external tagging"
+      - "Test serialization/deserialization in unit tests"
+      - "Verify JSON output matches TDLib format"
+      - "Use #[serde(rename = \"userTypeBot\")] if needed for TL name mapping"
+    owner: "developer"
+    due_date: "2026-01-17"
+    test_plan: "Add 3 serialization tests to test suite"
+
+  # Implementation Risks
+  - id: "R5"
+    type: "IMPLEMENTATION"
+    title: "Bot field getters for non-Bot variants"
+    description: |
+      The plan specifies convenience methods like can_be_edited(), is_inline(), etc.
+      For Regular/Deleted/Unknown variants, these methods must return sensible defaults.
+      Need to decide: panic!, return default, or return Option<T>.
+    status: "MITIGATED"
+    probability: "MEDIUM"
+    impact: "LOW"
+    severity: "LOW"
+    mitigation:
+      - "Return sensible defaults: false for bool, '' for &str, 0 for i32"
+      - "Document clearly: 'Returns false for non-Bot variants'"
+      - "Alternative: Provide is_bot() guard pattern"
+      - "DO NOT use Option<T> return - too verbose"
+    owner: "developer"
+    due_date: "2026-01-17"
+    decision: |
+      DECISION: Return defaults (false/empty/0). Document behavior.
+      Example: bot.can_join_groups() returns false for UserType::Regular.
+
+  - id: "R6"
+    type: "IMPLEMENTATION"
+    title: "Test coverage for 11 Bot fields"
+    description: |
+      With 11 fields in the Bot variant and 4 variants total, achieving >=35 tests
+      requires careful planning. Need to test:
+      - All 4 variants (4 tests)
+      - All conversion methods (8+ tests)
+      - All 11 Bot field getters (11+ tests)
+      - Display, serialization, equality (8+ tests)
+      Total: 30+ tests, need 5+ more for edge cases
+    status: "MITIGATED"
+    probability: "MEDIUM"
+    impact: "LOW"
+    severity: "LOW"
+    mitigation:
+      - "Create test matrix to ensure all 11 fields covered"
+      - "Add edge case tests: all flags true, all flags false"
+      - "Test serialization with different field combinations"
+      - "Test field getters return correct defaults for non-Bot variants"
+    owner: "developer"
+    due_date: "2026-01-17"
+    test_plan: |
+      Enum construction: 4 tests
+      Default behavior: 3 tests
+      Conversions: 9 tests
+      Convenience methods: 8 tests
+      Display: 4 tests
+      Serialization: 3 tests
+      Equality/hashing: 2 tests
+      Edge cases: 5 tests
+      Total: 38 tests (exceeds 35 target)
+
+summary:
+  total_risks: 6
+  by_severity:
+    CRITICAL: 0
+    HIGH: 0
+    MEDIUM: 0
+    LOW: 6
+  by_status:
+    OPEN: 1
+    MITIGATED: 5
+    BLOCKER: 0
+  by_type:
+    UNRESOLVED_API: 3
+    DEPENDENCY: 1
+    IMPLEMENTATION: 2
+    QUALITY: 0
+    SCHEDULE: 0
+
+risk_matrix:
+  HIGH_MITIGATED: 0
+  HIGH_OPEN: 0
+  MEDIUM_MITIGATED: 0
+  MEDIUM_OPEN: 0
+  LOW_MITIGATED: 5
+  LOW_OPEN: 1
+
+next_actions:
+  - priority: "HIGH"
+    action: "Finalize R3 decision - accept verbose constructor for MVP"
+    assignee: "developer"
+    due: "2026-01-17"
+    
+  - priority: "MEDIUM"
+    action: "Implement R6 test plan - ensure >=35 tests with good coverage"
+    assignee: "developer"
+    due: "2026-01-17"
+    
+  - priority: "LOW"
+    action: "Document R1 decision - why UserType is not Copy"
+    assignee: "developer"
+    due: "2026-01-17"
+
+decisions:
+  - id: "D1"
+    title: "UserType does not derive Copy"
+    rationale: "String field in Bot variant prevents Copy. This is semantically correct."
+    impact: "Users cannot copy UserType values, must clone() instead"
+    alternatives_considered:
+      - "Use &'static str instead of String (rejected - not all placeholders are static)"
+      - "Use Box<String> (rejected - still not Copy, adds overhead)"
+      - "Remove inline_query_placeholder field (rejected - breaks TL schema compliance)"
+
+  - id: "D2"
+    title: "from_td_api_name returns None for Bot"
+    rationale: "Cannot construct Bot variant without 11 fields of data"
+    impact: "Asymmetric API, but prevents invalid partial construction"
+    alternatives_considered:
+      - "Return Bot with all default fields (rejected - misleading, defaults may be invalid)"
+      - "Make from_td_api_name return Result (rejected - adds complexity for little benefit)"
+
+  - id: "D3"
+    title: "Bot field getters return defaults for non-Bot variants"
+    rationale: "Ergonomic - callers don't need to check variant before accessing fields"
+    impact: "May hide errors if caller expects Bot-specific data"
+    alternatives_considered:
+      - "Return Option<T> from getters (rejected - too verbose)"
+      - "panic! on non-Bot variants (rejected - not ergonomic)"
+      - "Provide guard methods only (rejected - incomplete API)"

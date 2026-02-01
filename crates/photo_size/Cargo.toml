@@ -1,0 +1,23 @@
+[package]
+name = "rustgram-photo-size"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_photo_size"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json = { workspace = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-temp-password-state"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Temporary password state management for Telegram 2FA"
+repository = "https://github.com/client/rustgram-client"
+keywords = ["telegram", "2fa", "password", "authentication"]
+categories = ["authentication", "cryptography"]
+
+[dependencies]
+# Workspace
+tokio = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+# Internal
+rustgram-logevent = { path = "../logevent" }
+
+[dev-dependencies]
+proptest = { workspace = true }
+
+[features]
+default = []
+
+[package.metadata.docs.rs]
+all-features = true

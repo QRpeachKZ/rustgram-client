@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-sticker-mask-position"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Sticker mask position for Telegram MTProto client"
+keywords.workspace = true
+categories.workspace = true
+
+[dependencies]
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+serde_json.workspace = true
+
+[features]
+default = []
+serde = ["dep:serde"]

@@ -1,0 +1,41 @@
+[package]
+name = "rustgram-messages-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_messages_manager"
+path = "src/lib.rs"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-net = { path = "../net" }
+rustgram-dialog-manager = { path = "../dialog_manager" }
+rustgram-message-types = { path = "../rustgram_message_types" }
+rustgram-message-db = { path = "../message_db" }
+rustgram-formatted-text = { path = "../formatted_text" }
+rustgram-message-content-type = { path = "../message_content_type" }
+rustgram-message-content = { path = "../message_content" }
+rustgram-message-input-reply-to = { path = "../message_input_reply_to" }
+rustgram-message-forward-info = { path = "../message_forward_info" }
+rustgram-message-full-id = { path = "../message_full_id" }
+
+serde = { workspace = true }
+serde_bytes = "0.11"
+bincode = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true }
+bytes = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+serde_json = { workspace = true }
+tracing = { workspace = true }
+dashmap = "5.5"
+
+[dev-dependencies]
+tokio-test = "0.4"
+serde_json = { workspace = true }

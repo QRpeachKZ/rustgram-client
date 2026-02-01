@@ -1,0 +1,34 @@
+[package]
+name = "rustgram_dialog_action_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Dialog action (typing indicators) management for Telegram MTProto client"
+keywords = ["telegram", "chat", "typing", "action", "indicator"]
+categories = ["network-programming", "state-management"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_dialog_action_manager"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

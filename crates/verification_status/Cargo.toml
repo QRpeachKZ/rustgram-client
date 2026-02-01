@@ -1,0 +1,18 @@
+[package]
+name = "rustgram-verification-status"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+bincode = "1.3"

@@ -1,0 +1,436 @@
+# Phase 1B: Database Layer (Persistence) Execution Plan
+# Epic: rustgram-client-a7u
+# Issue: rustgram-client-a7u.1
+
+plan:
+  title: "Database Layer (Persistence) - Phase 1B"
+  description: "Implement core SQLite databases for messages, users, chats, and files with migration system and corruption recovery"
+
+  # Phase breakdown
+  phases:
+    - id: 1
+      name: "Schema Design"
+      duration_hours: 40
+      status: "pending"
+      description: "Design database schemas aligned with TDLib structure"
+
+    - id: 2
+      name: "SQLite Integration"
+      duration_hours: 40
+      status: "pending"
+      description: "Implement database connections and query interfaces"
+      depends_on: [1]
+
+    - id: 3
+      name: "Migration System"
+      duration_hours: 20
+      status: "pending"
+      description: "Extend existing migration system for new databases"
+      depends_on: [1]
+
+    - id: 4
+      name: "Manager Integration"
+      duration_hours: 40
+      status: "pending"
+      description: "Wire up database interfaces to core managers"
+      depends_on: [2]
+
+    - id: 5
+      name: "Testing & Recovery"
+      duration_hours: 60
+      status: "pending"
+      description: "Implement tests and corruption recovery"
+      depends_on: [4]
+
+  # Batches for execution
+  batches:
+    - id: B1
+      name: "Message Database"
+      priority: "P0"
+      effort_hours: 48
+      parallel_group: 1
+      description: "Implement message storage with schema, migrations, and sync interface"
+
+      modules:
+        - path: "crates/storage/src/message/"
+          files:
+            - "schema.rs"      # Message database migrations
+            - "sync.rs"        # Synchronous message database interface
+            - "async.rs"       # Async wrapper (if needed)
+            - "models.rs"      # Message database models
+
+      tasks:
+        - id: "B1-T1"
+          name: "Design message schema"
+          description: "Create message table schema aligned with TDLib MessageDb"
+          effort_hours: 8
+          agent: "analyst"
+          acceptance:
+            - "Schema includes: dialog_id, message_id, sender_id, date, ttl_expires_at, content_blob"
+            - "Indexes on: (dialog_id, message_id), (dialog_id, date DESC)"
+            - "Migration V1: CREATE TABLE messages"
+            - "Document maps to TDLib MessageDb.h lines 29-46"
+
+        - id: "B1-T2"
+          name: "Implement MessageDbSync"
+          description: "Create synchronous message database interface"
+          effort_hours: 16
+          agent: "dev-rust"
+          depends_on: ["B1-T1"]
+          acceptance:
+            - "add_message() with MessageFullId, content blob"
+            - "get_message() returns MessageDbDialogMessage"
+            - "delete_message() removes by MessageFullId"
+            - "get_dialog_messages() with pagination"
+            - "No unwrap(), proper Result<> handling"
+            - "Doc comments on all public methods"
+
+        - id: "B1-T3"
+          name: "Add message migrations"
+          description: "Create migrations for message database"
+          effort_hours: 8
+          agent: "dev-rust"
+          depends_on: ["B1-T1"]
+          acceptance:
+            - "Migration V1: Initial messages table"
+            - "Migration V2: Add TTL expires_at column"
+            - "Migration V3: Add text column for search"
+            - "Migration V4: Add scheduled messages table"
+            - "Tests for each migration"
+
+        - id: "B1-T4"
+          name: "Wire to MessagesManager"
+          description: "Integrate MessageDb with MessagesManager"
+          effort_hours: 8
+          agent: "dev-rust"
+          depends_on: ["B1-T2", "B1-T3"]
+          acceptance:
+            - "MessagesManager has Option<MessageDbSync>"
+            - "Persist messages on receive"
+            - "Load messages on get_history"
+            - "Delete messages on delete"
+            - "Tests with in-memory database"
+
+        - id: "B1-T5"
+          name: "Add tests"
+          description: "Add unit and integration tests for message database"
+          effort_hours: 8
+          agent: "tester"
+          depends_on: ["B1-T4"]
+          acceptance:
+            - "Unit tests for all public methods (30+ tests)"
+            - "Integration test with MessagesManager"
+            - "Migration rollback test"
+            - "Corruption recovery test"
+            - "Performance test: <10ms per query"
+
+    - id: B2
+      name: "User Database"
+      priority: "P0"
+      effort_hours: 32
+      parallel_group: 1  # Can run in parallel with B1
+      description: "Implement user profile storage"
+
+      modules:
+        - path: "crates/storage/src/user/"
+          files:
+            - "schema.rs"  # User database migrations
+            - "sync.rs"    # Synchronous user database interface
+
+      tasks:
+        - id: "B2-T1"
+          name: "Design user schema"
+          description: "Create user table schema aligned with TDLib"
+          effort_hours: 6
+          agent: "analyst"
+          acceptance:
+            - "Schema includes: user_id, data_blob, profile_photo_blob, bio"
+            - "Index on user_id (PRIMARY KEY)"
+            - "Migration V1: CREATE TABLE users"
+
+        - id: "B2-T2"
+          name: "Implement UserDbSync"
+          description: "Create synchronous user database interface"
+          effort_hours: 12
+          agent: "dev-rust"
+          depends_on: ["B2-T1"]
+          acceptance:
+            - "add_user() with UserId and blob"
+            - "get_user() returns user blob"
+            - "get_users() for batch queries"
+            - "No unwrap(), proper Result<> handling"
+
+        - id: "B2-T3"
+          name: "Add user migrations"
+          description: "Create migrations for user database"
+          effort_hours: 6
+          agent: "dev-rust"
+          depends_on: ["B2-T1"]
+          acceptance:
+            - "Migration V1: Initial users table"
+            - "Migration V2: Add full_user_blob column"
+            - "Tests for each migration"
+
+        - id: "B2-T4"
+          name: "Wire to UserManager"
+          description: "Integrate UserDb with UserManager"
+          effort_hours: 8
+          agent: "dev-rust"
+          depends_on: ["B2-T2", "B2-T3"]
+          acceptance:
+            - "UserManager has Option<UserDbSync>"
+            - "Persist users on get_user success"
+            - "Load cached users before network"
+            - "Tests with in-memory database"
+
+    - id: B3
+      name: "Chat Database"
+      priority: "P1"
+      effort_hours: 32
+      parallel_group: 1  # Can run in parallel with B1, B2
+      description: "Implement chat/group metadata storage"
+
+      modules:
+        - path: "crates/storage/src/chat/"
+          files:
+            - "schema.rs"  # Chat database migrations
+            - "sync.rs"    # Synchronous chat database interface
+
+      tasks:
+        - id: "B3-T1"
+          name: "Design chat schema"
+          description: "Create chat table schema aligned with TDLib"
+          effort_hours: 6
+          agent: "analyst"
+          acceptance:
+            - "Schema includes: chat_id, data_blob, photo_blob, permissions"
+            - "Index on chat_id (PRIMARY KEY)"
+            - "Migration V1: CREATE TABLE chats"
+
+        - id: "B3-T2"
+          name: "Implement ChatDbSync"
+          description: "Create synchronous chat database interface"
+          effort_hours: 12
+          agent: "dev-rust"
+          depends_on: ["B3-T1"]
+          acceptance:
+            - "add_chat() with ChatId and blob"
+            - "get_chat() returns chat blob"
+            - "get_chats() for batch queries"
+            - "No unwrap(), proper Result<> handling"
+
+        - id: "B3-T3"
+          name: "Add chat migrations"
+          description: "Create migrations for chat database"
+          effort_hours: 6
+          agent: "dev-rust"
+          depends_on: ["B3-T1"]
+          acceptance:
+            - "Migration V1: Initial chats table"
+            - "Migration V2: Add full_chat_blob column"
+            - "Tests for each migration"
+
+        - id: "B3-T4"
+          name: "Wire to ChatManager"
+          description: "Integrate ChatDb with ChatManager"
+          effort_hours: 8
+          agent: "dev-rust"
+          depends_on: ["B3-T2", "B3-T3"]
+          acceptance:
+            - "ChatManager has Option<ChatDbSync>"
+            - "Persist chats on get_chat success"
+            - "Load cached chats before network"
+            - "Tests with in-memory database"
+
+    - id: B4
+      name: "File Database"
+      priority: "P1"
+      effort_hours: 32
+      parallel_group: 2  # After B1-B3 due to shared patterns
+      description: "Implement file metadata storage"
+
+      modules:
+        - path: "crates/storage/src/file/"
+          files:
+            - "schema.rs"  # File database migrations
+            - "sync.rs"    # Synchronous file database interface
+            - "id.rs"      # FileDbId type
+
+      tasks:
+        - id: "B4-T1"
+          name: "Design file schema"
+          description: "Create file table schema aligned with TDLib FileDb.h"
+          effort_hours: 6
+          agent: "analyst"
+          acceptance:
+            - "Schema includes: file_db_id (PK), file_data_blob, remote_location, local_location"
+            - "Index on file_db_id"
+            - "Migration V1: CREATE TABLE files"
+
+        - id: "B4-T2"
+          name: "Implement FileDbSync"
+          description: "Create synchronous file database interface"
+          effort_hours: 12
+          agent: "dev-rust"
+          depends_on: ["B4-T1"]
+          acceptance:
+            - "merge_file_data() as per TDLib FileDbInterface"
+            - "get_file_data() by location key"
+            - "clear_file_data() for cleanup"
+            - "get_next_file_db_id() for ID generation"
+
+        - id: "B4-T3"
+          name: "Add file migrations"
+          description: "Create migrations for file database"
+          effort_hours: 6
+          agent: "dev-rust"
+          depends_on: ["B4-T1"]
+          acceptance:
+            - "Migration V1: Initial files table"
+            - "Tests for migration"
+
+        - id: "B4-T4"
+          name: "Wire to DownloadManager"
+          description: "Integrate FileDb with DownloadManager"
+          effort_hours: 8
+          agent: "dev-rust"
+          depends_on: ["B4-T2", "B4-T3"]
+          acceptance:
+            - "DownloadManager has Option<FileDbSync>"
+            - "Cache file metadata in database"
+            - "Tests with in-memory database"
+
+    - id: B5
+      name: "TdDb Coordinator & Settings"
+      priority: "P0"
+      effort_hours: 48
+      parallel_group: 2  # After B1-B4
+      description: "Implement TdDb coordinator and key-value settings storage"
+
+      modules:
+        - path: "crates/td_db/src/"
+          files:
+            - "lib.rs"        # TdDb main interface
+            - "coordinator.rs" # Database coordinator
+            - "kv_store.rs"   # Key-value settings storage
+
+      tasks:
+        - id: "B5-T1"
+          name: "Implement TdDb coordinator"
+          description: "Create TdDb that manages all databases"
+          effort_hours: 16
+          agent: "dev-rust"
+          acceptance:
+            - "TdDb::open() initializes all databases"
+            - "TdDb::close() flushes and closes"
+            - "TdDb::get_message_db()"
+            - "TdDb::get_user_db()"
+            - "TdDb::get_chat_db()"
+            - "TdDb::get_file_db()"
+            - "TdDb::destroy() for cleanup"
+
+        - id: "B5-T2"
+          name: "Implement key-value settings"
+          description: "Create SQLite key-value storage for settings"
+          effort_hours: 12
+          agent: "dev-rust"
+          acceptance:
+            - "get/set/delete operations"
+            - "Support for: notification settings, privacy settings, theme settings"
+            - "BLOB value storage"
+
+        - id: "B5-T3"
+          name: "Corruption recovery"
+          description: "Implement database corruption detection and recovery"
+          effort_hours: 12
+          agent: "dev-rust"
+          acceptance:
+            - "Detect corruption on database open"
+            - "Attempt WAL checkpoint for WAL corruption"
+            - "Rebuild database for severe corruption"
+            - "Log recovered/lost data"
+            - "Return StorageError::DatabaseCorrupted"
+
+        - id: "B5-T4"
+          name: "Add corruption tests"
+          description: "Create tests for corruption recovery"
+          effort_hours: 8
+          agent: "tester"
+          depends_on: ["B5-T3"]
+          acceptance:
+            - "Test with corrupted WAL file"
+            - "Test with corrupted header"
+            - "Test database rebuild"
+            - "Test recovery logging"
+
+  # Dependencies
+  dependencies:
+    - batch: "B1, B2, B3"
+      description: "Can run in parallel - separate databases, no shared code"
+      type: "parallel"
+
+    - batch: "B4"
+      depends_on: "B1, B2, B3"
+      description: "Wait for one of B1-B3 to complete to establish patterns"
+      type: "sequential"
+
+    - batch: "B5"
+      depends_on: "B1, B2, B3, B4"
+      description: "Coordinator requires all databases to exist"
+      type: "sequential"
+
+    - external:
+      - crate: "message_content"
+        description: "Message serialization for BLOB storage"
+      - crate: "user_manager"
+        description: "User type definitions for user_db"
+      - crate: "chat_manager"
+        description: "Chat type definitions for chat_db"
+      - crate: "dialog_manager"
+        description: "Already has database, reference for patterns"
+
+  # Module inventory
+  modules_to_create:
+    - "crates/storage/src/message/"  # New
+    - "crates/storage/src/user/"     # New
+    - "crates/storage/src/chat/"     # New
+    - "crates/storage/src/file/"     # New
+
+  modules_to_modify:
+    - "crates/storage/src/lib.rs"           # Export new databases
+    - "crates/storage/src/migrations.rs"    # Reuse migration system
+    - "crates/storage/src/connection.rs"    # May need pooling
+    - "crates/td_db/src/lib.rs"             # Implement TdDb
+    - "crates/message_db/src/lib.rs"        # Replace stub with real impl
+    - "crates/messages_manager/src/lib.rs"  # Add MessageDb dependency
+    - "crates/user_manager/src/lib.rs"      # Add UserDb dependency
+    - "crates/chat_manager/src/lib.rs"      # Add ChatDb dependency
+    - "crates/download_manager/src/lib.rs"  # Add FileDb dependency
+
+  # Estimated effort
+  effort:
+    total_hours: 192
+    breakdown:
+      schema_design: 26    # B1-T1, B2-T1, B3-T1, B4-T1
+      implementation: 116  # B1-T2-4, B2-T2-4, B3-T2-4, B4-T2-4
+      migrations: 26       # B1-T3, B2-T3, B3-T3, B4-T3
+      coordinator: 28      # B5-T1-4
+      testing: 60          # Per-batch tests
+
+  timeline:
+    - phase: "Schema Design"
+      duration: "1 week"
+      deliverables: ["Schema docs for 4 databases"]
+
+    - phase: "Implementation"
+      duration: "3-4 weeks"
+      deliverables: ["B1-B4 complete"]
+
+    - phase: "Coordinator & Testing"
+      duration: "2 weeks"
+      deliverables: ["B5 complete, all tests passing"]
+
+    total_duration: "6-7 weeks"
+
+  # Success criteria reference
+  success_criteria: "reference/success-criteria-database-layer.yaml"

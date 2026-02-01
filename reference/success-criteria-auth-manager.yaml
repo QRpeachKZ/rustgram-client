@@ -1,0 +1,148 @@
+# AuthManager Network Integration - Success Criteria
+
+## Epic
+**ID**: rustgram-client-ff7.2
+**Module**: auth_manager
+**Priority**: P1
+**Baseline**: 7% coverage (as of 2026-01-17)
+
+---
+
+## Quality Metrics
+
+### Test Coverage (CRITICAL)
+| Metric | Current | Target | Status |
+|--------|---------|--------|--------|
+| Line Coverage | 7% | 70% | ❌ NOT_MET |
+| Branch Coverage | ~5% | 60% | ❌ NOT_MET |
+| Function Coverage | ~10% | 80% | ❌ NOT_MET |
+
+**Rationale**: P1 module requires 70% coverage per project standards (CLAUDE.md).
+
+---
+
+### Test Count (CRITICAL)
+| Type | Current | Target | Status |
+|------|---------|--------|--------|
+| Unit Tests | ~2 | 15+ | ❌ NOT_MET |
+| Integration Tests | 0 | 3+ | ❌ NOT_MET |
+| Property Tests | 0 | Optional | ⚪ OPTIONAL |
+
+**Rationale**: Current tests only cover basic compilation. Need comprehensive tests for:
+- `send_code()` success/error paths
+- `sign_in()` success/error paths (including 2FA)
+- `send_log_out()` success/error paths
+- State transitions (WaitCode → Ready, WaitCode → WaitPassword → Ready)
+- Error recovery scenarios
+
+---
+
+### Code Quality (BLOCKING)
+| Metric | Target | Status |
+|--------|--------|--------|
+| Clippy Warnings | 0 | ⚠️ VERIFY |
+| Production unwrap() | 0 | ⚠️ VERIFY |
+| Cyclomatic Complexity | ≤ 15 | ⚠️ VERIFY |
+| Unsafe Blocks | 0 (unless justified) | ⚠️ VERIFY |
+
+**Rationale**: rust-pro standards mandate no unwrap() in production code. Clippy must be clean.
+
+---
+
+### Documentation (REQUIRED)
+| Component | Target | Status |
+|-----------|--------|--------|
+| Public API Docs | 100% | ⚠️ VERIFY |
+| Module Documentation | Complete | ⚠️ VERIFY |
+| State Machine Docs | Complete | ⚠️ VERIFY |
+
+**Rationale**: AuthManager is a critical security component. All public APIs must be documented.
+
+---
+
+## Functional Requirements
+
+### MUST HAVE (P0)
+- [ ] `send_code()` works with valid phone number
+- [ ] `send_code()` handles invalid phone numbers gracefully
+- [ ] `sign_in()` works with valid code
+- [ ] `sign_in()` handles wrong/expired codes
+- [ ] `sign_in()` transitions to WaitPassword for 2FA accounts
+- [ ] `send_log_out()` successfully logs out
+- [ ] State machine transitions correctly
+- [ ] Network errors are propagated properly
+
+### SHOULD HAVE (P1)
+- [ ] Rate limiting for auth requests
+- [ ] Retry logic for transient network failures
+- [ ] Timeout handling
+- [ ] Phone number validation before sending
+
+### NICE TO HAVE (P2)
+- [ ] State persistence (if Q2 = persist)
+- [ ] Crash recovery (if Q3 = resume)
+- [ ] Metrics/telemetry for auth operations
+
+---
+
+## Performance Requirements
+
+| Metric | Target | Measurement |
+|--------|--------|-------------|
+| send_code latency | < 5s p95 | Benchmark |
+| sign_in latency | < 3s p95 | Benchmark |
+| log_out latency | < 2s p95 | Benchmark |
+| Memory overhead | < 1MB | Valgrind/heaptrack |
+
+---
+
+## Security Requirements
+
+| Requirement | Status |
+|-------------|--------|
+| No hardcoded credentials | ⚠️ VERIFY |
+| API hash/phone code hash not logged | ⚠️ VERIFY |
+| 2FA tokens handled securely | ⚠️ VERIFY |
+| No sensitive data in error messages | ⚠️ VERIFY |
+
+---
+
+## Acceptance Criteria
+
+### Gate 5: Review Gate Checklist
+
+**BLOCKING**: All items must pass
+
+- [ ] **Coverage**: Line coverage ≥ 70%
+- [ ] **Tests**: ≥ 15 unit tests + ≥ 3 integration tests
+- [ ] **Clippy**: 0 warnings
+- [ ] **Unsafe**: 0 unwrap() in production code paths
+- [ ] **Complexity**: Max cyclomatic complexity ≤ 15
+- [ ] **Docs**: 100% public API documentation
+- [ ] **Functional**: All MUST HAVE requirements met
+- [ ] **Security**: No sensitive data leakage
+
+---
+
+## Verdict Matrix
+
+| Metric | Pass Range | Fail |
+|--------|------------|------|
+| Coverage | ≥ 70% | < 70% |
+| Unit Tests | ≥ 15 | < 15 |
+| Integration Tests | ≥ 3 | < 3 |
+| Clippy | 0 | > 0 |
+| unwrap() | 0 | > 0 |
+| Complexity | ≤ 15 | > 15 |
+| API Docs | 100% | < 100% |
+
+**Overall Verdict**: APPROVED if all metrics in Pass Range
+
+---
+
+## Notes
+
+1. **Baseline**: Current auth_manager has 7% coverage (from test-coverage-audit.md)
+2. **Reference**: DialogManager achieved 60%+ coverage after network integration
+3. **Tools**: Use `cargo llvm-cov -p auth_manager --html` for coverage
+4. **Timeline**: 3-4 days total (as estimated in epic)

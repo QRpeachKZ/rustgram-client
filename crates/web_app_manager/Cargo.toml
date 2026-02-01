@@ -1,0 +1,28 @@
+# Copyright (c) 2024 rustgram-client contributors
+#
+# Licensed under MIT OR Apache-2.0
+
+[package]
+name = "rustgram-web-app-manager"
+version = "0.1.0"
+edition = "2021"
+authors = ["rustgram-client contributors"]
+license = "MIT OR Apache-2.0"
+description = "Web app manager for Telegram client"
+repository = "https://github.com/rustgram/rustgram-client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+rustgram-dialog-id = { path = "../dialog-id" }
+rustgram-user-id = { path = "../user-id" }
+rustgram-web-app = { path = "../web-app" }
+serde = { version = "1.0", features = ["derive"], optional = true }
+tokio = { version = "1.40", features = ["sync"], optional = true }
+
+[features]
+default = ["tokio", "serde"]
+async = ["tokio"]
+serde = ["dep:serde"]
+
+[dev-dependencies]
+tokio = { version = "1.40", features = ["rt", "macros", "sync"] }

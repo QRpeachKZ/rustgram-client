@@ -1,0 +1,21 @@
+[package]
+name = "rustgram-chain-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Placeholder crate for Telegram MTProto client"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[lib]
+name = "rustgram_chain_id"
+path = "src/lib.rs"

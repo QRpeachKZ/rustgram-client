@@ -1,0 +1,24 @@
+[package]
+name = "rustgram-active-story-state"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Active story state tracking for Telegram MTProto client"
+keywords = ["telegram", "mtproto", "story", "state"]
+categories = ["data-structures", "state-management"]
+
+[dependencies]
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_active_story_state"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []

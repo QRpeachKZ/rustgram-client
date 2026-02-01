@@ -1,0 +1,36 @@
+[package]
+name = "rustgram-account-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Account session and authorization management for Telegram client"
+
+[dependencies]
+# Type system
+rustgram-types = { path = "../types" }
+rustgram-age-verification-parameters = { path = "../age_verification_parameters" }
+
+# Serialization
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+
+# Async runtime
+tokio = { workspace = true }
+
+# Concurrent collections
+dashmap = "6.1"
+
+# Error handling
+thiserror = { workspace = true }
+
+# Logging
+tracing = { workspace = true }
+
+[dev-dependencies]
+# Testing
+rstest = { workspace = true }
+proptest = { workspace = true }

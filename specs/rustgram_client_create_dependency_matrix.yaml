@@ -1,0 +1,225 @@
+# Dependency Matrix: RustgramClient::create() Implementation
+## Task: rustgram-client-ufz.2
+
+```yaml
+matrix:
+  # Direct Dependencies (what create() needs to call)
+  direct:
+    - module: "client_actor::ClientActor"
+      relationship: "creates"
+      version: "current"
+      risk: "low"
+      notes: "Well-established API with new() and new_with_defaults()"
+      
+    - module: "client_actor::ClientActorOptions"
+      relationship: "configures"
+      version: "current"
+      risk: "low"
+      notes: "Builder pattern available, has with_default_dc_id()"
+      
+    - module: "client::ClientRegistry"
+      relationship: "uses"
+      version: "current"
+      risk: "low"
+      notes: "Complete implementation with register/unregister/get"
+      
+    - module: "client::ClientId"
+      relationship: "returns"
+      version: "current"
+      risk: "none"
+      notes: "Simple newtype wrapper, fully implemented"
+      
+    - module: "client::ClientConfig"
+      relationship: "accepts"
+      version: "current"
+      risk: "none"
+      notes: "TDLib-compatible config, needs pub visibility"
+      
+    - module: "error::AdapterError"
+      relationship: "raises"
+      version: "current"
+      risk: "none"
+      notes: "All required variants exist"
+
+  # Indirect Dependencies (what dependencies depend on)
+  indirect:
+    - module: "net::NetQueryDispatcher"
+      relationship: "used_by ClientActor"
+      risk: "medium"
+      notes: "ClientActor::new() creates NetQueryDispatcher"
+      impact: "If NetQueryDispatcher::new() fails, create() fails"
+      
+    - module: "tokio::sync::RwLock"
+      relationship: "used_by ClientRegistry"
+      risk: "low"
+      notes: "ClientRegistry uses RwLock for HashMap access"
+      
+    - module: "std::sync::OnceLock"
+      relationship: "used_by global_registry"
+      risk: "none"
+      notes: "Std lib primitive, stable since Rust 1.70"
+
+  # Affected Modules (what will be modified)
+  affected:
+    - path: "crates/paper_plane_adapter/src/lib.rs"
+      changes:
+        - "Add GLOBAL_REGISTRY static"
+        - "Add global_registry() function"
+        - "Add create() method"
+        - "Add destroy() method"
+        - "Re-export client::ClientConfig"
+        - "Rename ClientConfig to InternalClientConfig"
+      lines_added: "~80"
+      lines_modified: "~10"
+      test_changes: "Add 8+ unit tests, 2+ integration tests"
+      
+    - path: "crates/paper_plane_adapter/src/client.rs"
+      changes:
+        - "Ensure ClientConfig is pub"
+        - "Ensure ClientId is pub"
+      lines_added: "0"
+      lines_modified: "2"
+      test_changes: "None (tests already exist)"
+
+  # Transitive Dependencies (dependencies of dependencies)
+  transitive:
+    - module: "rustgram_net"
+      reason: "ClientActor uses NetQueryDispatcher"
+      risk: "low"
+      notes: "Stable crate, well-tested"
+      
+    - module: "rustgram_types"
+      reason: "ClientActor uses TlHelper"
+      risk: "low"
+      notes: "Core types crate"
+
+  # Risk Assessment by Dependency
+  risk_assessment:
+    high_risk: []
+    
+    medium_risk:
+      - module: "client_actor::ClientActor"
+        risk: "Medium - ClientActor::new() could panic if NetQueryDispatcher fails"
+        mitigation: "ClientActor should return Result, not panic"
+        action: "Add try_new() or ensure new() cannot fail"
+        
+      - module: "tokio runtime"
+        risk: "Medium - create() is async, requires runtime"
+        mitigation: "Document async requirement, users must have tokio runtime"
+        action: "Add docs explaining runtime requirement"
+        
+    low_risk:
+      - module: "client::ClientRegistry"
+        risk: "Low - Well-tested, uses safe Rust"
+        
+      - module: "std::sync::OnceLock"
+        risk: "None - Std lib primitive"
+        
+      - module: "error::AdapterError"
+        risk: "None - All variants already defined"
+
+# Dependency Graph (Mermaid)
+dependency_graph: |
+  ```mermaid
+  graph TD
+    A[RustgramClient::create] --> B[ClientActor::new]
+    A --> C[ClientRegistry::register]
+    A --> D[ClientConfig]
+    
+    B --> E[ClientActorOptions]
+    B --> F[NetQueryDispatcher]
+    
+    C --> G[Arc<RwLock<HashMap>>]
+    C --> H[AtomicI32]
+    
+    D --> I[api_id: i32]
+    D --> J[api_hash: String]
+    D --> K[database_path: String]
+    D --> L[files_directory: String]
+    D --> M[use_test_dc: bool]
+    D --> N[default_dc_id: i32]
+    
+    F --> O[rustgram_net]
+    
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bbf,stroke:#333,stroke-width:2px
+  ```
+
+# Module Ownership
+ownership:
+  crate_owner: "paper_plane_adapter"
+  module_owners:
+    lib_rs: "developer"
+    client_rs: "developer"
+    
+  approval_required:
+    - "client_actor crate owner" # For potential ClientActor API changes
+    - "net crate owner" # If NetQueryDispatcher changes needed
+
+# Integration Points
+integration_points:
+  paper_plane_gui:
+    type: "consumer"
+    interaction: |
+      Paper plane will call:
+      1. RustgramClient::create(config) - on new account setup
+      2. RustgramClient::send(json, client_id) - for each TDLib method
+      3. RustgramClient::receive(timeout) - to get updates
+      4. RustgramClient::destroy(client_id) - on logout/remove
+      
+    expectations:
+      - "create() returns valid ClientId immediately"
+      - "ClientId works with subsequent send/receive calls"
+      - "destroy() properly cleans up resources"
+      
+  tdlib_compatibility:
+    type: "standard"
+    reference: "TDLib td_create_client_id()"
+    requirements:
+      - "ClientId must be i32 compatible"
+      - "Multiple clients supported simultaneously"
+      - "Thread-safe create/destroy from any thread"
+
+# Build Impact
+build_impact:
+  compilation_time: "+5-10 seconds" # Minimal - mostly new code
+  binary_size: "+2-5 KB" # OnceLock static, small addition
+  runtime_overhead: "Negligible" # OnceLock is zero-cost after init
+  
+  dependencies_added: []
+  dependencies_modified: []
+  dependencies_removed: []
+
+# Test Dependencies
+test_dependencies:
+  existing:
+    - "tokio::test" # For async tests
+    - "client_actor::ClientActor" # For mock actors
+    
+  needed:
+    - "None - all test infrastructure exists"
+
+# Documentation Dependencies
+documentation_dependencies:
+  internal_docs:
+    - "ClientActor" # For understanding actor lifecycle
+    - "ClientRegistry" # For understanding registry behavior
+    
+  external_docs:
+    - "TDLib API reference" # For td_create_client_id() semantics
+    - "paper-plane client_manager.rs" # For usage patterns
+
+# Migration Impact (if existing users)
+migration_impact:
+  existing_api:
+    - "RustgramClient::new() -> Arc<Self>"
+    - "RustgramClient::with_config(ClientConfig) -> Arc<Self>"
+    
+  migration_path:
+    - "Keep existing methods for internal use"
+    - "Deprecate for external users with #[deprecated] note"
+    - "Document migration to create() in deprecation message"
+    
+  breaking_changes: true
+  migration_effort: "low" # Simple function call change

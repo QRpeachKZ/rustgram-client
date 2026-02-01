@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-message-quote"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lib]
+name = "rustgram_message_quote"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { workspace = true }
+thiserror = { workspace = true }
+rustgram-formatted-text = { path = "../formatted-text" }
+
+[dev-dependencies]
+serde_json = { workspace = true }

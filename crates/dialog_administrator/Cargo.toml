@@ -1,0 +1,39 @@
+[package]
+name = "rustgram-dialog-administrator"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Dialog administrator types for Telegram MTProto client"
+
+[dependencies]
+# Type definitions
+rustgram-types = { path = "../types" }
+
+# Logging
+tracing = { workspace = true }
+
+# Serialization (optional)
+serde = { version = "1.0", features = ["derive"], optional = true }
+
+# Property-based testing (optional, dev-only)
+proptest = { version = "1.4", optional = true }
+
+[dev-dependencies]
+serde_json = "1.0"
+bincode = "1.3"
+
+[features]
+default = []
+serde = ["dep:serde"]
+proptest = ["dep:proptest"]
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

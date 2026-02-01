@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-call-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-call-id = { path = "../call-id" }
+rustgram-call-discard-reason = { path = "../call_discard-reason" }
+rustgram-types = { path = "../types" }
+thiserror.workspace = true
+serde = { workspace = true, features = ["derive"] }
+tokio = { workspace = true }
+hex.workspace = true
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["test-util"] }

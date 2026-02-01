@@ -1,0 +1,923 @@
+# AuthManager Network Integration Specification
+# Task ID: rustgram-client-ff7.2
+# Version: 1.0
+# Last Updated: 2026-01-19
+
+spec:
+  name: "AuthManager Network Integration"
+  task_id: "rustgram-client-ff7.2"
+  complexity: "state_machine_with_network"
+  language: "rust"
+  estimated_duration: "4-5 days"
+
+# =============================================================================
+# MODULE STRUCTURE
+# =============================================================================
+
+module_structure:
+  crate: "auth_manager"
+  path: "crates/auth_manager/"
+  
+  files:
+    # Existing files (to be modified)
+    - path: "src/lib.rs"
+      changes: "Add NetQueryDispatcher integration, network methods, error states"
+      
+    - path: "src/state.rs"
+      changes: "Add WaitingRetry, NetworkError states"
+      
+    # New files to create
+    - path: "src/network.rs"
+      purpose: "Network request/response handling"
+      types:
+        - "PendingAuthRequest"
+        - "AuthRequestType"
+        - "AuthNetworkCallback"
+        
+    - path: "src/tl_types.rs"
+      purpose: "TL serialization for auth requests"
+      types:
+        - "SendCodeRequest"
+        - "SignInRequest"
+        - "LogOutRequest"
+        
+    - path: "tests/integration_test.rs"
+      purpose: "Integration tests with mock NetQueryDispatcher"
+      
+    - path: "tests/property_tests.rs"
+      purpose: "Property-based tests for TL serialization"
+      
+  # Supporting types crate additions
+  types_crate_additions:
+    - path: "crates/types/src/code_settings.rs"
+      purpose: "CodeSettings TL type for auth.sendCode"
+      
+    - path: "crates/types/src/email_verification.rs"
+      purpose: "EmailVerification polymorphic type for auth.signIn"
+
+# =============================================================================
+# TYPE DEFINITIONS
+# =============================================================================
+
+type_definitions:
+  
+  # ---------------------------------------------------------------------------
+  # Request Types (TL Serialization)
+  # ---------------------------------------------------------------------------
+  
+  SendCodeRequest:
+    constructor_id: 0xa677244f
+    tl_schema: "auth.sendCode#a677244f phone_number:string api_id:int api_hash:string settings:CodeSettings = auth.SentCode;"
+    rust_definition: |
+      #[derive(Debug, Clone, Serialize, Deserialize)]
+      pub struct SendCodeRequest {
+          pub phone_number: String,
+          pub api_id: i32,
+          pub api_hash: String,
+          pub settings: CodeSettings,
+      }
+      
+      impl TlSerialize for SendCodeRequest {
+          fn serialize_tl(&self, buf: &mut BytesMut) -> TypeResult<()> {
+              TlHelper::write_string(buf, &self.phone_number);
+              TlHelper::write_i32(buf, self.api_id);
+              TlHelper::write_string(buf, &self.api_hash);
+              self.settings.serialize_tl(buf)?;
+              Ok(())
+          }
+      }
+    implements:
+      - "TlSerialize"
+      - "Clone"
+      - "Debug"
+      
+  SignInRequest:
+    constructor_id: 0x8d52a951
+    tl_schema: "auth.signIn#8d52a951 flags:# phone_number:string phone_code_hash:string phone_code:flags.0?string email_verification:flags.1?EmailVerification = auth.Authorization;"
+    rust_definition: |
+      #[derive(Debug, Clone, Serialize, Deserialize)]
+      pub struct SignInRequest {
+          pub flags: u32,
+          pub phone_number: String,
+          pub phone_code_hash: String,
+          pub phone_code: Option<String>,
+          pub email_verification: Option<EmailVerification>,
+      }
+      
+      impl TlSerialize for SignInRequest {
+          fn serialize_tl(&self, buf: &mut BytesMut) -> TypeResult<()> {
+              TlHelper::write_i32(buf, self.flags as i32);
+              TlHelper::write_string(buf, &self.phone_number);
+              TlHelper::write_string(buf, &self.phone_code_hash);
+              if self.flags & 0x1 != 0 {
+                  TlHelper::write_string(buf, self.phone_code.as_ref().ok_or_else(|| {
+                      TypeError::SerializationError("phone_code flag set but no value".into())
+                  })?);
+              }
+              if self.flags & 0x2 != 0 {
+                  self.email_verification.as_ref().ok_or_else(|| {
+                      TypeError::SerializationError("email_verification flag set but no value".into())
+                  })?.serialize_tl(buf)?;
+              }
+              Ok(())
+          }
+      }
+    implements:
+      - "TlSerialize"
+      - "Clone"
+      - "Debug"
+      
+  LogOutRequest:
+    constructor_id: 0x3e72ba19
+    tl_schema: "auth.logOut#3e72ba19 = auth.LoggedOut;"
+    rust_definition: |
+      #[derive(Debug, Clone, Serialize, Deserialize)]
+      pub struct LogOutRequest;
+      
+      impl TlSerialize for LogOutRequest {
+          fn serialize_tl(&self, _buf: &mut BytesMut) -> TypeResult<()> {
+              Ok(()) // No fields
+          }
+      }
+    implements:
+      - "TlSerialize"
+      - "Clone"
+      - "Debug"
+      
+  # ---------------------------------------------------------------------------
+  # Response Types (TL Deserialization)
+  # ---------------------------------------------------------------------------
+  
+  Authorization:
+    polymorphic: true
+    variants:
+      - name: "AuthorizationSignUpRequired"
+        constructor_id: 0x35154f1d
+        fields:
+          - name: "authorization"
+            type: "Option<Authorization>"
+            
+  SentCode:
+    constructor_id: 0x5e002502
+    tl_schema: "auth.SentCode#5e002502 flags:# phone_registered:flags.1?true type:auth.SentCodeType next_type:auth.SentCodeType timeout:int = auth.SentCode;"
+    rust_definition: |
+      #[derive(Debug, Clone, Serialize, Deserialize)]
+      pub struct SentCode {
+          pub flags: u32,
+          pub phone_registered: bool,
+          pub code_type: SentCodeType,
+          pub next_type: Option<SentCodeType>,
+          pub timeout: i32,
+      }
+      
+      impl TlDeserialize for SentCode {
+          fn deserialize_tl(buf: &mut Bytes) -> TypeResult<Self> {
+              let flags = TlHelper::read_i32(buf)? as u32;
+              let phone_registered = (flags & 0x2) != 0;
+              let code_type = SentCodeType::deserialize_tl(buf)?;
+              let next_type = if (flags & 0x4) != 0 {
+                  Some(SentCodeType::deserialize_tl(buf)?)
+              } else {
+                  None
+              };
+              let timeout = TlHelper::read_i32(buf)?;
+              Ok(Self { flags, phone_registered, code_type, next_type, timeout })
+          }
+      }
+    implements:
+      - "TlDeserialize"
+      - "Clone"
+      - "Debug"
+      
+  LoggedOut:
+    constructor_id: 0x3e72ba19
+    tl_schema: "auth.LoggedOut#3e72ba19 = Bool;"
+    rust_definition: |
+      #[derive(Debug, Clone, Serialize, Deserialize)]
+      pub struct LoggedOut {
+          pub success: bool,
+      }
+    implements:
+      - "TlDeserialize"
+      - "Clone"
+      - "Debug"
+      
+  # ---------------------------------------------------------------------------
+  # Supporting Types
+  # ---------------------------------------------------------------------------
+  
+  CodeSettings:
+    constructor_id: 0xad253d78
+    tl_schema: "codeSettings#ad253d78 flags:# allow_flashcall:flags.0?true current_number:flags.1?true allow_app_hash:flags.4?true allow_missed_call:flags.5?true allow_firebase:flags.7?true unknown_number:flags.9?true logout_tokens:flags.6?Vector<bytes> token:flags.8?string app_sandbox:flags.8?Bool = CodeSettings;"
+    location: "crates/types/src/code_settings.rs"
+    rust_definition: |
+      #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+      pub struct CodeSettings {
+          pub flags: u32,
+          pub allow_flashcall: bool,
+          pub current_number: bool,
+          pub allow_app_hash: bool,
+          pub allow_missed_call: bool,
+          pub allow_firebase: bool,
+          pub unknown_number: bool,
+          pub logout_tokens: Option<Vec<Vec<u8>>>,
+          pub token: Option<String>,
+          pub app_sandbox: Option<bool>,
+      }
+      
+      impl TlSerialize for CodeSettings {
+          fn serialize_tl(&self, buf: &mut BytesMut) -> TypeResult<()> {
+              TlHelper::write_i32(buf, self.flags as i32);
+              if self.flags & 0x40 != 0 {
+                  let tokens = self.logout_tokens.as_ref().ok_or_else(|| {
+                      TypeError::SerializationError("logout_tokens flag set but no value".into())
+                  })?;
+                  TlHelper::write_i32(buf, tokens.len() as i32);
+                  for token in tokens {
+                      TlHelper::write_bytes(buf, token);
+                  }
+              }
+              if self.flags & 0x100 != 0 {
+                  TlHelper::write_string(buf, self.token.as_ref().ok_or_else(|| {
+                      TypeError::SerializationError("token flag set but no value".into())
+                  })?);
+                  let sandbox = self.app_sandbox.ok_or_else(|| {
+                      TypeError::SerializationError("app_sandbox flag set but no value".into())
+                  })?;
+                  if sandbox {
+                      buf.put_i32_le(TlBool::True.constructor_id());
+                  } else {
+                      buf.put_i32_le(TlBool::False.constructor_id());
+                  }
+              }
+              Ok(())
+          }
+      }
+    implements:
+      - "TlSerialize"
+      - "Default"
+      
+  EmailVerification:
+    polymorphic: true
+    location: "crates/types/src/email_verification.rs"
+    variants:
+      - name: "EmailVerificationCode"
+        constructor_id: 0x922e55a9
+        fields:
+          - name: "code"
+            type: "String"
+            
+      - name: "EmailVerificationGoogle"
+        constructor_id: 0xdb909ec2
+        fields:
+          - name: "token"
+            type: "String"
+            
+      - name: "EmailVerificationApple"
+        constructor_id: 0x96d074fd
+        fields:
+          - name: "token"
+            type: "String"
+            
+  # ---------------------------------------------------------------------------
+  # Network Request Tracking
+  # ---------------------------------------------------------------------------
+  
+  PendingAuthRequest:
+    rust_definition: |
+      #[derive(Debug, Clone)]
+      pub struct PendingAuthRequest {
+          pub query_id: NetQueryId,
+          pub request_type: AuthRequestType,
+          pub timeout: Duration,
+          pub created_at: Instant,
+          pub phone_number: Option<String>,
+      }
+    purpose: "Track in-flight network requests for correlation"
+    
+  AuthRequestType:
+    rust_definition: |
+      #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+      pub enum AuthRequestType {
+          SendCode,
+          SignIn,
+          LogOut,
+          DeleteAccount,
+      }
+    purpose: "Type of request for matching responses"
+    
+  # ---------------------------------------------------------------------------
+  # Network Error Types
+  # ---------------------------------------------------------------------------
+  
+  NetworkError:
+    rust_definition: |
+      #[derive(Debug, Clone, PartialEq, Eq)]
+      pub enum NetworkError {
+          Timeout,
+          DcMigration { new_dc_id: i32 },
+          FloodWait { seconds: i32 },
+          ServerError { code: i32, message: String },
+          SerializationError(String),
+          DeserializationError(String),
+          Unauthorized,
+      }
+      
+      impl From<QueryError> for NetworkError {
+          fn from(err: QueryError) -> Self {
+              match err {
+                  QueryError::Timeout => NetworkError::Timeout,
+                  QueryError::Generic(msg) => NetworkError::ServerError { code: 500, message: msg },
+                  _ => NetworkError::ServerError { code: 500, message: err.to_string() },
+              }
+          }
+      }
+    purpose: "Network-specific error types for state machine"
+
+# =============================================================================
+# STATE MACHINE TRANSITIONS
+# =============================================================================
+
+state_machine:
+  # Enhanced states with network integration
+  states:
+    - name: "None"
+      description: "Initial state, no authentication"
+      on_enter: "Reset all auth data"
+      
+    - name: "WaitPhoneNumber"
+      description: "Waiting for phone number input"
+      on_enter: "Display phone number prompt"
+      transitions:
+        - on: "send_code_success"
+          to: "WaitCode"
+          action: "Store phone_code_hash"
+          
+        - on: "send_code_error"
+          to: "WaitingRetry"
+          action: "Store error, increment retry count"
+          
+    - name: "WaitCode"
+      description: "Waiting for SMS/email code"
+      on_enter: "Display code prompt"
+      transitions:
+        - on: "sign_in_success"
+          to: "WaitPassword"
+          condition: "2FA enabled"
+          action: "Request password"
+          
+        - on: "sign_in_success"
+          to: "Ok"
+          condition: "2FA disabled"
+          action: "Set user_id, mark authorized"
+          
+        - on: "sign_in_error"
+          to: "WaitingRetry"
+          action: "Store error, increment retry count"
+          
+    - name: "WaitPassword"
+      description: "Waiting for 2FA password"
+      on_enter: "Display password prompt"
+      transitions:
+        - on: "check_password_success"
+          to: "Ok"
+          action: "Set user_id, mark authorized"
+          
+        - on: "check_password_error"
+          to: "WaitingRetry"
+          action: "Store error, increment retry count"
+          
+    - name: "Ok"
+      description: "Fully authenticated"
+      on_enter: "Notify authorization success"
+      transitions:
+        - on: "log_out"
+          to: "LoggingOut"
+          action: "Send logOut request"
+          
+    - name: "LoggingOut"
+      description: "Logout in progress"
+      on_enter: "Send auth.logOut request"
+      transitions:
+        - on: "log_out_success"
+          to: "None"
+          action: "Clear all auth data"
+          
+        - on: "log_out_error"
+          to: "Ok"
+          action: "Stay authenticated, notify error"
+          
+    - name: "WaitingRetry"
+      description: "Waiting before retry after error"
+      on_enter: "Schedule retry with exponential backoff"
+      transitions:
+        - on: "retry_timeout"
+          to: "WaitPhoneNumber"
+          condition: "retry_count < 3"
+          action: "Retry send_code"
+          
+        - on: "retry_timeout"
+          to: "NetworkError"
+          condition: "retry_count >= 3"
+          action: "Give up, notify error"
+          
+    - name: "NetworkError"
+      description: "Unrecoverable network error"
+      on_enter: "Notify error, require manual intervention"
+      transitions:
+        - on: "reset"
+          to: "None"
+          action: "Clear state, allow restart"
+          
+  # Network-triggered transitions
+  network_transitions:
+    - trigger: "on_send_code_response(SentCode)"
+      from: "WaitPhoneNumber"
+      to: "WaitCode"
+      action: "Store phone_code_hash, code_type, timeout"
+      
+    - trigger: "on_sign_in_response(Authorization)"
+      from: "WaitCode"
+      to: "Ok"
+      action: "Extract user_id, mark authorized"
+      
+    - trigger: "on_sign_in_response(AuthorizationSignUpRequired)"
+      from: "WaitCode"
+      to: "WaitSignUp"
+      action: "Request sign-up flow"
+      
+    - trigger: "on_log_out_response(LoggedOut)"
+      from: "LoggingOut"
+      to: "None"
+      action: "Clear all auth state"
+      
+    - trigger: "on_network_error(NetworkError)"
+      from: "Any"
+      to: "WaitingRetry"
+      condition: "recoverable"
+      action: "Schedule retry"
+      
+    - trigger: "on_network_error(NetworkError)"
+      from: "Any"
+      to: "NetworkError"
+      condition: "!recoverable"
+      action: "Notify unrecoverable error"
+
+# =============================================================================
+# API SURFACE
+# =============================================================================
+
+api_surface:
+  
+  # Public methods for network operations
+  public_methods:
+    - name: "send_code"
+      signature: "pub async fn send_code(&self, phone_number: String) -> Result<(), AuthManagerError>"
+      purpose: "Initiate phone number authentication"
+      preconditions:
+        - "state == None || state == WaitPhoneNumber"
+      postconditions:
+        - "state == WaitCode"
+        - "NetQueryDispatcher.send_request() called"
+        - "pending_requests contains query_id"
+      side_effects:
+        - "Transitions to WaitCode on success"
+        - "Transitions to WaitingRetry on error"
+      example: |
+        manager.send_code("+1234567890".to_string()).await?;
+        
+    - name: "sign_in"
+      signature: "pub async fn sign_in(&self, phone_code: String, email_verification: Option<EmailVerification>) -> Result<(), AuthManagerError>"
+      purpose: "Submit authentication code"
+      preconditions:
+        - "state == WaitCode"
+        - "phone_code_hash is set"
+      postconditions:
+        - "state == Ok || state == WaitPassword"
+        - "user_id is set on success"
+      side_effects:
+        - "Transitions to Ok on success (no 2FA)"
+        - "Transitions to WaitPassword on success (2FA enabled)"
+        - "Transitions to WaitingRetry on error"
+      example: |
+        manager.sign_in("12345".to_string(), None).await?;
+        
+    - name: "log_out"
+      signature: "pub async fn log_out(&self) -> Result<(), AuthManagerError>"
+      purpose: "Log out from authenticated session"
+      preconditions:
+        - "state == Ok"
+      postconditions:
+        - "state == None"
+        - "All auth data cleared"
+      side_effects:
+        - "Sends auth.logOut request"
+        - "Clears user_id, sent_code, password_info"
+      example: |
+        manager.log_out().await?;
+        
+    - name: "set_net_query_dispatcher"
+      signature: "pub fn set_net_query_dispatcher(&mut self, dispatcher: Arc<NetQueryDispatcher>)"
+      purpose: "Inject NetQueryDispatcher for network operations"
+      preconditions: []
+      postconditions:
+        - "self.dispatcher = Some(dispatcher)"
+      side_effects: []
+      example: |
+        manager.set_net_query_dispatcher(dispatcher);
+        
+  # Internal callback methods
+  internal_callbacks:
+    - name: "on_auth_result"
+      signature: "async fn on_auth_result(&self, query: NetQuery)"
+      purpose: "Handle network query responses"
+      visibility: "private"
+      implementation: |
+        async fn on_auth_result(&self, query: NetQuery) {
+            let request_type = self.pending_requests.remove(&query.id());
+            
+            match (request_type, query.into_result()) {
+                (Some(AuthRequestType::SendCode), Ok(data)) => {
+                    let sent_code = SentCode::deserialize_tl(&mut data)?;
+                    self.set_phone_code_hash(sent_code.phone_code_hash);
+                    self.set_state(State::WaitCode);
+                }
+                (Some(AuthRequestType::SignIn), Ok(data)) => {
+                    let auth = Authorization::deserialize_tl(&mut data)?;
+                    self.handle_authorization(auth)?;
+                }
+                (Some(AuthRequestType::LogOut), Ok(_data)) => {
+                    self.set_state(State::None);
+                    self.clear_all_data();
+                }
+                (_, Err(err)) => {
+                    self.handle_network_error(err)?;
+                }
+                _ => {
+                    return Err(AuthManagerError::InvalidResponse);
+                }
+            }
+        }
+        
+    - name: "handle_network_error"
+      signature: "fn handle_network_error(&self, error: NetworkError) -> Result<(), AuthManagerError>"
+      purpose: "Process network errors and determine recovery"
+      visibility: "private"
+      implementation: |
+        fn handle_network_error(&self, error: NetworkError) -> Result<(), AuthManagerError> {
+            match error {
+                NetworkError::Timeout => {
+                    self.set_state(State::WaitingRetry { attempts: 0, delay: Duration::from_secs(1) });
+                }
+                NetworkError::DcMigration { new_dc_id } => {
+                    self.migrate_dc(new_dc_id)?;
+                    self.set_state(State::WaitingRetry { attempts: 0, delay: Duration::from_secs(2) });
+                }
+                NetworkError::FloodWait { seconds } => {
+                    self.set_state(State::WaitingRetry { attempts: 0, delay: Duration::from_secs(seconds as u64) });
+                }
+                NetworkError::Unauthorized => {
+                    self.set_state(State::None);
+                }
+                _ => {
+                    self.set_state(State::NetworkError(error));
+                }
+            }
+            Ok(())
+        }
+
+# =============================================================================
+# INTEGRATION POINTS
+# =============================================================================
+
+integration_points:
+  
+  net_query_dispatcher:
+    crate: "net"
+    type: "Arc<NetQueryDispatcher>"
+    injection: "Constructor or setter"
+    lifecycle: "Shared with ClientActor"
+    methods_used:
+      - name: "dispatch"
+        signature: "pub fn dispatch(&self, query: NetQuery) -> Result<(), String>"
+        purpose: "Send TL request to MTProto layer"
+        usage: |
+          let query = NetQuery::new(
+              query_id,
+              serialized_data,
+              dc_id,
+              NetQueryType::Common,
+              AuthFlag::On,  // Unauth requests
+              GzipFlag::Off,
+              constructor_id,
+          );
+          self.dispatcher.dispatch(query)?;
+          
+  client_actor:
+    crate: "client_actor"
+    type: "Arc<ClientActor>"
+    relationship: "Peer/Coordinator"
+    integration_pattern: |
+      // ClientActor creates AuthManager and injects dispatcher
+      let auth_manager = AuthManager::new(api_id, api_hash);
+      auth_manager.set_net_query_dispatcher(client_actor.dispatcher());
+      
+      // AuthManager uses dispatcher for network calls
+      auth_manager.send_code(phone_number).await?;
+      
+  types:
+    crate: "types"
+    dependencies:
+      - "TlSerialize"
+      - "TlDeserialize"
+      - "TlHelper"
+      - "BytesMut"
+      - "Bytes"
+    usage: "TL serialization/deserialization of auth requests"
+    
+  auth:
+    crate: "auth"
+    type_dependencies:
+      - "SentCode"
+      - "PasswordInfo"
+      - "QrCodeLogin"
+      - "EmailVerification"
+    usage: "Auth-specific domain types"
+
+# =============================================================================
+# CONSTANTS
+# =============================================================================
+
+constants:
+  tl_constructors:
+    SEND_CODE: 0xa677244f
+    SIGN_IN: 0x8d52a951
+    LOG_OUT: 0x3e72ba19
+    CODE_SETTINGS: 0xad253d78
+    EMAIL_VERIFICATION_CODE: 0x922e55a9
+    EMAIL_VERIFICATION_GOOGLE: 0xdb909ec2
+    EMAIL_VERIFICATION_APPLE: 0x96d074fd
+    
+  timeouts:
+    REQUEST_TIMEOUT: "60s"
+    RETRY_BASE_DELAY: "1s"
+    RETRY_MAX_DELAY: "60s"
+    RETRY_MAX_ATTEMPTS: 3
+    
+  limits:
+    MAX_PHONE_NUMBER_LENGTH: 20
+    MIN_CODE_LENGTH: 4
+    MAX_CODE_LENGTH: 16
+    MAX_PASSWORD_LENGTH: 256
+
+# =============================================================================
+# TESTING REQUIREMENTS
+# =============================================================================
+
+testing:
+  unit_tests:
+    - module: "tl_types"
+      coverage_target: 90
+      tests:
+        - "SendCodeRequest serialization roundtrip"
+        - "SignInRequest serialization with flags"
+        - "LogOutRequest serialization"
+        - "CodeSettings serialization with all flag combinations"
+        - "EmailVerification polymorphism (3 variants)"
+        - "SentCode deserialization"
+        - "Authorization deserialization"
+        - "LoggedOut deserialization"
+        - "TL constructor ID validation"
+        
+    - module: "network"
+      coverage_target: 80
+      tests:
+        - "PendingAuthRequest creation and tracking"
+        - "AuthRequestType matching"
+        - "NetworkError conversion from QueryError"
+        - "on_auth_result response handling"
+        - "handle_network_error retry logic"
+        - "Exponential backoff calculation"
+        
+    - module: "state_machine"
+      coverage_target: 85
+      tests:
+        - "send_code → WaitCode transition"
+        - "sign_in → Ok transition (no 2FA)"
+        - "sign_in → WaitPassword transition (2FA)"
+        - "log_out → None transition"
+        - "Error → WaitingRetry transition"
+        - "WaitingRetry → WaitPhoneNumber after timeout"
+        - "NetworkError → None on reset"
+        - "Invalid state transitions rejected"
+        
+  integration_tests:
+    file: "tests/integration_test.rs"
+    coverage_target: 75
+    tests:
+      - name: "full_auth_flow"
+        description: "sendCode → signIn → logOut"
+        setup: "Mock NetQueryDispatcher"
+        steps:
+          - "manager.send_code(phone_number)"
+          - "mock_dispatcher.respond_with(SentCode)"
+          - "manager.sign_in(code, None)"
+          - "mock_dispatcher.respond_with(Authorization)"
+          - "assert manager.is_authorized()"
+          - "manager.log_out()"
+          - "mock_dispatcher.respond_with(LoggedOut)"
+          - "assert !manager.is_authorized()"
+          
+      - name: "network_error_recovery"
+        description: "Error → Retry → Success"
+        setup: "Mock NetQueryDispatcher with error injection"
+        steps:
+          - "manager.send_code(phone_number)"
+          - "mock_dispatcher.respond_with_error(Timeout)"
+          - "assert manager.state == WaitingRetry"
+          - "wait_for_retry_timeout()"
+          - "mock_dispatcher.respond_with(SentCode)"
+          - "assert manager.state == WaitCode"
+          
+      - name: "dc_migration"
+        description: "Handle DC migration during auth"
+        setup: "Mock NetQueryDispatcher with DC migration error"
+        steps:
+          - "manager.send_code(phone_number)"
+          - "mock_dispatcher.respond_with_error(DcMigration { new_dc_id: 4 })"
+          - "assert manager.dc_id == 4"
+          - "assert manager.state == WaitingRetry"
+          
+      - name: "flood_wait_handling"
+        description: "Handle FLOOD_WAIT errors"
+        setup: "Mock NetQueryDispatcher with FLOOD_WAIT error"
+        steps:
+          - "manager.send_code(phone_number)"
+          - "mock_dispatcher.respond_with_error(FloodWait { seconds: 60 })"
+          - "assert manager.state == WaitingRetry"
+          - "assert manager.retry_delay == 60s"
+          
+  property_tests:
+    file: "tests/property_tests.rs"
+    tests:
+      - name: "send_code_serialization_roundtrip"
+        strategy: "proptest::collection::string_pattern"
+        property: "serialize(deserialize(x)) == x"
+        
+      - name: "phone_number_validation"
+        strategy: "proptest::string::string_regex"
+        property: "valid phone numbers start with +"
+        
+      - name: "code_settings_flags"
+        strategy: "proptest::bits::u8::ANY"
+        property: "flags serialize correctly"
+        
+  coverage_target: 70
+  coverage_tool: "cargo llvm-cov"
+
+# =============================================================================
+# DEPENDENCIES
+# =============================================================================
+
+dependencies:
+  internal:
+    - crate: "net"
+      version: "workspace"
+      features: []
+      reason: "NetQueryDispatcher, NetQuery, NetQueryCallback"
+      
+    - crate: "types"
+      version: "workspace"
+      features: []
+      reason: "TL serialization traits, primitive types"
+      
+    - crate: "auth"
+      version: "workspace"
+      features: []
+      reason: "SentCode, PasswordInfo, EmailVerification"
+      
+    - crate: "client_actor"
+      version: "workspace"
+      features: []
+      reason: "NetQueryDispatcher integration pattern"
+      
+  external:
+    - crate: "tokio"
+      version: "1"
+      features: ["sync", "time", "macros"]
+      reason: "Async runtime, time utilities"
+      
+    - crate: "serde"
+      version: "1"
+      features: ["derive", "serde"]
+      reason: "Serialization for state persistence"
+      
+    - crate: "bytes"
+      version: "1"
+      features: []
+      reason: "BytesMut, Bytes for TL serialization"
+      
+    - crate: "async-trait"
+      version: "0.1"
+      features: []
+      reason: "NetQueryCallback trait"
+      
+    - crate: "tracing"
+      version: "workspace"
+      features: []
+      reason: "Logging"
+      
+    - crate: "thiserror"
+      version: "workspace"
+      features: []
+      reason: "Error handling"
+      
+  dev_dependencies:
+    - crate: "proptest"
+      version: "1"
+      features: []
+      reason: "Property-based testing"
+      
+    - crate: "tokio"
+      version: "1"
+      features: ["test-util"]
+      reason: "Testing utilities"
+
+# =============================================================================
+# PERFORMANCE REQUIREMENTS
+# =============================================================================
+
+performance:
+  latency:
+    send_code_request:
+      target: "< 500ms (p95)"
+      measurement: "Time from send_code() call to WaitCode state"
+      
+    sign_in_request:
+      target: "< 300ms (p95)"
+      measurement: "Time from sign_in() call to Ok/WaitPassword state"
+      
+    log_out_request:
+      target: "< 300ms (p95)"
+      measurement: "Time from log_out() call to None state"
+      
+  throughput:
+    concurrent_requests:
+      target: "10 parallel auth flows"
+      measurement: "Multiple AuthManager instances"
+      
+  memory:
+    per_auth_manager:
+      target: "< 1 KB"
+      measurement: "Heap size per instance"
+      
+    pending_request:
+      target: "< 512 bytes"
+      measurement: "Per PendingAuthRequest"
+
+# =============================================================================
+# SECURITY CONSIDERATIONS
+# =============================================================================
+
+security:
+  sensitive_data:
+    - name: "api_hash"
+      handling: "Never log, clear from memory on drop"
+      
+    - name: "phone_code_hash"
+      handling: "Never log, transient memory only"
+      
+    - name: "phone_code"
+      handling: "Never log, zero after use"
+      
+    - name: "password"
+      handling: "Never log, zero after use"
+      
+  threat_model:
+    - threat: "Code interception"
+      mitigation: "Use HTTPS, validate certificate pins"
+      
+    - threat: "Replay attacks"
+      mitigation: "Short-lived code timeout, single-use codes"
+      
+    - threat: "DC migration attacks"
+      mitigation: "Validate DC ID against known Telegram DCs"
+      
+    - threat: "Rate limit bypass"
+      mitigation: "Honor FLOOD_WAIT errors, implement exponential backoff"
+
+# =============================================================================
+# COMPATIBILITY MATRIX
+# =============================================================================
+
+compatibility:
+  tdlib_version: "1.8.30"
+  mtproto_version: "2.0"
+  telegram_api_layer: "175"
+  
+  breaking_changes: []
+  
+  api_compatibility:
+    auth_sendCode: "100%"
+    auth_signIn: "100%"
+    auth_logOut: "100%"

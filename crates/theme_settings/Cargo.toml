@@ -1,0 +1,28 @@
+[package]
+name = "rustgram-theme-settings"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+keywords.workspace = true
+categories.workspace = true
+
+description = "Theme settings management for Telegram client"
+
+[features]
+default = []
+serde = ["dep:serde", "dep:serde_json"]
+
+[dependencies]
+rustgram-base-theme = { path = "../base-theme" }
+rustgram-background-info = { path = "../background-info" }
+serde = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+
+[dev-dependencies]
+bincode = { workspace = true }
+
+[lints]
+workspace = true

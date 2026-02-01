@@ -1,0 +1,16 @@
+[package]
+name = "rustgram-affiliate-type"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+rustgram-dialog-id = { path = "../dialog_id" }
+serde = { workspace = true, optional = true }
+
+[features]
+default = []
+serde = ["dep:serde"]

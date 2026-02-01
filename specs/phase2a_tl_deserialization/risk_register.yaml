@@ -1,0 +1,754 @@
+# Risk Register: Phase 2A - Core TL Deserialization
+# Epic: rustgram-client-29c
+# Phase: Phase 2A
+# Version: 1.0
+# Date: 2026-01-21
+# Status: Active
+
+---
+
+## Metadata
+
+- **Epic:** rustgram-client-29c
+- **Phase:** Phase 2A - Core TL Deserialization
+- **Created:** 2026-01-21
+- **Last Updated:** 2026-01-21
+- **Owner:** Analyst Agent
+
+---
+
+## Risk Categories
+
+1. **TL_COMPLEXITY** - TL schema complexity and flag handling
+2. **TEST_DATA** - Golden test data availability and quality
+3. **INTEGRATION** - Breaking changes to existing code
+4. **PERFORMANCE** - Deserialization performance and memory usage
+5. **TIMING** - Timeline and scope estimation risks
+
+---
+
+## Risks
+
+### R1: Complex Flag-Based Field Handling
+
+**ID:** R1  
+**Type:** TL_COMPLEXITY  
+**Status:** OPEN  
+**Impact:** HIGH  
+**Likelihood:** HIGH
+
+**Description:**
+ChatFull has 20+ optional fields controlled by flags at bit positions 0-20. Incorrect flag handling will cause:
+- Wrong field interpretation
+- Buffer desynchronization
+- Silent data corruption
+
+**Affected Components:**
+- `tl_core/src/chat_full.rs` - ChatFull deserialization
+- `tl_core/src/user_full.rs` - UserFull deserialization
+- `tl_core/src/notify.rs` - PeerNotifySettings (11 flags)
+
+**Example TL Schema (ChatFull):**
+```tl
+chatFull#2633421b flags:# 
+    can_set_username:flags.7?true 
+    has_scheduled:flags.8?true 
+    translations_disabled:flags.19?true 
+    id:long 
+    about:string 
+    participants:ChatParticipants 
+    chat_photo:flags.2?Photo 
+    notify_settings:PeerNotifySettings 
+    exported_invite:flags.13?ExportedChatInvite 
+    bot_info:flags.3?Vector<BotInfo> 
+    pinned_msg_id:flags.6?int 
+    folder_id:flags.11?int 
+    call:flags.12?InputGroupCall 
+    ttl_period:flags.14?int 
+    groupcall_default_join_as:flags.15?Peer 
+    theme_emoticon:flags.16?string 
+    requests_pending:flags.17?int 
+    recent_requesters:flags.17?Vector<long> 
+    available_reactions:flags.18?ChatReactions 
+    reactions_limit:flags.20?int 
+    = ChatFull;
+```
+
+**Mitigation Strategy:**
+1. Create FlagReader utility with comprehensive tests
+2. Test each bit position (0-20) individually
+3. Add unit tests for all flag combinations
+4. Document flag indices in code comments
+5. Use property-based testing for flag permutations
+6. Add debug assertions for flag validation
+
+**Owner:** Developer  
+**Due Date:** Step 4 (Day 11)  
+**Contingency:**
+If flag handling too complex, create phased approach:
+- Phase 1: Required fields only
+- Phase 2: Common flags (bits 0-10)
+- Phase 3: Rare flags (bits 11-20)
+
+---
+
+### R2: Constructor ID Mismatch
+
+**ID:** R2  
+**Type:** TL_COMPLEXITY  
+**Status:** OPEN  
+**Impact:** CRITICAL  
+**Likelihood:** MEDIUM
+
+**Description:**
+Constructor IDs must match TDLib's CRC32 calculation exactly. Any mismatch causes protocol failures. Constructor IDs are calculated from TL schema definitions using CRC32.
+
+**Affected Components:**
+- All TL type deserializations
+- `tl_core/src/photo.rs` - 7 constructor IDs
+- `tl_core/src/peer.rs` - 11 constructor IDs
+- `tl_core/src/chat_full.rs` - 15+ constructor IDs
+
+**Constructor ID Examples:**
+| Type | TL Definition | CRC32 | Verification |
+|------|---------------|-------|--------------|
+| photoEmpty | `photoEmpty id:long = Photo;` | 0x2331b22d | telegram_api.tl:233 |
+| photo | `photo flags:# ... = Photo;` | 0xfb197a65 | telegram_api.tl:234 |
+| chatFull | `chatFull flags:# ... = ChatFull;` | 0x2633421b | telegram_api.tl:132 |
+
+**Mitigation Strategy:**
+1. Verify all constructor IDs against telegram_api.tl
+2. Create verification table before implementation
+3. Add constructor_id() tests for all types
+4. Pin TDLib commit hash in documentation
+5. Create golden test vectors from TDLib
+6. Add CRC32 validation in CI
+
+**Owner:** Developer  
+**Due Date:** Step 1 (Day 1-3)  
+**Contingency:**
+If mismatch discovered, pause implementation until:
+- Constructor IDs recalculated
+- TDLib source verified
+- Test vectors updated
+
+---
+
+### R3: Missing Golden Test Data
+
+**ID:** R3  
+**Type:** TEST_DATA  
+**Status:** OPEN  
+**Impact:** HIGH  
+**Likelihood:** MEDIUM
+
+**Description:**
+Golden test data from TDLib may not be available for all types. Without real test vectors:
+- Cannot validate binary format correctness
+- May miss edge cases
+- TDLib compatibility uncertain
+
+**Affected Components:**
+- `tl_core/tests/golden/` - All test files
+- Integration tests for all types
+
+**Required Test Vectors:**
+| Test File | TL Type | TDLib Operation | Priority |
+|-----------|---------|-----------------|----------|
+| photo.bin | Photo | messages.getPhoto | High |
+| photo_empty.bin | Photo::Empty | messages.getPhoto | High |
+| chat_full.bin | ChatFull | messages.getFullChat | High |
+| chat_full_minimal.bin | ChatFull (minimal) | messages.getFullChat | Medium |
+| user_full.bin | UserFull | users.getFullUser | High |
+| channel_participants.bin | ChannelParticipants | channels.getParticipants | Medium |
+
+**Mitigation Strategy:**
+1. Set up TDLib test client immediately (Week 1, Day 1)
+2. Capture all response types early
+3. Manually construct fallback vectors
+4. Share test vectors across team
+5. Document test vector format
+6. Create test vector generation script
+
+**TDLib Capture Script:**
+```python
+# scripts/capture_tdlib_responses.py
+import subprocess
+import re
+
+def capture_tl_responses():
+    # Run TDLib client
+    client = subprocess.Popen(
+        ['./tdjson', '--log-level=5'],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    
+    # Extract binary responses from logs
+    # ... parsing logic
+    
+    # Save to test files
+    with open('tl_core/tests/golden/photo.bin', 'wb') as f:
+        f.write(photo_bytes)
+
+if __name__ == '__main__':
+    capture_tl_responses()
+```
+
+**Owner:** Developer + QA  
+**Due Date:** Step 1 (Day 1-3)  
+**Contingency:**
+If TDLib capture fails, manually construct test vectors based on TL schema:
+- Use hex literal arrays
+- Document as "synthetic" test data
+- Prioritize real data later
+
+---
+
+### R4: Breaking Changes to Existing Managers
+
+**ID:** R4  
+**Type:** INTEGRATION  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** MEDIUM
+
+**Description:**
+Existing managers (user_manager, dialog_manager) have placeholder TL code. Replacing with tl_core may:
+- Break existing compilation
+- Require API changes
+- Introduce new error types
+
+**Affected Components:**
+- `crates/user_manager/src/network.rs` - Uses placeholder UserFull
+- `crates/dialog_manager/src/tl_types.rs` - Uses placeholder ChatFull
+- `crates/dialog_manager/src/participants.rs` - Has TODO comments
+
+**Current Placeholder Code:**
+```rust
+// dialog_manager/src/participants.rs:625
+// TODO: Implement proper TL deserialization from telegram_api.tl:726
+let participants = parse_participants_placeholder(data)?;
+```
+
+**Mitigation Strategy:**
+1. Maintain backward compatibility API
+2. Add adapter layer for error conversion
+3. Update managers incrementally
+4. Add deprecation warnings for old code
+5. Run full workspace tests after integration
+6. Document migration path
+
+**Adapter Pattern:**
+```rust
+// tl_core/src/compat.rs
+/// Backward compatibility adapter for user_manager
+pub struct UserFullAdapter {
+    inner: UserFull,
+}
+
+impl UserFullAdapter {
+    /// Convert to old format (if needed)
+    pub fn to_legacy(&self) -> LegacyUserFull {
+        // ...
+    }
+}
+```
+
+**Owner:** Developer  
+**Due Date:** Step 6 (Day 19-21)  
+**Contingency:**
+If breaking changes unavoidable:
+- Bump major version of affected managers
+- Create migration guide
+- Update all dependent code
+
+---
+
+### R5: Deserialization Performance Issues
+
+**ID:** R5  
+**Type:** PERFORMANCE  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** LOW
+
+**Description:**
+Large types (ChatFull with 10k+ participants) may deserialize slowly. Poor performance could:
+- Block UI updates
+- Cause timeouts
+- Increase memory usage
+
+**Affected Components:**
+- `tl_core/src/chat_full.rs` - Large participant lists
+- `tl_core/src/photo.rs` - Large photo size vectors
+
+**Performance Targets:**
+| Type | Size | Target Time |
+|------|------|-------------|
+| Photo | 3-5 KB | < 500μs |
+| ChatFull | 10-20 KB | < 2ms |
+| UserFull | 8-15 KB | < 1.5ms |
+| ChannelParticipants (10k) | 100+ KB | < 50ms |
+
+**Mitigation Strategy:**
+1. Benchmark each type during implementation
+2. Profile hot paths with flamegraph
+3. Optimize flag checking (use bitwise ops)
+4. Use zero-copy where possible (Bytes)
+5. Consider lazy deserialization for large vectors
+6. Add performance regression tests
+
+**Optimization Example:**
+```rust
+// Before: Allocation on each flag check
+fn has_flag(&self, bit: u32) -> bool {
+    self.flags & (1 << bit) != 0  // Allocates u32
+}
+
+// After: Inline bitwise operation
+#[inline]
+fn has_flag(&self, bit: u32) -> bool {
+    self.flags & (1 << bit) != 0  // Optimized by compiler
+}
+```
+
+**Owner:** Developer  
+**Due Date:** Step 6 (Day 19-21)  
+**Contingency:**
+If performance targets unmet:
+- Use lazy deserialization for large vectors
+- Cache deserialized objects
+- Consider streaming parser for very large responses
+
+---
+
+### R6: Complex Nested Type Circular Dependencies
+
+**ID:** R6  
+**Type:** TL_COMPLEXITY  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** LOW
+
+**Description:**
+ChatFull references many nested types (Photo, PeerNotifySettings, ChatParticipants, BotInfo, etc.). These may have circular dependencies:
+- ChatFull → Photo
+- Photo → PhotoSize
+- ChatFull → BotInfo
+- BotInfo → Photo
+
+**Affected Components:**
+- `tl_core/src/chat_full.rs` - Most complex nesting
+- `tl_core/src/user_full.rs` - Complex nesting
+- Module compilation order
+
+**Nesting Graph:**
+```mermaid
+graph LR
+    ChatFull --> Photo
+    ChatFull --> PeerNotifySettings
+    ChatFull --> ChatParticipants
+    ChatFull --> BotInfo
+    BotInfo --> Photo
+    ChatParticipants --> Peer
+```
+
+**Mitigation Strategy:**
+1. Carefully order module implementation
+2. Use forward declarations for circular types
+3. Consider splitting complex types into submodules
+4. Add integration tests for nested deserialization
+5. Document dependency graph in comments
+
+**Module Order (Prevents Circularity):**
+1. error.rs (no dependencies)
+2. flags.rs (no dependencies)
+3. photo.rs (depends on error, flags)
+4. peer.rs (depends on error)
+5. notify.rs (depends on error, flags, peer)
+6. chat_full.rs (depends on all above)
+7. user_full.rs (depends on error, flags, photo, notify)
+
+**Owner:** Developer  
+**Due Date:** Step 1 (Day 1-3) - Module planning  
+**Contingency:**
+If circular dependencies unavoidable:
+- Use `Rc<Self>` for recursive types
+- Split into separate crates if needed
+- Consider Builder pattern for complex types
+
+---
+
+### R7: Error Type Compatibility
+
+**ID:** R7  
+**Type:** INTEGRATION  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** MEDIUM
+
+**Description:**
+TlError from tl_core must integrate with existing error types:
+- `rustgram_types::error::TypeError`
+- `user_manager::UserManagerError`
+- `dialog_manager::DialogError`
+
+Incompatible error types cause:
+- Conversion boilerplate
+- Error context loss
+- Difficult error handling
+
+**Affected Components:**
+- `tl_core/src/error.rs` - TlError definition
+- Error conversions in all managers
+
+**Current Error Types:**
+```rust
+// rustgram-types/src/error.rs
+pub enum TypeError {
+    DeserializationError(String),
+    // ... other variants
+}
+
+// tl_core/src/error.rs (proposed)
+pub enum TlError {
+    UnknownConstructor { expected: Vec<u32>, found: u32, context: String },
+    UnexpectedEof { requested: usize, remaining: usize, type_name: String },
+    // ... other variants
+}
+```
+
+**Mitigation Strategy:**
+1. Implement `From<TlError> for TypeError` conversion
+2. Preserve error context in conversions
+3. Use `thiserror` for automatic conversion
+4. Document error conversion patterns
+5. Add error context preservation tests
+6. Consider unifying error types long-term
+
+**Conversion Pattern:**
+```rust
+// tl_core/src/error.rs
+impl From<TlError> for rustgram_types::error::TypeError {
+    fn from(err: TlError) -> Self {
+        Self::DeserializationError(err.to_string())
+    }
+}
+
+// user_manager/src/network.rs
+let user_full = UserFull::deserialize_tl(&mut buf)
+    .map_err(|e| UserManagerError::DeserializationError {
+        field: "user_full".to_string(),
+        cause: e.to_string(),
+    })?;
+```
+
+**Owner:** Developer  
+**Due Date:** Step 1 (Day 1-3)  
+**Contingency:**
+If error conversion too complex:
+- Keep TlError internal to tl_core
+- Convert to TypeError at boundaries
+- Document error loss in conversion
+
+---
+
+### R8: Scope Larger Than Estimated
+
+**ID:** R8  
+**Type:** TIMING  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** MEDIUM
+
+**Description:**
+Full implementation of all nested types may exceed estimated timeline:
+- BotInfo has 10+ nested fields
+- ChatReactions has multiple variants
+- ExportedChatInvite complex structure
+- VideoSize types referenced but not planned
+
+**Current Estimate:** 3 weeks (21 days)
+
+**Detailed Scope:**
+| Module | Estimated LOC | Estimated Time |
+|--------|---------------|----------------|
+| error.rs | 200 LOC | 1 day |
+| flags.rs | 150 LOC | 1 day |
+| photo.rs | 600 LOC | 3 days |
+| peer.rs | 400 LOC | 2 days |
+| notify.rs | 300 LOC | 2 days |
+| chat_full.rs | 1200 LOC | 5 days |
+| user_full.rs | 500 LOC | 3 days |
+| Tests | ~ | 4 days |
+| **TOTAL** | **3350 LOC** | **21 days** |
+
+**Mitigation Strategy:**
+1. Prioritize core types (Photo, ChatFull, UserFull)
+2. Defer rare types to Phase 2B
+3. Implement stubs for very complex nested types
+4. Track progress daily
+5. Adjust scope if falling behind
+6. Add buffer time for unexpected complexity
+
+**Priority Levels:**
+- **P0 (Must have):** Photo, PeerNotifySettings, ChatFull, UserFull
+- **P1 (Should have):** PhotoSize variants, InputPeer variants
+- **P2 (Nice to have):** VideoSize, ChatReactions, ExportedChatInvite
+
+**Owner:** Project Manager + Developer  
+**Due Date:** Continuous monitoring  
+**Contingency:**
+If scope too large:
+- Split into Phase 2A.1 (core) and Phase 2A.2 (extended)
+- Defer P2 types to Phase 2B
+- Extend timeline by 1 week if needed
+
+---
+
+### R9: Memory Safety in Unsafe Code
+
+**ID:** R9  
+**Type:** TL_COMPLEXITY  
+**Status:** OPEN  
+**Impact:** HIGH  
+**Likelihood:** LOW
+
+**Description:**
+TL deserialization may require unsafe code for:
+- Reading bytes from buffer without bounds checking
+- Transmuting bytes to types
+- Parsing variable-length integers
+
+Incorrect unsafe code causes:
+- Memory corruption
+- Segmentation faults
+- Security vulnerabilities
+
+**Affected Components:**
+- `tl_core/src/utils.rs` - Vector deserialization helpers
+- Any manual buffer parsing
+
+**Unsafe Code Guidelines:**
+```rust
+// AVOID: Unsafe without clear safety documentation
+unsafe {
+    std::ptr::read_unaligned(buf.as_ptr() as *const T)
+}
+
+// PREFER: Safe wrapper with bounds checking
+fn read_type<T>(buf: &mut Bytes) -> Result<T, TlError> {
+    if buf.remaining() < size_of::<T>() {
+        return Err(TlError::UnexpectedEof {
+            requested: size_of::<T>(),
+            remaining: buf.remaining(),
+            type_name: std::any::type_name::<T>(),
+        });
+    }
+    
+    let mut result = std::mem::MaybeUninit::<T>::uninit();
+    let ptr = result.as_mut_ptr() as *mut u8;
+    
+    unsafe {
+        buf.copy_to_slice(std::slice::from_raw_parts_mut(ptr, size_of::<T>()));
+    }
+    
+    Ok(unsafe { result.assume_init() })
+}
+```
+
+**Mitigation Strategy:**
+1. Avoid `unsafe` code if possible
+2. Use `bytes::Bytes` (safe wrapper)
+3. Add safety documentation for all `unsafe` blocks
+4. Run fuzz tests (libFuzzer)
+5. Add `#[deny(unsafe_op_in_unsafe_fn)]` lint
+6. Security review of all unsafe code
+
+**Owner:** Developer + Security Reviewer  
+**Due Date:** Step 1 (Day 1-3) - Design review  
+**Contingency:**
+If unsafe code required:
+- Create separate audit task
+- Add detailed safety documentation
+- Run extensive fuzz tests
+- Consider formal verification for critical paths
+
+---
+
+### R10: Test Coverage Gap
+
+**ID:** R10  
+**Type:** TEST_DATA  
+**Status:** OPEN  
+**Impact:** MEDIUM  
+**Likelihood:** MEDIUM
+
+**Description:**
+Achieving 80%+ code coverage may be difficult due to:
+- Complex flag combinations (2^20 possibilities)
+- Rare TL type variants
+- Error path explosion
+
+**Target:** 80%+ coverage for tl_core crate
+
+**Coverage Challenges:**
+| Challenge | Complexity | Mitigation |
+|-----------|------------|------------|
+| Flag combinations | 2^20 for ChatFull | Property-based testing |
+| Rare variants | Low occurrence in wild | Synthetic tests |
+| Error paths | Every read can fail | Error injection tests |
+
+**Mitigation Strategy:**
+1. Use property-based testing (proptest) for flags
+2. Create synthetic test data for rare variants
+3. Error injection tests for error paths
+4. Track coverage weekly
+5. Add coverage CI check
+6. Document uncovered code (why it's hard to test)
+
+**Property-Based Testing Example:**
+```rust
+use proptest::prelude::*;
+
+proptest! {
+    #[test]
+    fn test_chat_full_roundtrip(flags in any::<u32>()) {
+        // Generate arbitrary flags
+        // Create ChatFull with those flags
+        // Serialize and deserialize
+        // Verify equality
+    }
+}
+```
+
+**Owner:** Developer + QA  
+**Due Date:** Step 6 (Day 19-21)  
+**Contingency:**
+If 80% coverage unachievable:
+- Document why coverage is lower
+- Focus on critical paths (90%+)
+- Use risk-based testing for uncovered code
+
+---
+
+## Risk Summary
+
+### By Category
+
+| Category | Count | Open | Mitigated | Blocked |
+|----------|-------|------|-----------|---------|
+| TL_COMPLEXITY | 4 | 4 | 0 | 0 |
+| TEST_DATA | 2 | 2 | 0 | 0 |
+| INTEGRATION | 2 | 2 | 0 | 0 |
+| PERFORMANCE | 1 | 1 | 0 | 0 |
+| TIMING | 1 | 1 | 0 | 0 |
+| **TOTAL** | **10** | **10** | **0** | **0** |
+
+### By Priority
+
+| Priority | Count | Risk IDs |
+|----------|-------|----------|
+| CRITICAL | 1 | R2 |
+| HIGH | 4 | R1, R3, R9, R10 |
+| MEDIUM | 5 | R4, R5, R6, R7, R8 |
+| LOW | 0 | - |
+
+### By Likelihood
+
+| Likelihood | Count | Risk IDs |
+|------------|-------|----------|
+| HIGH | 2 | R1, R8 |
+| MEDIUM | 6 | R2, R3, R4, R6, R7, R10 |
+| LOW | 2 | R5, R9 |
+
+---
+
+## Risk Review Process
+
+### Frequency
+- **Daily:** Review OPEN risks with HIGH/CRITICAL impact
+- **Weekly:** Review all OPEN risks
+- **Phase Gates:** Full risk assessment
+
+### Triggers for Review
+- Risk status changes (OPEN → MITIGATED)
+- New risks discovered during implementation
+- Timeline deviation > 20%
+- Test failures reveal new issues
+
+### Escalation Path
+1. **Owner** handles risk mitigation
+2. **Phase Lead** reviews blocked risks
+3. **Project Manager** escalates HIGH/CRITICAL risks
+4. **Tech Lead** makes final call on CRITICAL risks
+
+---
+
+## Action Items
+
+### Immediate (Before Phase 2A Start)
+- [ ] Verify all constructor IDs (R2)
+- [ ] Set up TDLib test client (R3)
+- [ ] Create FlagReader utility with tests (R1)
+- [ ] Plan module dependency order (R6)
+
+### Step 1 (Day 1-3): Foundation
+- [ ] Create TlError with conversion to TypeError (R7)
+- [ ] Document unsafe code guidelines (R9)
+- [ ] Verify TDLib reference accessible (R2)
+- [ ] Start TDLib response capture (R3)
+
+### Step 2-3 (Day 4-10): Basic Types
+- [ ] Implement Photo with all 6 PhotoSize variants (R1)
+- [ ] Implement Peer/InputPeer variants (R6)
+- [ ] Add property-based tests for flags (R1, R10)
+- [ ] Verify golden tests pass (R3)
+
+### Step 4-5 (Day 11-18): Complex Types
+- [ ] Implement ChatFull with all 20+ fields (R1, R8)
+- [ ] Implement UserFull with all nested types (R8)
+- [ ] Add performance benchmarks (R5)
+- [ ] Run fuzz tests on unsafe code (R9)
+
+### Step 6 (Day 19-21): Integration
+- [ ] Update user_manager to use tl_core (R4)
+- [ ] Update dialog_manager to use tl_core (R4)
+- [ ] Verify workspace builds without errors (R4)
+- [ ] Run coverage analysis (R10)
+
+### Continuous
+- [ ] Track timeline vs actual progress (R8)
+- [ ] Monitor test coverage (R10)
+- [ ] Update risk register weekly
+- [ ] Benchmark performance targets (R5)
+
+---
+
+## Success Criteria for Risk Mitigation
+
+### Phase 2A Complete
+- R1: All flag handling tested (property-based tests pass)
+- R2: All constructor IDs verified against telegram_api.tl
+- R3: 10+ golden test files from TDLib
+- R4: All managers updated to use tl_core
+- R5: Performance targets met (< 2ms for ChatFull)
+- R6: No circular dependencies
+- R7: TlError integrates with existing error types
+- R8: Implementation within 3-week timeline
+- R9: All unsafe code audited and documented
+- R10: 80%+ test coverage achieved
+
+### All Risks Mitigated
+- 0 CRITICAL risks remaining
+- All HIGH risks mitigated or acceptable
+- Test coverage > 80%
+- Performance targets met
+- All golden tests pass
+
+---
+
+**Last Updated:** 2026-01-21  
+**Next Review:** After Step 1 (Day 3)  
+**Review Frequency:** Weekly

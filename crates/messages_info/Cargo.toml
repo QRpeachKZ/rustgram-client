@@ -1,0 +1,20 @@
+[package]
+name = "rustgram-messages-info"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+# Workspace
+serde = { workspace = true, features = ["derive"] }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+
+# Local crates - will use placeholder for Message type
+rustgram-types = { path = "../types" }
+
+[dev-dependencies]
+bincode = "1.3"

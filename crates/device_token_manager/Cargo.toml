@@ -1,0 +1,36 @@
+[package]
+name = "rustgram_device_token_manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Push notification device token management for Telegram MTProto client"
+keywords = ["telegram", "push", "notification", "token", "device"]
+categories = ["network-programming"]
+
+[dependencies]
+rustgram-types = { path = "../types" }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+
+[lib]
+name = "rustgram_device_token_manager"
+path = "src/lib.rs"
+
+[features]
+default = []
+full = []
+serde = ["dep:serde"]
+
+[lints]
+rust = { unexpected-cfgs = "allow" }
+clippy = { all = "deny", unwrap-used = "deny", expect-used = "deny" }
+
+[package.metadata.docs.rs]
+all-features = true

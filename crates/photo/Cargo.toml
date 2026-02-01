@@ -1,0 +1,37 @@
+[package]
+name = "rustgram-photo"
+version.workspace = true
+edition.workspace = true
+
+[dependencies]
+# Photo type dependencies
+rustgram-animation-size = { path = "../animation_size", default-features = false }
+rustgram-photo-size = { path = "../photo_size", default-features = false }
+rustgram-sticker-photo-size = { path = "../sticker_photo_size" }
+
+# Type system
+rustgram-types = { path = "../types" }
+
+# Caching
+lru = "0.12"
+parking_lot = { workspace = true }
+
+# Serialization
+bytes = { workspace = true }
+
+# Error handling
+thiserror = { workspace = true }
+
+# Optional dependencies
+serde = { workspace = true, optional = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "test-util"] }
+
+[features]
+default = []
+serde = [
+  "dep:serde",
+  "rustgram-animation-size/serde",
+  "rustgram-photo-size/serde",
+]

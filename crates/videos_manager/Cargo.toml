@@ -1,0 +1,18 @@
+[package]
+name = "rustgram-videos-manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[dependencies]
+tokio = { workspace = true }
+rustgram-file-id = { path = "../file_id" }
+rustgram-dimensions = { path = "../dimensions" }
+rustgram-photo-size = { path = "../photo-size" }
+rustgram-animation-size = { path = "../animation-size" }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros"] }

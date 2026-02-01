@@ -1,0 +1,98 @@
+# API Compatibility Check - Execution Plan
+
+phase: 4
+epic: rustgram-client-1q4
+task: rustgram-client-ma0.4
+created: 2026-01-17
+
+scope:
+  critical_managers:
+    - messages-manager
+    - notification-manager
+    - connection-state_manager
+    - auth_manager
+    - dialog_manager
+    - user_manager
+  tl_schema_coverage: true
+  stub_handling: "document_separately"
+
+methodology:
+  step_1: "Compare public API signatures with TDLib headers (references/td/td/telegram/*.h)"
+  step_2: "Verify actor pattern mappings (C++ patterns → Rust equivalents)"
+  step_3: "Check TL schema type coverage against td_api.tl"
+  step_4: "Document stub implementations separately"
+  step_5: "Create gap analysis for missing 13%"
+
+batches:
+  - batch: 1
+    name: "Foundation Layer"
+    modules:
+      - auth_manager
+      - connection-state_manager
+    rationale: "Authentication and connection - foundation for all other managers"
+    tdlib_reference:
+      - "td/telegram/AuthManager.h"
+      - "td/telegram/StateManager.h"
+      - "td/telegram/ConnectionStateManager.h"
+
+  - batch: 2
+    name: "Core Data Layer"
+    modules:
+      - user_manager
+      - dialog_manager
+    rationale: "User and chat data structures - core domain models"
+    tdlib_reference:
+      - "td/telegram/UsersManager.h"
+      - "td/telegram/DialogManager.h"
+
+  - batch: 3
+    name: "Message Handling Layer"
+    modules:
+      - messages-manager
+      - notification-manager
+    rationale: "Message handling and notifications - most complex subsystem"
+    tdlib_reference:
+      - "td/telegram/MessagesManager.h"
+      - "td/telegram/NotificationManager.h"
+
+success_criteria:
+  api_coverage:
+    description: "Percentage of critical managers audited"
+    target: 100
+    threshold: 90
+    unit: "percent"
+
+  tl_schema_coverage:
+    description: "TL schema types verified"
+    target: 87
+    threshold: 80
+    unit: "percent"
+
+  documentation_complete:
+    description: "Required documentation artifacts"
+    items:
+      - api_compatibility_report
+      - gap_analysis
+      - stub_inventory
+      - actor_pattern_mapping
+
+  quality_gates:
+    no_critical_risks: true
+    max_high_risks: 3
+    clippy_clean: true
+    no_production_unwrap: true
+
+artifacts:
+  required:
+    - "specs/api-compatibility-check/clarification_qa.md"
+    - "specs/api-compatibility-check/plan.yaml"
+    - "specs/api-compatibility-check/spec.yaml"
+    - "reference/success-criteria.yaml"
+    - "docs/api-compatibility-report.md"
+    - "docs/gap-analysis.md"
+    - "docs/stub-inventory.md"
+    - "docs/actor-pattern-mapping.md"
+
+estimated_batches: 3
+estimated_crates_per_batch: 2
+total_crates_to_audit: 6

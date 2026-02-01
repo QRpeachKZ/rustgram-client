@@ -1,0 +1,13 @@
+[package]
+name = "rustgram-boost"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+
+[dependencies]
+rustgram-types = { path = "../types" }
+serde = { version = "1.0", features = ["derive"] }
+thiserror = "2.0"
+
+[dev-dependencies]
+serde_json = "1.0"

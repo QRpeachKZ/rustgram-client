@@ -1,0 +1,10 @@
+[package]
+name = "rustgram-group-call-id"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+
+[dev-dependencies]
+rstest.workspace = true

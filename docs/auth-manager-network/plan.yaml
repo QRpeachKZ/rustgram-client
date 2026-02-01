@@ -1,0 +1,217 @@
+# AuthManager Network Integration - Execution Plan
+
+## Epic
+**ID**: rustgram-client-ff7.2
+**Title**: AuthManager Network Integration
+**Priority**: P1
+**Timeline**: 3-4 days
+
+## Current State Assessment
+
+### Already Implemented
+- ✅ `send_code()` method (lines 876-945)
+- ✅ `sign_in()` method (lines 947-1030)
+- ✅ `send_log_out()` method (lines 1032-1096)
+- ✅ TL request types (`SendCodeRequest`, `SignInRequest`, `LogOutRequest`)
+- ✅ TL response types (`Authorization`, `SentCode`, `LoggedOut`)
+- ✅ Auth state machine (WaitCode, WaitPassword, Ready states)
+
+### Gaps Identified
+- ❌ Test coverage: 7% vs 70% target (PRIMARY GAP)
+- ⚠️ Architecture consistency: Uses direct NetQueryDispatcher vs DialogManager's NetworkClient
+- ⚠️ No state persistence for auth tokens
+- ⚠️ No crash recovery logic
+- ⚠️ Limited error handling documentation
+
+---
+
+## Execution Plan
+
+### Phase 1: Planning & Requirements ✅ COMPLETE
+**Status**: Complete
+**Artifacts**: clarification_qa.md, plan.yaml, success-criteria.yaml
+**Risks**: 5 risks identified, awaiting Q1-Q4 responses
+
+---
+
+### Phase 2: Analysis & Spec
+**Duration**: 0.5 day
+**Goal**: Create technical specification incorporating clarification responses
+
+#### Tasks
+1. **Review clarification responses**
+   - Incorporate answers to Q1-Q4
+   - Update risk register based on decisions
+
+2. **Create specification**
+   - `specs/auth_manager_network.yaml`
+   - Define public API surface
+   - Document state transitions
+
+3. **Dependency matrix**
+   - Map dependencies on: types, net, client_actor, td_db
+   - Identify circular dependencies if any
+
+4. **Plan validation**
+   - Verify plan consistency with requirements
+   - Check for rework opportunities
+
+**Deliverables**:
+- `specs/auth_manager_network.yaml`
+- `docs/auth-manager-network/dependency_matrix.md`
+- `docs/auth-manager-network/risk_register.yaml`
+- `docs/auth-manager-network/plan_validation.md` (if needed)
+
+**Exit Criteria**:
+- Spec addresses all clarification responses
+- Dependency matrix complete
+- No BLOCKER risks
+
+---
+
+### Phase 3: Development
+**Duration**: 1-2 days
+**Goal**: Implement missing functionality per spec
+
+#### Batch 1: Testing Foundation (0.5 day)
+- [ ] Add test module structure
+- [ ] Create mock NetQueryDispatcher or test NetworkClient
+- [ ] Set up test fixtures for auth states
+
+#### Batch 2: Unit Tests (1 day)
+- [ ] `send_code()` tests:
+  - [ ] Success case (returns SentCode)
+  - [ ] Error cases (invalid phone, network error)
+  - [ ] State transition to WaitCode
+
+- [ ] `sign_in()` tests:
+  - [ ] Success case (returns Authorization with user)
+  - [ ] Error cases (wrong code, expired code)
+  - [ ] State transition to Ready or WaitPassword
+
+- [ ] `send_log_out()` tests:
+  - [ ] Success case (returns LoggedOut)
+  - [ ] Error handling
+  - [ ] State transition to Closed
+
+#### Batch 3: Refactoring (conditional, 0.5 day)
+**ONLY IF Q1 answer = adopt NetworkClient pattern**:
+- [ ] Create NetworkClient wrapper for AuthManager
+- [ ] Refactor network methods to use NetworkClient
+- [ ] Update all call sites
+
+#### Batch 4: State Persistence (conditional, 0.5 day)
+**ONLY IF Q2 answer = persist state**:
+- [ ] Add serialize/deserialize for auth state
+- [ ] Integrate with secure_storage
+- [ ] Implement state restoration on startup
+
+**Deliverables**:
+- Code changes in `crates/auth_manager/src/lib.rs`
+- Code changes in `crates/auth_manager/src/tests.rs` or `tests/`
+- `docs/auth-manager-network/migration_notes.md` (if refactoring)
+
+**Exit Criteria**:
+- Code compiles with no warnings
+- All new tests pass
+- No unwrap() in production code
+- Clippy clean
+
+---
+
+### Phase 4: Testing
+**Duration**: 0.5 day
+**Goal**: Verify test coverage and integration
+
+#### Tasks
+1. **Run test suite**
+   - `cargo test -p auth_manager`
+   - Verify all tests pass
+
+2. **Coverage analysis**
+   - `cargo llvm-cov -p auth_manager --html`
+   - Verify >= 70% coverage
+
+3. **Integration tests**
+   - Test auth flow end-to-end
+   - Test state transitions
+   - Test error recovery
+
+**Deliverables**:
+- `docs/auth-manager-network/test_report.md`
+- Coverage report HTML
+
+**Exit Criteria**:
+- All tests pass
+- Coverage >= 70%
+- No test failures
+
+---
+
+### Gate 5: Review
+**Duration**: 0.5 day
+**Goal**: Final quality gate
+
+#### Checklist
+- [ ] 0 critical issues
+- [ ] 0 clippy warnings
+- [ ] 0 production unwrap()
+- [ ] Cyclomatic complexity <= threshold (from success-criteria.yaml)
+- [ ] Tests >= min_tests (from success-criteria.yaml)
+- [ ] Coverage >= min_coverage (70%)
+- [ ] Public API docs = 100%
+
+**Verdict**: APPROVED | CHANGES_REQUESTED | BLOCKED
+
+---
+
+## Dependencies
+
+### External
+- `types`: TL schema types (auth_requests, auth_responses)
+- `net`: NetQueryDispatcher, NetQuery
+- `client_actor`: ActorId<AuthManager>
+- `td_db`: Optional, for state persistence
+
+### Internal
+- DialogManager: Reference for NetworkClient pattern (if adopting)
+
+---
+
+## Risk Register
+
+| ID | Type | Description | Probability | Impact | Mitigation |
+|----|------|-------------|-------------|--------|------------|
+| R1 | TEST_COVERAGE_GAP | 7% vs 70% target | High | High | Add 15+ unit tests, 3+ integration tests |
+| R2 | ARCHITECTURE_CONSISTENCY | Pattern mismatch with DialogManager | Medium | Medium | Decision on Q1, potential refactoring |
+| R3 | PERSISTENCE_UNCLEAR | No state persistence spec | Medium | Medium | Decision on Q2, optional implementation |
+| R4 | STATE_RECOVERY | Crash recovery undefined | Medium | Low | Decision on Q3, document behavior |
+| R5 | TESTING_STRATEGY | Mock vs real dispatcher | Low | Medium | Decision on Q4, hybrid approach |
+
+---
+
+## Success Criteria
+
+See `reference/success-criteria-auth-manager.yaml`
+
+**Minimum Targets**:
+- min_tests: 15 unit tests + 3 integration tests
+- min_coverage: 70%
+- max_cyclomatic_complexity: 15
+- clippy_warnings: 0
+- production_unwrap: 0
+
+---
+
+## Timeline Summary
+
+| Phase | Duration | Start | End |
+|-------|----------|-------|-----|
+| Phase 1 | 0.5 day | Day 0 | Day 0.5 |
+| Phase 2 | 0.5 day | Day 0.5 | Day 1 |
+| Gate 2.5 | Immediate | Day 1 | Day 1 |
+| Phase 3 | 1-2 days | Day 1 | Day 2-3 |
+| Phase 4 | 0.5 day | Day 3 | Day 3.5 |
+| Gate 5 | 0.5 day | Day 3.5 | Day 4 |
+
+**Total**: 3-4 days (as estimated)

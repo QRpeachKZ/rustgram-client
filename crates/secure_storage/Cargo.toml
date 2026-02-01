@@ -1,0 +1,31 @@
+[package]
+name = "rustgram-secure-storage"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+description = "Secure storage with encryption for rustgram-client"
+keywords = ["telegram", "mtproto", "crypto", "storage"]
+categories = ["cryptography"]
+
+[features]
+default = []
+
+[dependencies]
+rustgram-buffer = { path = "../buffer" }
+rustgram-crypto = { path = "../crypto" }
+rustgram-types = { path = "../types" }
+serde = { workspace = true }
+sha2 = { workspace = true }
+pbkdf2 = { workspace = true }
+
+[dev-dependencies]
+
+[lints]
+workspace = true
+
+[package.metadata.docs.rs]
+all-features = true
