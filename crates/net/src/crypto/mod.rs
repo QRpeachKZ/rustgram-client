@@ -27,7 +27,7 @@ mod hash;
 mod hmac;
 mod kdf;
 mod prime;
-mod rsa;
+pub(crate) mod rsa;
 
 pub use aes_ige::{aes_ige_decrypt, aes_ige_encrypt, AesIge, CryptoError};
 pub use crypto_auth_key::{

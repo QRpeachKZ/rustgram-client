@@ -34,6 +34,7 @@ use thiserror::Error;
 use crate::circuit_breaker::{CircuitBreaker, CircuitBreakerConfig};
 use crate::dc::{DcId, DcOptionsSet};
 use crate::health_check::{HealthChecker, HealthCheckConfig, HealthStatus};
+use crate::rsa_key_shared::RsaKey;
 use crate::session::{SessionConnection, SessionConnectionConfig};
 
 /// Connection purpose determines which sub-pool to use.
@@ -107,7 +108,7 @@ pub struct PoolConfig {
     pub cleanup_interval: Duration,
 
     /// Maximum retry attempts for connection acquisition.
-    /// Default: 5
+    /// Default: 1
     pub max_retry_attempts: u32,
 
     /// Base delay for exponential backoff (first retry).
@@ -142,7 +143,7 @@ impl Default for PoolConfig {
             max_pending_acquires: 100,
             acquire_timeout: Duration::from_secs(30),
             cleanup_interval: Duration::from_secs(60),
-            max_retry_attempts: 5,
+            max_retry_attempts: 1,
             retry_base_delay: Duration::from_millis(100),
             retry_max_delay: Duration::from_secs(10),
             retry_with_jitter: true,
@@ -266,6 +267,7 @@ struct ConnectionPoolInner {
 
     /// DC options for all data centers
     dc_options: Mutex<DcOptionsSet>,
+    rsa_keys: Mutex<Vec<RsaKey>>,
 
     /// Circuit breakers for each DC
     circuit_breakers: Mutex<HashMap<DcId, Arc<CircuitBreaker>>>,
@@ -405,6 +407,7 @@ impl ConnectionPool {
                 closed: Mutex::new(false),
                 pending_count: Mutex::new(0),
                 dc_options: Mutex::new(DcOptionsSet::new()),
+                rsa_keys: Mutex::new(Vec::new()),
                 circuit_breakers: Mutex::new(HashMap::new()),
                 health_checker,
             }),
@@ -423,6 +426,23 @@ impl ConnectionPool {
     /// for their configured data centers.
     pub fn set_dc_options(&self, options: DcOptionsSet) {
         *self.inner.dc_options.lock() = options;
+    }
+
+    /// Sets RSA keys for handshake encryption.
+    ///
+    /// Keys are applied to new connections and updated on existing connections.
+    pub fn set_rsa_keys(&self, keys: Vec<RsaKey>) {
+        *self.inner.rsa_keys.lock() = keys.clone();
+
+        for purpose in [ConnectionPurpose::Main, ConnectionPurpose::Download, ConnectionPurpose::Upload] {
+            let pools = self.inner.get_pool(purpose);
+            let pools = pools.lock();
+            for pool in pools.values() {
+                for entry in pool {
+                    entry.connection.set_rsa_keys(keys.clone());
+                }
+            }
+        }
     }
 
     /// Acquires a connection for the given DC and purpose.
@@ -561,6 +581,8 @@ impl ConnectionPool {
         // Set DC options on the connection
         let dc_options = self.inner.dc_options.lock().clone();
         connection.set_dc_options(dc_options);
+        let rsa_keys = self.inner.rsa_keys.lock().clone();
+        connection.set_rsa_keys(rsa_keys);
 
         // Start the connection
         connection
@@ -820,7 +842,7 @@ mod tests {
         assert_eq!(config.max_pending_acquires, 100);
         assert_eq!(config.acquire_timeout, Duration::from_secs(30));
         assert_eq!(config.cleanup_interval, Duration::from_secs(60));
-        assert_eq!(config.max_retry_attempts, 5);
+        assert_eq!(config.max_retry_attempts, 1);
         assert_eq!(config.retry_base_delay, Duration::from_millis(100));
         assert_eq!(config.retry_max_delay, Duration::from_secs(10));
         assert!(config.retry_with_jitter);

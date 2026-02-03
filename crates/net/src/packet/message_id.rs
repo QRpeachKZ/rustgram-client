@@ -10,11 +10,10 @@
 //!
 //! # Format
 //!
-//! The message ID format is: `[time_bits(32) : seq_no(8) : random(24)]`
+//! The message ID format is: `[time_bits(32) : random(32)]`
 //!
-//! - `time_bits`: `(server_time / 2^32) as nanoseconds` (mod 2^32)
-//! - `seq_no`: message sequence number
-//! - `random`: random bytes for uniqueness
+//! - `time_bits`: `server_time * 2^32` (integer seconds in high bits)
+//! - `random`: randomized lower bits for uniqueness
 //!
 //! # References
 //!
@@ -32,9 +31,8 @@ use std::fmt;
 ///
 /// The message ID is structured as:
 /// ```text
-/// bits 0-31:   time (unix_time / 2^32 in nanoseconds, modulo 2^32)
-/// bits 32-39:  sequence number portion
-/// bits 40-63:  random bytes
+/// bits 0-31:   fractional time/randomized bits
+/// bits 32-63:  integer time (seconds)
 /// ```
 ///
 /// # Examples
@@ -105,10 +103,13 @@ impl MessageId {
     /// # Algorithm
     ///
     /// ```text
-    /// time_ns = server_time * 1_000_000_000
-    /// time_bits = (time_ns / 2^32) as u32
-    /// msg_id = (time_bits as u64) << 32
+    /// msg_id = floor(server_time * 2^32)
     /// ```
+    ///
+    /// # MTProto Requirements
+    ///
+    /// - Client → Server messages: `msg_id` must be even
+    /// - Server → Client messages: `msg_id` must be odd
     ///
     /// # Examples
     ///
@@ -120,21 +121,54 @@ impl MessageId {
     /// assert!(!msg_id.is_empty());
     /// ```
     #[must_use]
-    pub fn generate(server_time: f64, _is_outgoing: bool, _seq_no: i32) -> Self {
-        // Convert server time to nanoseconds
-        let time_ns = (server_time * 1_000_000_000.0) as u128;
+    pub fn generate(server_time: f64, is_outgoing: bool, _seq_no: i32) -> Self {
+        // TDLib-compatible: msg_id = floor(server_time * 2^32)
+        let mut msg_id = (server_time * ((1u64 << 32) as f64)) as u64;
 
-        // Divide by 2^32 to get the time bits (MTProto spec)
-        let time_bits = ((time_ns >> 32) & 0xFFFFFFFF) as u64;
-
-        // Message ID format: [time_bits(32) : seq_no(8) : random(24)]
-        // For now, we use a simplified version with just time bits
-        let mut msg_id = time_bits << 32;
-
-        // Add random lower bits for uniqueness
+        // Randomize lower bits for clocks with low precision
         use rand::Rng;
-        let random_bits = rand::thread_rng().gen::<u32>() as u64;
-        msg_id |= random_bits & 0x00FFFFFF;
+        let rx = rand::thread_rng().gen::<u32>() as u64;
+        let to_xor = rx & ((1u64 << 22) - 1);
+        msg_id ^= to_xor;
+
+        // Ensure required parity
+        if is_outgoing {
+            // Client → server messages must be even
+            msg_id &= !0x03;
+        } else {
+            // Server → client messages must be odd
+            msg_id &= !0x03;
+            msg_id |= 0x01;
+        }
+
+        // Debug-only assertion to verify MTProto requirements
+        #[cfg(debug_assertions)]
+        {
+            if is_outgoing {
+                assert_eq!(
+                    msg_id & 1,
+                    0,
+                    "Client → Server msg_id must be even, got 0x{:016x} (lsb={})",
+                    msg_id,
+                    msg_id & 1
+                );
+            } else {
+                assert_eq!(
+                    msg_id & 1,
+                    1,
+                    "Server → Client msg_id must be odd, got 0x{:016x} (lsb={})",
+                    msg_id,
+                    msg_id & 1
+                );
+            }
+
+            tracing::trace!(
+                "Generated MessageId: 0x{:016x}, lsb={}, outgoing={}",
+                msg_id,
+                msg_id & 1,
+                is_outgoing
+            );
+        }
 
         Self(msg_id)
     }
@@ -150,17 +184,13 @@ impl MessageId {
             return 0.0;
         }
 
-        // Extract time bits (upper 32 bits)
-        let time_bits = (self.0 >> 32) & 0xFFFFFFFF;
-
-        // Reverse the generation: time = (time_bits * 2^32) / 1e9
-        let time_ns = (time_bits as u128) << 32;
-        time_ns as f64 / 1_000_000_000.0
+        // Reverse the generation: time = msg_id / 2^32
+        self.0 as f64 / ((1u64 << 32) as f64)
     }
 
     /// Returns the sequence number portion of the message ID.
     ///
-    /// In the MTProto spec, bits 32-39 contain a portion of the sequence number.
+    /// In this implementation, lower bits are randomized; seq_no is not encoded.
     #[must_use]
     pub const fn seq_no(self) -> i32 {
         // Extract sequence number from bits 32-39

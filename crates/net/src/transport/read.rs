@@ -9,9 +9,9 @@
 use bytes::Bytes;
 
 use crate::crypto::{aes_ige_decrypt, kdf, kdf2, KdfOutput};
-use crate::packet::{PacketInfo, PacketType};
+use crate::packet::{MessageId, PacketInfo, PacketType};
 use crate::transport::header::{
-    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader,
+    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader, NoCryptoPrefix,
 };
 
 /// Result of reading from the transport.
@@ -265,29 +265,88 @@ impl DefaultTransportReader {
     }
 
     /// Reads a no-crypto packet.
+    ///
+    /// Format per MTProto 2.0 specification (plaintext handshake):
+    /// ```text
+    /// auth_key_id(8) = 0
+    /// msg_id(8)
+    /// message_data_length(4)
+    /// message_data(N)
+    /// ```
+    ///
+    /// NOTE: Unlike encrypted packets, plaintext packets do NOT have a seq_no field.
+    /// Total header size is 20 bytes (8 + 8 + 4), not 24.
     fn read_no_crypto(&self, message: &[u8]) -> Result<ReadResult, TransportReadError> {
-        if message.len() < NoCryptoHeader::SIZE {
+        let min_size = NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE;
+
+        tracing::debug!(
+            "NoCrypto packet read: received_bytes={}, min_required={}, header_size={}, prefix_size={}",
+            message.len(),
+            min_size,
+            NoCryptoHeader::SIZE,
+            NoCryptoPrefix::SIZE,
+        );
+
+        if message.len() < min_size {
             return Err(TransportReadError::MessageTooSmall {
                 actual: message.len(),
-                expected: NoCryptoHeader::SIZE,
+                expected: min_size,
             });
         }
 
         let header = NoCryptoHeader::read_from(message).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: message.len(),
-                expected: NoCryptoHeader::SIZE,
+                expected: min_size,
             }
         })?;
 
         if !header.is_no_crypto() {
+            tracing::error!(
+                "NoCrypto packet: invalid auth_key_id={:016x}, expected 0",
+                header.auth_key_id
+            );
             return Err(TransportReadError::AuthKeyIdMismatch {
                 found: header.auth_key_id,
                 expected: 0,
             });
         }
 
-        let data = message[NoCryptoHeader::SIZE..].to_vec();
+        // Read the NoCryptoPrefix (msg_id + message_data_length, NO padding)
+        let prefix = NoCryptoPrefix::read_from(&message[NoCryptoHeader::SIZE..]).ok_or({
+            TransportReadError::MessageTooSmall {
+                actual: message.len(),
+                expected: min_size,
+            }
+        })?;
+
+        // Detailed logging
+        tracing::debug!(
+            "NoCrypto packet header: auth_key_id={:016x}, msg_id={:016x}, msg_id_mod4={:08x}, data_len={}",
+            header.auth_key_id,
+            prefix.msg_id,
+            prefix.msg_id % 4,
+            prefix.message_data_length,
+        );
+
+        // Validate message length
+        let total_size = NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE + prefix.message_data_length as usize;
+        if message.len() < total_size {
+            return Err(TransportReadError::InvalidMessageLength {
+                length: prefix.message_data_length,
+                reason: format!("not enough data: {} < {}", message.len(), total_size),
+            });
+        }
+
+        // Extract data
+        let data_offset = NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE;
+        let data = message[data_offset..total_size].to_vec();
+
+        tracing::trace!(
+            "NoCrypto packet data (first 32 bytes): {:02x?}",
+            data.iter().take(std::cmp::min(32, data.len())).collect::<Vec<_>>()
+        );
+
         Ok(ReadResult::packet(data))
     }
 
@@ -298,17 +357,19 @@ impl DefaultTransportReader {
         auth_key: &[u8; 256],
         packet_info: &mut PacketInfo,
     ) -> Result<ReadResult, TransportReadError> {
-        if message.len() < CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE {
+        let min_size =
+            CryptoHeader::encrypt_begin_offset() + CryptoHeader::ENCRYPTED_HEADER_SIZE + CryptoPrefix::SIZE;
+        if message.len() < min_size {
             return Err(TransportReadError::MessageTooSmall {
                 actual: message.len(),
-                expected: CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE,
+                expected: min_size,
             });
         }
 
         let header = CryptoHeader::read_from(message).ok_or({
             TransportReadError::MessageTooSmall {
                 actual: message.len(),
-                expected: CryptoHeader::SIZE + CryptoHeader::ENCRYPTED_HEADER_SIZE,
+                expected: CryptoHeader::SIZE,
             }
         })?;
 
@@ -347,23 +408,37 @@ impl DefaultTransportReader {
         aes_ige_decrypt(&aes_key, &mut iv, &mut to_decrypt)
             .map_err(|e| TransportReadError::CryptoError(e.to_string()))?;
 
-        // Read the prefix
-        if to_decrypt.len() < CryptoPrefix::SIZE {
+        // Read the encrypted header (salt + session_id) and prefix
+        if to_decrypt.len() < CryptoHeader::ENCRYPTED_HEADER_SIZE + CryptoPrefix::SIZE {
             return Err(TransportReadError::MessageTooSmall {
                 actual: to_decrypt.len(),
-                expected: CryptoPrefix::SIZE,
+                expected: CryptoHeader::ENCRYPTED_HEADER_SIZE + CryptoPrefix::SIZE,
             });
         }
-
-        let prefix = CryptoPrefix::read_from(&to_decrypt).ok_or({
+        let salt = u64::from_le_bytes(to_decrypt[0..8].try_into().map_err(|_| {
             TransportReadError::MessageTooSmall {
                 actual: to_decrypt.len(),
-                expected: CryptoPrefix::SIZE,
+                expected: CryptoHeader::ENCRYPTED_HEADER_SIZE,
+            }
+        })?);
+        let session_id = u64::from_le_bytes(to_decrypt[8..16].try_into().map_err(|_| {
+            TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: CryptoHeader::ENCRYPTED_HEADER_SIZE,
+            }
+        })?);
+
+        let prefix_offset = CryptoHeader::ENCRYPTED_HEADER_SIZE;
+        let prefix = CryptoPrefix::read_from(&to_decrypt[prefix_offset..]).ok_or({
+            TransportReadError::MessageTooSmall {
+                actual: to_decrypt.len(),
+                expected: CryptoHeader::ENCRYPTED_HEADER_SIZE + CryptoPrefix::SIZE,
             }
         })?;
 
         // Validate message length
-        let total_size = CryptoPrefix::SIZE + prefix.message_data_length as usize;
+        let data_offset = CryptoHeader::ENCRYPTED_HEADER_SIZE + CryptoPrefix::SIZE;
+        let total_size = data_offset + prefix.message_data_length as usize;
         if to_decrypt.len() < total_size {
             return Err(TransportReadError::InvalidMessageLength {
                 length: prefix.message_data_length,
@@ -378,13 +453,13 @@ impl DefaultTransportReader {
         }
 
         // Update packet info
-        packet_info.salt = header.salt;
-        packet_info.session_id = header.session_id;
-        // packet_info.message_id would be set from prefix.msg_id
+        packet_info.salt = salt;
+        packet_info.session_id = session_id;
+        packet_info.message_id = MessageId::from_u64(prefix.msg_id);
         packet_info.seq_no = prefix.seq_no as i32;
 
         // Extract data
-        let data = to_decrypt[CryptoPrefix::SIZE..total_size].to_vec();
+        let data = to_decrypt[data_offset..total_size].to_vec();
         Ok(ReadResult::packet(data))
     }
 
@@ -659,12 +734,20 @@ mod tests {
     #[test]
     fn test_read_no_crypto() {
         let data = vec![1u8, 2, 3, 4, 5];
-        let mut message = NoCryptoHeader::new();
-        message.auth_key_id = 0;
 
-        let mut packet = vec![0u8; 8];
-        message.write_to(&mut packet);
-        packet.extend_from_slice(&data);
+        // Build packet: header (8) + prefix (12) + data
+        let mut packet = vec![0u8; NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE + data.len()];
+
+        // Write header
+        let header = NoCryptoHeader::new();
+        header.write_to(&mut packet);
+
+        // Write prefix with message_data_length
+        let prefix = NoCryptoPrefix::with_values(0x62000000_00000001, data.len() as u32);
+        prefix.write_to(&mut packet[NoCryptoHeader::SIZE..]);
+
+        // Write data
+        packet[NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE..].copy_from_slice(&data);
 
         let reader = DefaultTransportReader::new();
         let result = reader.read_no_crypto(&packet);
@@ -683,12 +766,16 @@ mod tests {
 
     #[test]
     fn test_read_no_crypto_wrong_key_id() {
-        let mut message = NoCryptoHeader::new();
-        message.auth_key_id = 123; // Not zero
+        let mut packet = vec![0u8; NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE + 8];
 
-        let mut packet = vec![0u8; 8];
-        message.write_to(&mut packet);
-        packet.extend_from_slice(&[1u8; 8]);
+        // Write non-zero auth_key_id
+        let mut header = NoCryptoHeader::new();
+        header.auth_key_id = 123; // Not zero
+        header.write_to(&mut packet);
+
+        // Write prefix
+        let prefix = NoCryptoPrefix::new();
+        prefix.write_to(&mut packet[NoCryptoHeader::SIZE..]);
 
         let reader = DefaultTransportReader::new();
         let result = reader.read_no_crypto(&packet);

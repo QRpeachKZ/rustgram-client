@@ -95,36 +95,36 @@ impl AesIge {
             });
         }
 
-        // Split IV into IV1 and IV2
+        // Split IV into IV1 and IV2 (C[-1] and P[-1])
         let (iv1, iv2) = iv.split_at_mut(AES_BLOCK_SIZE);
 
         // Initialize AES cipher
         let mut cipher = Aes256::new(key.into());
 
-        // IGE encryption: C[i] = E(K, P[i] ^ C[i-1]) ^ IV[i]
-        // For encryption, C[-1] = IV1, and we use IV2 for XORing
+        // IGE encryption:
+        // C[i] = AES(P[i] XOR C[i-1]) XOR P[i-1]
         let mut prev_cipherblock = [0u8; AES_BLOCK_SIZE];
         prev_cipherblock.copy_from_slice(iv1);
+        let mut prev_plainblock = [0u8; AES_BLOCK_SIZE];
+        prev_plainblock.copy_from_slice(iv2);
 
         for chunk in data.chunks_exact_mut(AES_BLOCK_SIZE) {
-            // XOR plaintext with previous ciphertext block (or IV1 for first block)
-            let mut temp = [0u8; AES_BLOCK_SIZE];
-            temp.copy_from_slice(chunk);
+            let mut plain = [0u8; AES_BLOCK_SIZE];
+            plain.copy_from_slice(chunk);
+
+            let mut temp = plain;
             xor_inplace(&mut temp, &prev_cipherblock);
-
-            // Encrypt the block
             cipher.encrypt_block_mut((&mut temp).into());
+            xor_inplace(&mut temp, &prev_plainblock);
 
-            // XOR with IV2
-            xor_inplace(&mut temp, iv2);
-
-            // Store result and update previous cipherblock
             chunk.copy_from_slice(&temp);
-            prev_cipherblock.copy_from_slice(chunk);
+            prev_cipherblock.copy_from_slice(&temp);
+            prev_plainblock.copy_from_slice(&plain);
         }
 
-        // Update IV1 with the last encrypted block for chaining
+        // Update IVs for chaining
         iv[..AES_BLOCK_SIZE].copy_from_slice(&prev_cipherblock);
+        iv[AES_BLOCK_SIZE..].copy_from_slice(&prev_plainblock);
 
         Ok(())
     }
@@ -168,39 +168,36 @@ impl AesIge {
             });
         }
 
-        // Split IV into IV1 and IV2
+        // Split IV into IV1 and IV2 (C[-1] and P[-1])
         let (iv1, iv2) = iv.split_at_mut(AES_BLOCK_SIZE);
 
         // Initialize AES cipher
         let mut cipher = Aes256::new(key.into());
 
-        // IGE decryption: P[i] = D(K, C[i] ^ IV2) ^ C[i-1]
-        // For decryption, C[-1] = IV1
+        // IGE decryption:
+        // P[i] = AES^-1(C[i] XOR P[i-1]) XOR C[i-1]
         let mut prev_cipherblock = [0u8; AES_BLOCK_SIZE];
         prev_cipherblock.copy_from_slice(iv1);
+        let mut prev_plainblock = [0u8; AES_BLOCK_SIZE];
+        prev_plainblock.copy_from_slice(iv2);
 
         for chunk in data.chunks_exact_mut(AES_BLOCK_SIZE) {
-            // Save current ciphertext block for next iteration
-            let mut current_cipherblock = [0u8; AES_BLOCK_SIZE];
-            current_cipherblock.copy_from_slice(chunk);
+            let mut cipher_block = [0u8; AES_BLOCK_SIZE];
+            cipher_block.copy_from_slice(chunk);
 
-            // XOR ciphertext with IV2
-            let mut temp = [0u8; AES_BLOCK_SIZE];
-            temp.copy_from_slice(chunk);
-            xor_inplace(&mut temp, iv2);
-
-            // Decrypt the block
+            let mut temp = cipher_block;
+            xor_inplace(&mut temp, &prev_plainblock);
             cipher.decrypt_block_mut((&mut temp).into());
-
-            // XOR with previous ciphertext block (or IV1 for first block)
             xor_inplace(&mut temp, &prev_cipherblock);
 
-            // Store result
             chunk.copy_from_slice(&temp);
-
-            // Store current ciphertext for next iteration
-            prev_cipherblock = current_cipherblock;
+            prev_cipherblock.copy_from_slice(&cipher_block);
+            prev_plainblock.copy_from_slice(&temp);
         }
+
+        // Update IVs for chaining
+        iv[..AES_BLOCK_SIZE].copy_from_slice(&prev_cipherblock);
+        iv[AES_BLOCK_SIZE..].copy_from_slice(&prev_plainblock);
 
         Ok(())
     }

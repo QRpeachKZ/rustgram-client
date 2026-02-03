@@ -21,10 +21,10 @@ use crate::transport::{ReadResult, TransportRead, TransportWrite, WriteOptions};
 pub const MAX_PACKET_SIZE: usize = 16 * 1024 * 1024; // 16 MB
 
 /// Default connection timeout.
-const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(10);
+const DEFAULT_CONNECT_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// Default read timeout.
-const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(15);
+const DEFAULT_READ_TIMEOUT: Duration = Duration::from_secs(30);
 
 use std::sync::Arc;
 
@@ -52,6 +52,9 @@ pub struct TcpTransport {
 
     /// Transport mode for packet framing
     pub transport_mode: crate::transport::TransportMode,
+
+    /// Whether transport magic has been sent
+    magic_sent: bool,
 }
 
 impl TcpTransport {
@@ -65,6 +68,7 @@ impl TcpTransport {
             writer: Arc::new(crate::transport::write::DefaultTransportWriter::new()),
             write_options: WriteOptions::default(),
             transport_mode: crate::transport::TransportMode::default(),
+            magic_sent: false,
         }
     }
 
@@ -82,6 +86,7 @@ impl TcpTransport {
             writer,
             write_options: WriteOptions::default(),
             transport_mode: crate::transport::TransportMode::default(),
+            magic_sent: false,
         }
     }
 
@@ -109,7 +114,7 @@ impl TcpTransport {
     pub async fn connect(&mut self) -> Result<(), ConnectionError> {
         self.state = ConnectionState::Connecting;
 
-        let mut stream = timeout(DEFAULT_CONNECT_TIMEOUT, TcpStream::connect(self.addr))
+        let stream = timeout(DEFAULT_CONNECT_TIMEOUT, TcpStream::connect(self.addr))
             .await
             .map_err(|_| ConnectionError::Timeout(DEFAULT_CONNECT_TIMEOUT))?
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
@@ -118,24 +123,6 @@ impl TcpTransport {
         stream
             .set_nodelay(true)
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
-
-        // Send transport magic number if needed (for Intermediate mode)
-        let magic = crate::transport::get_transport_magic(self.transport_mode);
-        if !magic.is_empty() {
-            stream
-                .write_all(&magic)
-                .await
-                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
-            stream
-                .flush()
-                .await
-                .map_err(|e| ConnectionError::Socket(e.to_string()))?;
-            tracing::info!(
-                "Sent transport magic: {:02x?} (mode: {:?})",
-                magic,
-                self.transport_mode
-            );
-        }
 
         self.stream = Some(stream);
         self.state = ConnectionState::Ready;
@@ -169,9 +156,31 @@ impl TcpTransport {
         // 2. Add transport-level framing (length prefix)
         let framed = crate::transport::frame_packet(self.transport_mode, &mtp_packet);
 
-        // 3. Write to stream
+        // 3. Prepend magic if not sent yet (send together with first packet)
+        let to_send = if !self.magic_sent {
+            let magic = crate::transport::get_transport_magic(self.transport_mode);
+            if !magic.is_empty() {
+                let mut combined = Vec::with_capacity(magic.len() + framed.len());
+                combined.extend_from_slice(&magic);
+                combined.extend_from_slice(&framed);
+                tracing::info!(
+                    "Prepending transport magic: {:02x?} (mode: {:?})",
+                    magic,
+                    self.transport_mode
+                );
+                self.magic_sent = true;
+                combined
+            } else {
+                self.magic_sent = true;
+                framed
+            }
+        } else {
+            framed
+        };
+
+        // 4. Write to stream
         stream
-            .write_all(&framed)
+            .write_all(&to_send)
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
@@ -182,9 +191,9 @@ impl TcpTransport {
 
         tracing::info!(
             "TCP transport wrote {} bytes (framed from {} bytes MTProto packet)\nSent data (hex): {:02x?}",
-            framed.len(),
+            to_send.len(),
             mtp_packet.len(),
-            framed
+            to_send
         );
 
         Ok(())
@@ -317,6 +326,42 @@ impl TcpTransport {
             },
         ))
     }
+
+    /// Sends transport magic if required and not already sent.
+    pub async fn send_magic_if_needed(&mut self) -> Result<(), ConnectionError> {
+        if self.magic_sent {
+            return Ok(());
+        }
+
+        let magic = crate::transport::get_transport_magic(self.transport_mode);
+        if magic.is_empty() {
+            self.magic_sent = true;
+            return Ok(());
+        }
+
+        let stream = self
+            .stream
+            .as_mut()
+            .ok_or_else(|| ConnectionError::Failed("Not connected".into()))?;
+
+        stream
+            .write_all(&magic)
+            .await
+            .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+        stream
+            .flush()
+            .await
+            .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+        self.magic_sent = true;
+        tracing::info!(
+            "Sent transport magic: {:02x?} (mode: {:?})",
+            magic,
+            self.transport_mode
+        );
+
+        Ok(())
+    }
 }
 
 /// Clone helper for TransportRead trait.
@@ -377,6 +422,18 @@ impl TcpReadHalf {
         auth_key: Option<&[u8; 256]>,
         packet_type: crate::packet::PacketType,
     ) -> Result<ReadResult, ConnectionError> {
+        let (result, _info) = self
+            .read_packet_with_info(auth_key, packet_type)
+            .await?;
+        Ok(result)
+    }
+
+    /// Reads a packet from the stream and returns the filled PacketInfo.
+    pub async fn read_packet_with_info(
+        &mut self,
+        auth_key: Option<&[u8; 256]>,
+        packet_type: crate::packet::PacketType,
+    ) -> Result<(ReadResult, PacketInfo), ConnectionError> {
         // Read packet length based on transport mode
         let length = match self.transport_mode {
             crate::transport::TransportMode::Abridged => {
@@ -435,9 +492,12 @@ impl TcpReadHalf {
 
         // Decode
         let mut packet_info = PacketInfo::new().with_packet_type(packet_type);
-        self.reader
+        let result = self
+            .reader
             .read(&buffer, auth_key, &mut packet_info)
-            .map_err(|e| ConnectionError::Failed(e.to_string()))
+            .map_err(|e| ConnectionError::Failed(e.to_string()))?;
+
+        Ok((result, packet_info))
     }
 }
 
@@ -491,6 +551,41 @@ impl TcpWriteHalf {
             .await
             .map_err(|e| ConnectionError::Socket(e.to_string()))?;
 
+        self.stream
+            .flush()
+            .await
+            .map_err(|e| ConnectionError::Socket(e.to_string()))?;
+
+        tracing::trace!(
+            "TcpWriteHalf wrote {} bytes (framed from {} bytes MTProto packet)",
+            framed.len(),
+            mtp_packet.len()
+        );
+
+        Ok(())
+    }
+
+    /// Writes a packet using a pre-populated PacketInfo.
+    ///
+    /// This is required for encrypted packets where message_id/seq_no/salt/session_id
+    /// must be set by the caller.
+    pub async fn write_packet_with_info(
+        &mut self,
+        data: &[u8],
+        auth_key: Option<&[u8; 256]>,
+        packet_info: &mut PacketInfo,
+    ) -> Result<(), ConnectionError> {
+        let mtp_packet = self
+            .writer
+            .write(data, auth_key, packet_info)
+            .map_err(|e| ConnectionError::Ssl(e.to_string()))?;
+
+        let framed = crate::transport::frame_packet(self.transport_mode, &mtp_packet);
+
+        self.stream
+            .write_all(&framed)
+            .await
+            .map_err(|e| ConnectionError::Socket(e.to_string()))?;
         self.stream
             .flush()
             .await

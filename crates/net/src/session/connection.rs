@@ -20,7 +20,7 @@ use crate::connection::ConnectionError;
 use crate::crypto::{aes_ige_decrypt, aes_ige_encrypt, sha256};
 use crate::dc::{DcId, DcOption, DcOptionsSet};
 use crate::handshake::{HandshakeAction, HandshakeError, HandshakeMode, MtprotoHandshake};
-use crate::packet::MessageId;
+use crate::packet::{MessageId, PacketInfo, PacketType};
 use crate::query::NetQuery;
 use crate::rsa_key_shared::RsaKey;
 use crate::transport::{ReadResult, TcpTransport, WriteOptions};
@@ -653,7 +653,7 @@ impl SessionConnection {
         tracing::info!("Sent req_pq_multi to DC {}", self.config.dc_id.get_raw_id());
 
         // 4. Run handshake loop
-        let auth_key = self
+        let (transport, auth_key) = self
             .run_handshake_loop(transport, &mut handshake)
             .await?;
 
@@ -671,7 +671,7 @@ impl SessionConnection {
         tracing::info!("Handshake complete, auth key stored for DC {}", self.config.dc_id.get_raw_id());
 
         // 5. Start main network loop with new auth key
-        self.run_network_loop().await?;
+        self.run_network_loop_with_transport(transport).await?;
 
         self.set_state(SessionState::Ready);
 
@@ -689,7 +689,7 @@ impl SessionConnection {
         &self,
         mut transport: TcpTransport,
         handshake: &mut MtprotoHandshake,
-    ) -> Result<Vec<u8>, ConnectionError> {
+    ) -> Result<(TcpTransport, Vec<u8>), ConnectionError> {
         loop {
             // Read response from server (unencrypted during handshake)
             let read_result = transport.read(None).await?;
@@ -717,7 +717,7 @@ impl SessionConnection {
                     // Handshake complete!
                     tracing::info!("Handshake completed with auth key and salt {}", server_salt);
                     self.auth_data.set_server_salt(server_salt);
-                    return Ok(auth_key);
+                    return Ok((transport, auth_key));
                 }
                 Err(HandshakeError::InvalidState { .. } | HandshakeError::NonceMismatch) => {
                     return Err(ConnectionError::Failed("Handshake state error".into()));
@@ -883,19 +883,39 @@ impl SessionConnection {
         let addr = std::net::SocketAddr::new(dc_option.ip_address, dc_option.port);
         let mut transport = TcpTransport::new(addr);
         transport.connect().await?;
+        transport.send_magic_if_needed().await?;
 
         // 2. Split transport into read/write halves
         let (mut read_half, mut write_half) = transport.split().ok_or_else(|| {
             ConnectionError::Failed("Failed to split transport".into())
         })?;
 
-        // 3. Spawn query sender task
+        // 3. Prepare auth key bytes for encrypted communication
+        let auth_key = self
+            .auth_data
+            .get_auth_key()
+            .ok_or_else(|| ConnectionError::Failed("No auth key".into()))?;
+        if auth_key.len() != 256 {
+            return Err(ConnectionError::Failed(format!(
+                "Invalid auth key length: {}",
+                auth_key.len()
+            )));
+        }
+        let mut auth_key_bytes = [0u8; 256];
+        auth_key_bytes.copy_from_slice(auth_key.as_bytes());
+
+        let auth_key_bytes_read = auth_key_bytes;
+        let auth_key_bytes_write = auth_key_bytes;
+
+        // 4. Spawn query sender task
         let mut query_receiver = self.query_receiver.lock().take().ok_or_else(|| {
             ConnectionError::Failed("Query receiver already taken".into())
         })?;
         let auth_data = self.auth_data.clone();
         let stop_flag = self.stop_flag.clone();
         let event_sender = self.event_sender.clone();
+        let query_lifecycle = self.query_lifecycle.clone();
+        let active_queries = self.active_queries.clone();
         let _dc_id = self.config.dc_id;
 
         tokio::spawn(async move {
@@ -903,7 +923,7 @@ impl SessionConnection {
                 match query_receiver.recv().await {
                     Some(query) => {
                         // Serialize query
-                        let packet = match Self::serialize_query_packet_impl(&query, &auth_data) {
+                        let (packet, mut packet_info) = match Self::serialize_query_packet_impl(&query, &auth_data) {
                             Ok(p) => p,
                             Err(e) => {
                                 tracing::error!("Failed to serialize query: {}", e);
@@ -912,18 +932,34 @@ impl SessionConnection {
                             }
                         };
 
-                        // Encrypt packet
-                        let encrypted = match Self::encrypt_packet_impl(&packet, &auth_data) {
-                            Ok(p) => p,
-                            Err(e) => {
-                                tracing::error!("Failed to encrypt packet: {}", e);
-                                let _ = event_sender.send(SessionEvent::Error(e.to_string()));
-                                continue;
-                            }
-                        };
+                        // Register query by message_id for response matching
+                        let msg_id = packet_info.message_id.as_u64();
+                        if let Err(err) = query_lifecycle.mark_sent(query.id(), msg_id) {
+                            tracing::warn!(
+                                "Failed to mark query {} as sent (message_id={}): {}",
+                                query.id(),
+                                msg_id,
+                                err
+                            );
+                        }
+                        active_queries.lock().insert(msg_id, query.clone());
 
                         // Write to transport
-                        if let Err(e) = write_half.write_packet(&encrypted, None).await {
+                        let msg_id = packet_info.message_id.as_u64();
+                        if let Err(err) = query_lifecycle.mark_sent(query.id(), msg_id) {
+                            tracing::warn!(
+                                "Failed to mark query {} as sent (message_id={}): {}",
+                                query.id(),
+                                msg_id,
+                                err
+                            );
+                        }
+                        active_queries.lock().insert(msg_id, query.clone());
+
+                        if let Err(e) = write_half
+                            .write_packet_with_info(&packet, Some(&auth_key_bytes_write), &mut packet_info)
+                            .await
+                        {
                             tracing::error!("Failed to write packet: {}", e);
                             let _ = event_sender.send(SessionEvent::Error(e.to_string()));
                             break;
@@ -937,23 +973,112 @@ impl SessionConnection {
             Ok::<(), ConnectionError>(())
         });
 
-        // 4. Spawn packet receiver task
+        // 5. Spawn packet receiver task
         let stop_flag = self.stop_flag.clone();
         let event_sender = self.event_sender.clone();
+        let query_lifecycle = self.query_lifecycle.clone();
+        let active_queries = self.active_queries.clone();
+        let statistics = self.statistics.clone();
+        let ping_manager = self.ping_manager.clone();
 
         tokio::spawn(async move {
             while !stop_flag.load(Ordering::Relaxed) {
-                match read_half.read_packet(None, crate::packet::PacketType::Common).await {
-                    Ok(ReadResult::Packet(data)) => {
-                        // Forward to packet processing
-                        let _ = event_sender.send(SessionEvent::Error(
-                            format!("Received {} bytes packet", data.len())
-                        ));
-                        // Note: In a full implementation, we'd process the packet here
+                match read_half
+                    .read_packet_with_info(
+                        Some(&auth_key_bytes_read),
+                        crate::packet::PacketType::Common,
+                    )
+                    .await
+                {
+                    Ok((ReadResult::Packet(data), packet_info)) => {
+                        statistics.lock().packets_received += 1;
+                        statistics.lock().bytes_received += data.len() as u64;
+
+                        let handle_service = |packet: ServicePacket| {
+                            match packet {
+                                ServicePacket::Pong(ping_id) => {
+                                    ping_manager.lock().on_pong(ping_id);
+                                }
+                                ServicePacket::NewSessionCreated { .. } => {
+                                    tracing::debug!("New session created");
+                                }
+                                ServicePacket::Ack { msg_ids } => {
+                                    tracing::debug!(
+                                        "Received ack for {} messages",
+                                        msg_ids.len()
+                                    );
+                                }
+                                _ => {
+                                    tracing::debug!(
+                                        "Unhandled service packet: {:?}",
+                                        packet
+                                    );
+                                }
+                            }
+                        };
+
+                        let handle_content = |message_id: u64, payload: Bytes| {
+                            if let Some(query_id) =
+                                query_lifecycle.find_by_message_id(message_id)
+                            {
+                                if let Err(e) = query_lifecycle
+                                    .mark_completed(message_id, payload.clone())
+                                {
+                                    tracing::error!(
+                                        "Failed to complete query {}: {}",
+                                        query_id,
+                                        e
+                                    );
+                                } else {
+                                    statistics.lock().successful_queries += 1;
+                                    tracing::debug!(
+                                        "Completed query {} with message_id={}",
+                                        query_id,
+                                        message_id
+                                    );
+                                }
+                                active_queries.lock().remove(&message_id);
+                                return;
+                            }
+
+                            if let Some(query) = active_queries.lock().remove(&message_id) {
+                                query.set_ok(payload);
+                                let _ = event_sender
+                                    .send(SessionEvent::QueryCompleted(query.id()));
+                                return;
+                            }
+
+                            tracing::debug!(
+                                "Received message with no matching query: message_id={}",
+                                message_id
+                            );
+                        };
+
+                        match ServicePacket::decode(&data) {
+                            Ok(ServicePacket::MessageContainer { messages }) => {
+                                let mut stack = messages;
+                                while let Some(msg) = stack.pop() {
+                                    match ServicePacket::decode(&msg.body) {
+                                        Ok(ServicePacket::MessageContainer { messages }) => {
+                                            stack.extend(messages);
+                                        }
+                                        Ok(packet) => handle_service(packet),
+                                        Err(_) => handle_content(msg.msg_id, msg.body),
+                                    }
+                                }
+                            }
+                            Ok(packet) => handle_service(packet),
+                            Err(_) => {
+                                handle_content(
+                                    packet_info.message_id.as_u64(),
+                                    data,
+                                );
+                            }
+                        }
                     }
-                    Ok(ReadResult::Nop) => continue,
-                    Ok(ReadResult::QuickAck(_)) => continue,
-                    Ok(ReadResult::Error(code)) => {
+                    Ok((ReadResult::Nop, _)) => continue,
+                    Ok((ReadResult::QuickAck(_), _)) => continue,
+                    Ok((ReadResult::Error(code), _)) => {
                         tracing::error!("Transport error: {}", code);
                         break;
                     }
@@ -980,10 +1105,29 @@ impl SessionConnection {
         &self,
         mut transport: TcpTransport,
     ) -> Result<(), ConnectionError> {
+        transport.send_magic_if_needed().await?;
+
         // Split the provided transport
         let (mut read_half, mut write_half) = transport.split().ok_or_else(|| {
             ConnectionError::Failed("Failed to split transport".into())
         })?;
+
+        // Prepare auth key bytes for encrypted communication
+        let auth_key = self
+            .auth_data
+            .get_auth_key()
+            .ok_or_else(|| ConnectionError::Failed("No auth key".into()))?;
+        if auth_key.len() != 256 {
+            return Err(ConnectionError::Failed(format!(
+                "Invalid auth key length: {}",
+                auth_key.len()
+            )));
+        }
+        let mut auth_key_bytes = [0u8; 256];
+        auth_key_bytes.copy_from_slice(auth_key.as_bytes());
+
+        let auth_key_bytes_read = auth_key_bytes;
+        let auth_key_bytes_write = auth_key_bytes;
 
         // Spawn query sender task
         let mut query_receiver = self.query_receiver.lock().take().ok_or_else(|| {
@@ -997,7 +1141,7 @@ impl SessionConnection {
             while !stop_flag.load(Ordering::Relaxed) {
                 match query_receiver.recv().await {
                     Some(query) => {
-                        let packet = match Self::serialize_query_packet_impl(&query, &auth_data) {
+                        let (packet, mut packet_info) = match Self::serialize_query_packet_impl(&query, &auth_data) {
                             Ok(p) => p,
                             Err(e) => {
                                 tracing::error!("Failed to serialize query: {}", e);
@@ -1006,16 +1150,10 @@ impl SessionConnection {
                             }
                         };
 
-                        let encrypted = match Self::encrypt_packet_impl(&packet, &auth_data) {
-                            Ok(p) => p,
-                            Err(e) => {
-                                tracing::error!("Failed to encrypt packet: {}", e);
-                                let _ = event_sender.send(SessionEvent::Error(e.to_string()));
-                                continue;
-                            }
-                        };
-
-                        if let Err(e) = write_half.write_packet(&encrypted, None).await {
+                        if let Err(e) = write_half
+                            .write_packet_with_info(&packet, Some(&auth_key_bytes_write), &mut packet_info)
+                            .await
+                        {
                             tracing::error!("Failed to write packet: {}", e);
                             let _ = event_sender.send(SessionEvent::Error(e.to_string()));
                             break;
@@ -1030,18 +1168,109 @@ impl SessionConnection {
         // Spawn packet receiver task
         let stop_flag = self.stop_flag.clone();
         let event_sender = self.event_sender.clone();
+        let query_lifecycle = self.query_lifecycle.clone();
+        let active_queries = self.active_queries.clone();
+        let statistics = self.statistics.clone();
+        let ping_manager = self.ping_manager.clone();
 
         tokio::spawn(async move {
             while !stop_flag.load(Ordering::Relaxed) {
-                match read_half.read_packet(None, crate::packet::PacketType::Common).await {
-                    Ok(ReadResult::Packet(data)) => {
-                        let _ = event_sender.send(SessionEvent::Error(
-                            format!("Received {} bytes", data.len())
-                        ));
+                match read_half
+                    .read_packet_with_info(
+                        Some(&auth_key_bytes_read),
+                        crate::packet::PacketType::Common,
+                    )
+                    .await
+                {
+                    Ok((ReadResult::Packet(data), packet_info)) => {
+                        statistics.lock().packets_received += 1;
+                        statistics.lock().bytes_received += data.len() as u64;
+
+                        let handle_service = |packet: ServicePacket| {
+                            match packet {
+                                ServicePacket::Pong(ping_id) => {
+                                    ping_manager.lock().on_pong(ping_id);
+                                }
+                                ServicePacket::NewSessionCreated { .. } => {
+                                    tracing::debug!("New session created");
+                                }
+                                ServicePacket::Ack { msg_ids } => {
+                                    tracing::debug!(
+                                        "Received ack for {} messages",
+                                        msg_ids.len()
+                                    );
+                                }
+                                _ => {
+                                    tracing::debug!(
+                                        "Unhandled service packet: {:?}",
+                                        packet
+                                    );
+                                }
+                            }
+                        };
+
+                        let handle_content = |message_id: u64, payload: Bytes| {
+                            if let Some(query_id) =
+                                query_lifecycle.find_by_message_id(message_id)
+                            {
+                                if let Err(e) = query_lifecycle
+                                    .mark_completed(message_id, payload.clone())
+                                {
+                                    tracing::error!(
+                                        "Failed to complete query {}: {}",
+                                        query_id,
+                                        e
+                                    );
+                                } else {
+                                    statistics.lock().successful_queries += 1;
+                                    tracing::debug!(
+                                        "Completed query {} with message_id={}",
+                                        query_id,
+                                        message_id
+                                    );
+                                }
+                                active_queries.lock().remove(&message_id);
+                                return;
+                            }
+
+                            if let Some(query) = active_queries.lock().remove(&message_id) {
+                                query.set_ok(payload);
+                                let _ = event_sender
+                                    .send(SessionEvent::QueryCompleted(query.id()));
+                                return;
+                            }
+
+                            tracing::debug!(
+                                "Received message with no matching query: message_id={}",
+                                message_id
+                            );
+                        };
+
+                        match ServicePacket::decode(&data) {
+                            Ok(ServicePacket::MessageContainer { messages }) => {
+                                let mut stack = messages;
+                                while let Some(msg) = stack.pop() {
+                                    match ServicePacket::decode(&msg.body) {
+                                        Ok(ServicePacket::MessageContainer { messages }) => {
+                                            stack.extend(messages);
+                                        }
+                                        Ok(packet) => handle_service(packet),
+                                        Err(_) => handle_content(msg.msg_id, msg.body),
+                                    }
+                                }
+                            }
+                            Ok(packet) => handle_service(packet),
+                            Err(_) => {
+                                handle_content(
+                                    packet_info.message_id.as_u64(),
+                                    data,
+                                );
+                            }
+                        }
                     }
-                    Ok(ReadResult::Nop) => continue,
-                    Ok(ReadResult::QuickAck(_)) => continue,
-                    Ok(ReadResult::Error(code)) => {
+                    Ok((ReadResult::Nop, _)) => continue,
+                    Ok((ReadResult::QuickAck(_), _)) => continue,
+                    Ok((ReadResult::Error(code), _)) => {
                         tracing::error!("Transport error: {}", code);
                         break;
                     }
@@ -1064,7 +1293,7 @@ impl SessionConnection {
     fn serialize_query_packet_impl(
         query: &NetQuery,
         auth_data: &AuthDataShared,
-    ) -> Result<Vec<u8>, ConnectionError> {
+    ) -> Result<(Vec<u8>, PacketInfo), ConnectionError> {
         use std::time::{SystemTime, UNIX_EPOCH};
 
         let message_id = MessageId::generate(
@@ -1078,17 +1307,17 @@ impl SessionConnection {
 
         let seq_no = auth_data.next_seq_no(true);
 
-        let mut packet = Vec::new();
-        packet.extend_from_slice(&auth_data.server_salt().to_le_bytes());
-        packet.extend_from_slice(&auth_data.session_id().to_le_bytes());
-        packet.extend_from_slice(&message_id.as_u64().to_le_bytes());
-        packet.extend_from_slice(&seq_no.to_le_bytes());
-        packet.extend_from_slice(&(query.query().len() as u32).to_le_bytes());
-        packet.extend_from_slice(query.query());
-
         query.set_message_id(message_id.as_u64());
 
-        Ok(packet)
+        let packet_info = PacketInfo::new()
+            .with_packet_type(PacketType::Common)
+            .with_salt(auth_data.server_salt())
+            .with_session_id(auth_data.session_id())
+            .with_message_id(message_id)
+            .with_seq_no(seq_no)
+            .with_version(2);
+
+        Ok((query.query().to_vec(), packet_info))
     }
 
     /// Static helper for encrypting a packet.

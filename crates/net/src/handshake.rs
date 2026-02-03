@@ -34,12 +34,15 @@
 //! - MTProto 2.0: <https://core.telegram.org/mtproto/description>
 
 use crate::crypto::{
-    aes_ige_decrypt, aes_ige_encrypt, pq_factorize, sha1, sha256, tmp_kdf, KdfOutput,
+    aes_ige_decrypt, aes_ige_encrypt, pq_factorize_big, sha1, sha256, tmp_kdf, KdfOutput,
     RsaPublicKeyWrapper,
 };
 use crate::dc::DcId;
 use crate::rsa_key_shared::RsaKey;
+use crate::test_config::is_test_dc;
 use bytes::BytesMut;
+use num_bigint::BigUint;
+use num_traits::{One, Zero};
 use rand::Rng;
 use rustgram_types::{
     ClientDhInnerData, DhGenOk, PQInnerDataDc, PQInnerDataTempDc, ReqDhParams, ReqPqMulti,
@@ -339,6 +342,49 @@ impl MtprotoHandshake {
         req.serialize_tl(&mut buf)
             .map_err(|e| HandshakeError::Other(format!("Serialization failed: {}", e)))?;
 
+        // Debug-only assertions to verify correct serialization
+        #[cfg(debug_assertions)]
+        {
+            let data = buf.as_ref();
+
+            // req_pq_multi should be exactly 20 bytes:
+            // - constructor ID (4 bytes): 0xbe7e8ef1
+            // - nonce (16 bytes)
+            assert_eq!(
+                data.len(),
+                20,
+                "req_pq_multi must be exactly 20 bytes, got {}",
+                data.len()
+            );
+
+            // First 4 bytes should be constructor ID in little-endian
+            // 0xf18e7ebe as little-endian bytes: [e7, 8e, f1, be]
+            // But when stored as u32 LE and converted to bytes: be f1 8e e7
+            let constructor_id = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
+            assert_eq!(
+                constructor_id, 0xbe7e8ef1,
+                "req_pq_multi constructor ID must be 0xbe7e8ef1, got 0x{:08x}",
+                constructor_id
+            );
+
+            // Remaining 16 bytes should be the nonce
+            assert_eq!(
+                &data[4..20],
+                nonce_bytes,
+                "req_pq_multi nonce must match the generated nonce"
+            );
+
+            tracing::debug!(
+                "req_pq_multi serialized correctly: {} bytes, constructor=0x{:08x}",
+                data.len(),
+                constructor_id
+            );
+            tracing::trace!(
+                "req_pq_multi hex: {:02x?}",
+                data
+            );
+        }
+
         self.state = HandshakeState::ResPQ;
 
         Ok(HandshakeAction::Send(buf.to_vec()))
@@ -367,7 +413,7 @@ impl MtprotoHandshake {
     /// Returns various errors if validation or factorization fails.
     pub fn on_res_pq(
         &mut self,
-        data: &[u8],
+        res_pq: ResPq,
         rsa_key: &RsaPublicKeyWrapper,
     ) -> Result<HandshakeAction, HandshakeError> {
         if self.state != HandshakeState::ResPQ {
@@ -377,11 +423,6 @@ impl MtprotoHandshake {
             });
         }
 
-        // Parse ResPQ response
-        // Note: For now, we'll do a simplified parse. A full implementation would
-        // use TlDeserialize
-        let res_pq = self.parse_res_pq(data)?;
-
         // Validate nonce
         if res_pq.nonce != self.nonce {
             return Err(HandshakeError::NonceMismatch);
@@ -389,17 +430,12 @@ impl MtprotoHandshake {
 
         self.server_nonce = res_pq.server_nonce;
 
-        // Factorize PQ - convert Vec<u8> to u64
-        let pq_u64 = u64::from_le_bytes(
-            res_pq.pq[..8]
-                .try_into()
-                .map_err(|_| HandshakeError::Other("Invalid PQ bytes".into()))?,
-        );
-        let (p_u64, q_u64) = pq_factorize(pq_u64).ok_or(HandshakeError::FactorizationFailed)?;
-
-        // Convert u64 to Vec<u8>
-        let p = p_u64.to_le_bytes().to_vec();
-        let q = q_u64.to_le_bytes().to_vec();
+        // Factorize PQ (big-endian bytes)
+        let (mut p, mut q) = pq_factorize_big(&res_pq.pq)
+            .map_err(|_| HandshakeError::FactorizationFailed)?;
+        if BigUint::from_bytes_be(&p) > BigUint::from_bytes_be(&q) {
+            std::mem::swap(&mut p, &mut q);
+        }
 
         // Generate new_nonce
         rand::thread_rng().fill(&mut self.new_nonce);
@@ -411,7 +447,10 @@ impl MtprotoHandshake {
         // Build PQ inner data based on mode
         let inner_data = match self.mode {
             HandshakeMode::Main => {
-                let dc_id = self.dc_id.get_raw_id();
+                let mut dc_id = self.dc_id.get_raw_id();
+                if is_test_dc() {
+                    dc_id += 10000;
+                }
                 let inner = PQInnerDataDc::new(
                     res_pq.pq.clone(),
                     p.clone(),
@@ -430,7 +469,10 @@ impl MtprotoHandshake {
                 buf.to_vec()
             }
             HandshakeMode::Temp => {
-                let dc_id = self.dc_id.get_raw_id();
+                let mut dc_id = self.dc_id.get_raw_id();
+                if is_test_dc() {
+                    dc_id += 10000;
+                }
                 let expires_in = self.expires_in.unwrap_or(86400);
                 let inner = PQInnerDataTempDc::new(rustgram_types::mtproto_auth::PQInnerDataTempDcOptions {
                     pq: res_pq.pq.clone(),
@@ -715,45 +757,13 @@ impl MtprotoHandshake {
         &self,
         data: &[u8],
     ) -> Result<ServerDhParamsOk, HandshakeError> {
-        // Constructor ID for server_DH_params_ok is 0xd0e8075c
-        // For now, we'll do simplified parsing
-        let mut offset = 4; // Skip constructor ID
-
-        // Read nonce (16 bytes)
-        let nonce = &data[offset..offset + 16];
-        offset += 16;
-
-        // Read server_nonce (16 bytes)
-        let server_nonce = &data[offset..offset + 16];
-        offset += 16;
-
-        // Read encrypted_answer bytes
-        offset = (offset + 3) & !3; // Align
-
-        let encrypted_len = if data[offset] < 254 {
-            data[offset] as usize
-        } else {
-            // Extended length
-            offset += 1;
-            let mut len_bytes = [0u8; 4];
-            len_bytes[0..3].copy_from_slice(&data[offset..offset + 3]);
-            u32::from_le_bytes(len_bytes) as usize
-        };
-        offset += if data[offset - (encrypted_len < 254) as usize - 1] < 254 {
-            1
-        } else {
-            4
-        };
-
-        offset = (offset + 3) & !3; // Align
-
-        let encrypted_answer = data[offset..offset + encrypted_len].to_vec();
-
-        Ok(ServerDhParamsOk::new(
-            TlInt128::new(nonce.try_into().unwrap()),
-            TlInt128::new(server_nonce.try_into().unwrap()),
-            encrypted_answer,
-        ))
+        let mut bytes = TlBytes::from_vec(data.to_vec());
+        ServerDhParamsOk::deserialize_tl(&mut bytes).map_err(|e| {
+            HandshakeError::Other(format!(
+                "Failed to deserialize ServerDhParamsOk: {}",
+                e
+            ))
+        })
     }
 
     /// Parses DhGenOk from raw data.
@@ -810,26 +820,35 @@ impl MtprotoHandshake {
             let mut aes_key = [0u8; 32];
             rand::thread_rng().fill(&mut aes_key);
 
-            // Compute SHA256(aes_key + data)
+            // data_with_hash = data + sha256(aes_key + data)
             let hash = sha256([&aes_key[..], &padded_data].concat().as_slice());
-
-            // Reverse data for encryption
-            let mut data_to_encrypt = padded_data.clone();
-            data_to_encrypt[..data.len()].reverse();
-
-            // Build data_with_hash = data + hash
             let mut data_with_hash = Vec::with_capacity(192 + 32);
-            data_with_hash.extend_from_slice(&data_to_encrypt);
+            data_with_hash.extend_from_slice(&padded_data);
             data_with_hash.extend_from_slice(&hash);
 
-            // XOR first 32 bytes with hash
-            let encrypted_hash = sha256(&data_with_hash);
-            for i in 0..32 {
-                data_with_hash[i] ^= encrypted_hash[i];
+            // Reverse first 192 bytes (data portion)
+            data_with_hash[..192].reverse();
+
+            // decrypted_data = 256 bytes
+            let mut decrypted_data = vec![0u8; RSA_ENCRYPTED_SIZE];
+            let mut aes_iv = [0u8; 32];
+
+            // AES-IGE encrypt data_with_hash into decrypted_data[32..]
+            decrypted_data[32..].copy_from_slice(&data_with_hash);
+            if aes_ige_encrypt(&aes_key, &mut aes_iv, &mut decrypted_data[32..]).is_err() {
+                continue;
             }
 
-            // Try RSA encryption using PKCS#1 v1.5 (as TDLib does)
-            match rsa_key.encrypt_v1_5(&data_with_hash) {
+            // hash = sha256(decrypted_data[32..])
+            let hash = sha256(&decrypted_data[32..]);
+
+            // decrypted_data[0..32] = aes_key XOR hash
+            for i in 0..32 {
+                decrypted_data[i] = aes_key[i] ^ hash[i];
+            }
+
+            // Try raw RSA encryption (as TDLib does)
+            match rsa_key.encrypt_raw(&decrypted_data) {
                 Ok(encrypted_data) => return Ok(encrypted_data),
                 Err(_) => continue,
             }
@@ -882,6 +901,12 @@ impl MtprotoHandshake {
     ) -> Result<ServerDhInnerData, HandshakeError> {
         // Answer format: SHA1(answer) + answer + padding (0-15 bytes)
         // Skip SHA1 hash (20 bytes)
+        if decrypted.len() < 20 + 4 {
+            return Err(HandshakeError::Other(
+                "Decrypted answer too short".into(),
+            ));
+        }
+
         let mut offset = 20;
 
         // Check constructor ID (should be 0xb5890dba for server_DH_inner_data)
@@ -908,52 +933,32 @@ impl MtprotoHandshake {
         let g = i32::from_le_bytes(decrypted[offset..offset + 4].try_into().unwrap());
         offset += 4;
 
-        // Read dh_prime bytes
-        offset = (offset + 3) & !3; // Align
-        let dh_prime_len = if decrypted[offset] < 254 {
-            decrypted[offset] as usize
-        } else {
-            // Simplified - assume 255 means need extended reading
-            offset += 1;
-            let mut len_bytes = [0u8; 4];
-            len_bytes[0..3].copy_from_slice(&decrypted[offset..offset + 3]);
-            u32::from_le_bytes(len_bytes) as usize
-        };
-        offset += if decrypted[offset - (dh_prime_len < 254) as usize - 1] < 254 {
-            1
-        } else {
-            4
-        };
+        // Read dh_prime bytes (TL bytes)
+        let dh_prime = read_tl_bytes(decrypted, &mut offset)?;
 
-        offset = (offset + 3) & !3; // Align
-        let dh_prime = decrypted[offset..offset + dh_prime_len].to_vec();
-        offset += dh_prime_len;
-
-        // Align
-        offset = (offset + 3) & !3;
-
-        // Read ga bytes
-        let ga_len = if decrypted[offset] < 254 {
-            decrypted[offset] as usize
-        } else {
-            offset += 1;
-            let mut len_bytes = [0u8; 4];
-            len_bytes[0..3].copy_from_slice(&decrypted[offset..offset + 3]);
-            u32::from_le_bytes(len_bytes) as usize
-        };
-        offset += if decrypted[offset - (ga_len < 254) as usize - 1] < 254 {
-            1
-        } else {
-            4
-        };
-
-        offset = (offset + 3) & !3; // Align
-        let ga = decrypted[offset..offset + ga_len].to_vec();
-        offset += ga_len;
+        // Read ga bytes (TL bytes)
+        let ga = read_tl_bytes(decrypted, &mut offset)?;
 
         // Read server_time (i32, 4 bytes)
         offset = (offset + 3) & !3; // Align
+        if offset + 4 > decrypted.len() {
+            return Err(HandshakeError::Other(
+                "Not enough bytes for server_time".into(),
+            ));
+        }
         let server_time = i32::from_le_bytes(decrypted[offset..offset + 4].try_into().unwrap());
+
+        // Validate SHA1(answer) prefix
+        let inner_len = offset + 4 - 20;
+        if 20 + inner_len > decrypted.len() {
+            return Err(HandshakeError::Other(
+                "Invalid inner data length".into(),
+            ));
+        }
+        let expected_hash = sha1(&decrypted[20..20 + inner_len]);
+        if decrypted[0..20] != expected_hash {
+            return Err(HandshakeError::HashMismatch);
+        }
 
         Ok(ServerDhInnerData::new(
             nonce, server_nonce, g, dh_prime, ga, server_time,
@@ -969,34 +974,67 @@ impl MtprotoHandshake {
         dh_prime: &[u8],
         ga: &[u8],
     ) -> Result<(), HandshakeError> {
-        // Check g is 2 or 5 (standard values)
-        if g != 2 && g != 5 {
+        // Check g is 2..=7 (TDLib allows 2-7)
+        if !(2..=7).contains(&g) {
             return Err(HandshakeError::DhValidationFailed(format!(
                 "Invalid generator: {}",
                 g
             )));
         }
 
-        // Check dh_prime size (should be 2048 bits = 256 bytes)
-        if dh_prime.len() != 256 {
+        // Check dh_prime size (should be 2048 bits)
+        let prime = BigUint::from_bytes_be(dh_prime);
+        if prime.is_zero() || prime.bits() != 2048 {
             return Err(HandshakeError::DhValidationFailed(format!(
-                "Invalid prime size: {}",
-                dh_prime.len()
+                "Invalid prime size: {} bits",
+                prime.bits()
             )));
         }
 
-        // Check ga size (should be 256 bytes)
-        if ga.len() != 256 {
+        // Check ga size (1..=256 bytes)
+        if ga.is_empty() || ga.len() > 256 {
             return Err(HandshakeError::DhValidationFailed(format!(
                 "Invalid ga size: {}",
                 ga.len()
             )));
         }
 
-        // TODO: Add more thorough validation:
-        // - Check dh_prime is a safe prime
-        // - Check ga is in [2, dh_prime - 2]
-        // - Check ga > 1 and ga < dh_prime
+        // Check dh_prime mod conditions for generator (TDLib)
+        let mod_ok = match g {
+            2 => (&prime % 8u32) == BigUint::from(7u32),
+            3 => (&prime % 3u32) == BigUint::from(2u32),
+            4 => true,
+            5 => {
+                let r = &prime % 5u32;
+                r == BigUint::from(1u32) || r == BigUint::from(4u32)
+            }
+            6 => {
+                let r = &prime % 24u32;
+                r == BigUint::from(19u32) || r == BigUint::from(23u32)
+            }
+            7 => {
+                let r = &prime % 7u32;
+                r == BigUint::from(3u32)
+                    || r == BigUint::from(5u32)
+                    || r == BigUint::from(6u32)
+            }
+            _ => false,
+        };
+        if !mod_ok {
+            return Err(HandshakeError::DhValidationFailed(
+                "Bad prime mod 4g".into(),
+            ));
+        }
+
+        // Check ga range (2^2048-64 <= ga <= p - 2^2048-64)
+        let ga_num = BigUint::from_bytes_be(ga);
+        let left = BigUint::one() << (2048 - 64);
+        let right = &prime - &left;
+        if ga_num < left || ga_num > right {
+            return Err(HandshakeError::DhValidationFailed(
+                "g_a out of range".into(),
+            ));
+        }
 
         Ok(())
     }
@@ -1007,28 +1045,67 @@ impl MtprotoHandshake {
     //  proper big integer arithmetic.
     fn compute_dh_key(
         &self,
-        _g: i32,
-        _dh_prime: &[u8],
-        _ga: &[u8],
+        g: i32,
+        dh_prime: &[u8],
+        ga: &[u8],
     ) -> Result<(Vec<u8>, Vec<u8>), HandshakeError> {
-        // Generate random exponent b
-        let mut b = [0u8; 256];
-        rand::thread_rng().fill(&mut b);
+        let prime = BigUint::from_bytes_be(dh_prime);
+        let g_big = BigUint::from(g as u32);
+        let ga_big = BigUint::from_bytes_be(ga);
 
-        // For a production implementation, we would:
-        // 1. Use a proper big integer library
-        // 2. Compute g_b = g^b mod dh_prime
-        // 3. Compute auth_key = ga^b mod dh_prime
+        if ga_big.is_zero() || ga_big >= prime {
+            return Err(HandshakeError::DhValidationFailed(
+                "g_a out of range".into(),
+            ));
+        }
 
-        // For now, we'll use a simplified approach
-        // NOTE: This is NOT cryptographically secure and must be replaced
-        // with proper big integer arithmetic using num-bigint or similar
+        // Generate random exponent b in (1, prime-1)
+        let one = BigUint::one();
+        let mut b = BigUint::zero();
+        for _ in 0..100 {
+            let mut b_bytes = [0u8; 256];
+            rand::thread_rng().fill(&mut b_bytes);
+            b = BigUint::from_bytes_be(&b_bytes);
+            if b > one && b < &prime - &one {
+                break;
+            }
+        }
+        if b.is_zero() || b <= one || b >= &prime - &one {
+            return Err(HandshakeError::DhValidationFailed(
+                "Failed to generate valid DH exponent".into(),
+            ));
+        }
 
-        // Placeholder: just return random bytes
-        let gb = vec![0u8; 256];
-        let auth_key = vec![0u8; 256];
+        // Compute g_b = g^b mod p and auth_key = g_a^b mod p
+        let mut gb = g_big.modpow(&b, &prime);
+        let mut auth_key = ga_big.modpow(&b, &prime);
 
-        Ok((gb, auth_key))
+        // Ensure g_b is in the recommended range
+        let left = BigUint::one() << (2048 - 64);
+        let right = &prime - &left;
+        if gb < left || gb > right {
+            // regenerate once if out of range
+            let mut b_bytes = [0u8; 256];
+            rand::thread_rng().fill(&mut b_bytes);
+            b = BigUint::from_bytes_be(&b_bytes);
+            if b <= one || b >= &prime - &one {
+                return Err(HandshakeError::DhValidationFailed(
+                    "Failed to regenerate valid DH exponent".into(),
+                ));
+            }
+            gb = g_big.modpow(&b, &prime);
+            auth_key = ga_big.modpow(&b, &prime);
+        }
+
+        let gb_bytes = gb.to_bytes_be();
+        let mut auth_key_bytes = auth_key.to_bytes_be();
+        if auth_key_bytes.len() < 256 {
+            let mut padded = vec![0u8; 256 - auth_key_bytes.len()];
+            padded.append(&mut auth_key_bytes);
+            auth_key_bytes = padded;
+        }
+
+        Ok((gb_bytes, auth_key_bytes))
     }
 
     /// Encrypts client DH inner data.
@@ -1146,7 +1223,7 @@ impl MtprotoHandshake {
                     .ok_or_else(|| HandshakeError::RsaKeyNotFound(res_pq.server_public_key_fingerprints.first().copied().unwrap_or(0)))?;
 
                 // Process ResPQ with raw data and RSA key
-                self.on_res_pq(data, &rsa_key)
+                self.on_res_pq(res_pq, &rsa_key)
             }
             HandshakeState::ServerDhParams => {
                 tracing::info!("Received ServerDHParams response");
@@ -1219,6 +1296,38 @@ impl MtprotoHandshake {
         // For now, return None to indicate we need real keys
         None
     }
+}
+
+/// Reads TL-serialized bytes from a buffer, advancing `offset`.
+fn read_tl_bytes(data: &[u8], offset: &mut usize) -> Result<Vec<u8>, HandshakeError> {
+    if *offset >= data.len() {
+        return Err(HandshakeError::Other("Not enough bytes for length prefix".into()));
+    }
+
+    let first = data[*offset];
+    *offset += 1;
+
+    let (len, prefix_len) = if first < 254 {
+        (first as usize, 1usize)
+    } else {
+        if *offset + 3 > data.len() {
+            return Err(HandshakeError::Other("Not enough bytes for extended length".into()));
+        }
+        let mut len_bytes = [0u8; 4];
+        len_bytes[0..3].copy_from_slice(&data[*offset..*offset + 3]);
+        *offset += 3;
+        (u32::from_le_bytes(len_bytes) as usize, 4usize)
+    };
+
+    let padding = (4 - ((len + prefix_len) % 4)) % 4;
+    if *offset + len + padding > data.len() {
+        return Err(HandshakeError::Other("Not enough bytes for data".into()));
+    }
+
+    let out = data[*offset..*offset + len].to_vec();
+    *offset += len + padding;
+
+    Ok(out)
 }
 
 #[cfg(test)]

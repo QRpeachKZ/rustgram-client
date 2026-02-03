@@ -76,12 +76,13 @@ impl TlHelper {
     /// Writes a bytes value to the buffer with length prefix.
     ///
     /// In MTProto, bytes are serialized as:
-    /// - If length < 254: 1 byte length + padding + data
+    /// - If length < 254: 1 byte length + data + padding
     /// - If length >= 254: 4 bytes length + data + padding
     pub fn write_bytes(buf: &mut BytesMut, data: &[u8]) {
         let len = data.len();
         if len < 254 {
             buf.put_u8(len as u8);
+            buf.put_slice(data);
             // Add padding to align to 4 bytes
             let padding = (4 - ((len + 1) % 4)) % 4;
             for _ in 0..padding {
@@ -92,12 +93,12 @@ impl TlHelper {
             // Write 3 bytes of length (little-endian)
             let len_bytes = (len as u32).to_le_bytes();
             buf.put_slice(&len_bytes[0..3]);
+            buf.put_slice(data);
             let padding = (4 - (len % 4)) % 4;
             for _ in 0..padding {
                 buf.put_u8(0);
             }
         }
-        buf.put_slice(data);
     }
 
     /// Writes a string to the buffer (same as bytes with UTF-8 encoding).

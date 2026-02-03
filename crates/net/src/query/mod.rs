@@ -685,6 +685,11 @@ impl NetQuery {
     pub fn set_callback(&self, callback: Box<dyn NetQueryCallback>) {
         *self.inner.callback.lock() = Some(callback);
     }
+
+    /// Takes the callback, if any, leaving None behind.
+    pub fn take_callback(&self) -> Option<Box<dyn NetQueryCallback>> {
+        self.inner.callback.lock().take()
+    }
 }
 
 impl fmt::Display for NetQuery {

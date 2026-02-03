@@ -109,17 +109,24 @@ async fn main() -> Result<()> {
     set_test_mode(config.test_dc);
 
     // Load RSA key from .pem file
-    if let Err(e) = load_rsa_key(&config.rsa_key_path) {
-        warn!(
-            "Failed to load RSA key from {}: {}, using fallback",
-            config.rsa_key_path.display(),
-            e
-        );
-    }
+    let rsa_key = match load_rsa_key(&config.rsa_key_path) {
+        Ok(key) => Some(key),
+        Err(e) => {
+            warn!(
+                "Failed to load RSA key from {}: {}, using fallback",
+                config.rsa_key_path.display(),
+                e
+            );
+            None
+        }
+    };
 
     // Create connection pool
     info!("Creating connection pool...");
     let pool = Arc::new(ConnectionPool::new());
+    if let Some(key) = rsa_key {
+        pool.set_rsa_keys(vec![key]);
+    }
 
     // Load DC options with DC2 override support and set on pool
     let dc_options = load_dc_options(&config)?;
@@ -130,7 +137,11 @@ async fn main() -> Result<()> {
     let dispatcher = NetQueryDispatcher::new();
     dispatcher.set_main_dc_id(2); // DC 2 is default for new auth
     dispatcher.set_session_pool(pool.clone());
-    dispatcher.set_session_config(SessionConnectionConfig::new(DcId::internal(2)));
+    dispatcher.set_session_config(
+        SessionConnectionConfig::new(DcId::internal(2))
+            .with_pfs(false)
+            .with_main(true),
+    );
 
     info!("Starting authentication flow");
 
@@ -285,17 +296,26 @@ fn load_dc_options(config: &Config) -> Result<DcOptionsSet> {
 ///
 /// Reads the PEM file and parses it as an RSA public key. The key can then
 /// be passed to RsaKeyManager for use in MTProto authentication.
-fn load_rsa_key(path: &PathBuf) -> Result<()> {
+fn load_rsa_key(path: &PathBuf) -> Result<rustgram_net::RsaKey> {
     use rustgram_net::RsaPublicKeyWrapper;
+    use rustgram_net::RsaKey;
     use std::fs;
 
     let pem_data = fs::read(path)?;
-    let _key = RsaPublicKeyWrapper::from_pem(&pem_data)
+    let pem_string = String::from_utf8(pem_data.clone())
+        .map_err(|e| anyhow::anyhow!("RSA key is not valid UTF-8 PEM: {}", e))?;
+
+    let key = RsaPublicKeyWrapper::from_pem(&pem_data)
         .map_err(|e| anyhow::anyhow!("Failed to parse RSA key: {}", e))?;
 
-    // TODO: Pass key to RsaKeyManager when integrated
+    let fingerprint = RsaKey::compute_fingerprint(&pem_string);
+    if fingerprint == 0 {
+        return Err(anyhow::anyhow!("Failed to compute RSA key fingerprint"));
+    }
+    let rsa_key = RsaKey::new(pem_string, fingerprint, key.bits());
+
     info!("RSA key loaded from {}", path.display());
-    Ok(())
+    Ok(rsa_key)
 }
 
 /// Client configuration.

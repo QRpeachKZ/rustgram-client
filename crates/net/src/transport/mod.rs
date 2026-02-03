@@ -30,7 +30,9 @@ mod socks5;
 mod tcp;
 mod write;
 
-pub use header::{CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader};
+pub use header::{
+    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader, NoCryptoPrefix,
+};
 pub use http::{HttpTransport, HttpTransportFactory};
 pub use http_proxy::{HttpProxyTransport, HttpProxyTransportFactory};
 pub use mtproto_proxy::{MtprotoProxyTransport, MtprotoProxyTransportFactory};
@@ -47,6 +49,12 @@ pub const INTERMEDIATE_MAGIC: u32 = 0xeeeeeeee;
 
 /// Magic number for Intermediate transport mode with padding
 pub const INTERMEDIATE_MAGIC_PADDED: u32 = 0xdddddddd;
+
+/// Magic number for Abridged transport mode
+///
+/// Abridged mode starts with this single byte to indicate the transport mode.
+/// See https://core.telegram.org/mtproto/mtproto-transports#abridged
+pub const ABRIDGED_MAGIC: u8 = 0xef;
 
 /// Returns the initial magic bytes for the given transport mode.
 ///
@@ -70,14 +78,15 @@ pub const INTERMEDIATE_MAGIC_PADDED: u32 = 0xdddddddd;
 /// let magic = get_transport_magic(TransportMode::Intermediate);
 /// assert_eq!(magic, vec![0xEE, 0xEE, 0xEE, 0xEE]);
 ///
-/// // Abridged mode has no magic number
+/// // Abridged mode also has a magic number
 /// let magic = get_transport_magic(TransportMode::Abridged);
-/// assert_eq!(magic, vec![]);
+/// assert_eq!(magic, vec![0xEF]);
 /// ```
 pub fn get_transport_magic(mode: TransportMode) -> Vec<u8> {
     match mode {
         TransportMode::Intermediate => INTERMEDIATE_MAGIC.to_le_bytes().to_vec(),
-        TransportMode::Abridged | TransportMode::NoCrypto | TransportMode::Full => vec![],
+        TransportMode::Abridged => vec![ABRIDGED_MAGIC],
+        TransportMode::NoCrypto | TransportMode::Full => vec![],
     }
 }
 
@@ -98,11 +107,11 @@ impl Default for Transport {
 }
 
 impl Transport {
-    /// Creates a new transport with default (abridged) mode.
+    /// Creates a new transport with default (Intermediate) mode.
     #[must_use]
     pub const fn new() -> Self {
         Self {
-            mode: TransportMode::Abridged,
+            mode: TransportMode::Intermediate,
         }
     }
 
@@ -135,10 +144,10 @@ pub enum TransportMode {
     NoCrypto = 0,
 
     /// Abridged mode: 1-byte length prefix for packets < 127 bytes
-    #[default]
     Abridged = 1,
 
-    /// Intermediate mode: 4-byte length prefix
+    /// Intermediate mode: 4-byte length prefix (TDLib default)
+    #[default]
     Intermediate = 2,
 
     /// Full mode: Encrypted with AES-IGE
@@ -212,8 +221,8 @@ pub fn encode_length(mode: TransportMode, length: usize) -> Vec<u8> {
 ///
 /// let packet = vec![0x00, 0x01, 0x02, 0x03];
 /// let framed = frame_packet(TransportMode::Abridged, &packet);
-/// // Result: [0x04, 0x00, 0x01, 0x02, 0x03]
-/// assert_eq!(framed[0], 0x04); // Length prefix
+/// // Result: [0x08, 0x00, 0x01, 0x02, 0x03] (length << 1)
+/// assert_eq!(framed[0], 0x08); // Length prefix (4 << 1 = 8)
 /// assert_eq!(&framed[1..], &packet[..]);
 /// ```
 pub fn frame_packet(mode: TransportMode, packet: &[u8]) -> Vec<u8> {
@@ -229,13 +238,13 @@ mod tests {
     #[test]
     fn test_transport_default() {
         let transport = Transport::default();
-        assert_eq!(transport.mode(), TransportMode::Abridged);
+        assert_eq!(transport.mode(), TransportMode::Intermediate);
     }
 
     #[test]
     fn test_transport_new() {
         let transport = Transport::new();
-        assert_eq!(transport.mode(), TransportMode::Abridged);
+        assert_eq!(transport.mode(), TransportMode::Intermediate);
     }
 
     #[test]
@@ -253,7 +262,7 @@ mod tests {
 
     #[test]
     fn test_transport_mode_default() {
-        assert_eq!(TransportMode::default(), TransportMode::Abridged);
+        assert_eq!(TransportMode::default(), TransportMode::Intermediate);
     }
 
     #[test]
@@ -265,7 +274,7 @@ mod tests {
     #[test]
     fn test_get_transport_magic_abridged() {
         let magic = get_transport_magic(TransportMode::Abridged);
-        assert_eq!(magic, vec![]);
+        assert_eq!(magic, vec![0xEF]);
     }
 
     #[test]

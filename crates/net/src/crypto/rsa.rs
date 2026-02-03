@@ -22,8 +22,11 @@ use rsa::traits::PublicKeyParts;
 use rsa::{rand_core::OsRng, Pkcs1v15Encrypt, RsaPrivateKey, RsaPublicKey};
 use sha2::Sha256;
 use thiserror::Error;
+use rsa::BigUint;
 
-use crate::crypto::sha256;
+use crate::crypto::sha1;
+use bytes::BytesMut;
+use rustgram_types::tl::TlHelper;
 
 /// Error types for RSA operations.
 #[derive(Debug, Error)]
@@ -88,7 +91,7 @@ impl RsaPublicKeyWrapper {
     /// * `key` - The RSA public key
     pub fn new(key: RsaPublicKey) -> Self {
         let bits = key.size() * 8;
-        let fingerprint = Self::compute_fingerprint(&key);
+        let fingerprint = compute_fingerprint_from_key(&key);
 
         Self {
             inner: key,
@@ -99,8 +102,10 @@ impl RsaPublicKeyWrapper {
 
     /// Computes the fingerprint of an RSA public key.
     ///
-    /// Uses the method from TDLib: SHA256 hash of the DER-encoded key,
-    /// then take first 8 bytes as little-endian i64.
+    /// Uses the method expected by MTProto servers:
+    /// 1) Serialize n and e as TL bytes (without constructor)
+    /// 2) SHA1 over the serialized buffer
+    /// 3) Take bytes 12..20 as little-endian i64
     ///
     /// # Arguments
     ///
@@ -110,19 +115,7 @@ impl RsaPublicKeyWrapper {
     ///
     /// The fingerprint as i64
     fn compute_fingerprint(key: &RsaPublicKey) -> i64 {
-        // Encode to DER format
-        let der = key
-            .to_public_key_der()
-            .expect("RSA public key should serialize to DER successfully");
-
-        // Compute SHA256
-        let hash = sha256(der.as_bytes());
-
-        // Take first 8 bytes as little-endian i64
-        let bytes: [u8; 8] = hash[0..8]
-            .try_into()
-            .unwrap_or([0u8; 8]);
-        i64::from_le_bytes(bytes)
+        compute_fingerprint_from_key(key)
     }
 
     /// Encrypts data using PKCS#1 OAEP padding with SHA256.
@@ -185,6 +178,37 @@ impl RsaPublicKeyWrapper {
         self.inner
             .encrypt(&mut rng, Pkcs1v15Encrypt, data)
             .map_err(|e| RsaError::EncryptionFailed(e.to_string()))
+    }
+
+    /// Encrypts data using raw RSA (no padding).
+    ///
+    /// MTProto handshake expects raw RSA on a 256-byte block.
+    pub fn encrypt_raw(&self, data: &[u8]) -> RsaResult<Vec<u8>> {
+        if data.len() != self.size() {
+            return Err(RsaError::DataTooLarge(data.len(), self.size()));
+        }
+
+        let n = self.inner.n();
+        let e = self.inner.e();
+        let m = BigUint::from_bytes_be(data);
+
+        if &m >= n {
+            return Err(RsaError::EncryptionFailed(
+                "Message representative out of range".into(),
+            ));
+        }
+
+        let c = m.modpow(e, n);
+        let mut out = c.to_bytes_be();
+
+        // Left-pad to key size
+        if out.len() < self.size() {
+            let mut padded = vec![0u8; self.size() - out.len()];
+            padded.append(&mut out);
+            out = padded;
+        }
+
+        Ok(out)
     }
 
     /// Verifies a signature against data.
@@ -278,6 +302,20 @@ impl RsaPublicKeyWrapper {
             .as_ref()
             .to_vec())
     }
+}
+
+pub(crate) fn compute_fingerprint_from_key(key: &RsaPublicKey) -> i64 {
+    let n = key.n().to_bytes_be();
+    let e = key.e().to_bytes_be();
+
+    let mut buf = BytesMut::new();
+    TlHelper::write_bytes(&mut buf, &n);
+    TlHelper::write_bytes(&mut buf, &e);
+
+    let hash = sha1(buf.as_ref());
+    let mut tail = [0u8; 8];
+    tail.copy_from_slice(&hash[12..20]);
+    i64::from_le_bytes(tail)
 }
 
 /// RSA private key wrapper for MTProto operations.

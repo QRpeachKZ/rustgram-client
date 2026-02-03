@@ -45,7 +45,7 @@ impl CryptoHeader {
     pub const ENCRYPTED_HEADER_SIZE: usize = 16;
 
     /// Total size of the header.
-    pub const SIZE: usize = 32;
+    pub const SIZE: usize = 40;
 
     /// Creates a new `CryptoHeader`.
     #[must_use]
@@ -77,15 +77,15 @@ impl CryptoHeader {
     /// Returns the byte offset where encryption begins.
     #[must_use]
     pub const fn encrypt_begin_offset() -> usize {
-        // Encryption starts at salt field (offset 16)
-        16
+        // Encryption starts after auth_key_id + msg_key (offset 24)
+        24
     }
 
     /// Writes the header to a byte buffer.
     ///
     /// # Panics
     ///
-    /// Panics if `buf.len() < 32`.
+    /// Panics if `buf.len() < 40`.
     pub fn write_to(&self, buf: &mut [u8]) {
         assert!(buf.len() >= Self::SIZE, "Buffer too small for CryptoHeader");
 
@@ -99,9 +99,9 @@ impl CryptoHeader {
     ///
     /// # Errors
     ///
-    /// Returns an error if `buf.len() < 40` (header + salt + session_id).
+    /// Returns an error if `buf.len() < 40`.
     pub fn read_from(buf: &[u8]) -> Option<Self> {
-        if buf.len() < Self::SIZE + Self::ENCRYPTED_HEADER_SIZE {
+        if buf.len() < Self::SIZE {
             return None;
         }
 
@@ -379,13 +379,111 @@ impl EndToEndPrefix {
     }
 }
 
+/// MTProto unencrypted packet prefix.
+///
+/// This prefix follows `NoCryptoHeader` for unencrypted packets.
+/// Format per MTProto 2.0 specification:
+/// ```text
+/// [0:8]   msg_id (u64)
+/// [8:12]  message_data_length (u32)
+/// ```
+///
+/// NOTE: Unlike encrypted packets (which have seq_no), unencrypted packets
+/// do NOT have any padding field. The total size is 12 bytes, not 16.
+///
+/// # References
+///
+/// - MTProto 2.0 Specification: <https://core.telegram.org/mtproto/description>
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(C)]
+#[derive(Default)]
+pub struct NoCryptoPrefix {
+    /// Message ID (time-based, similar to encrypted packets)
+    pub msg_id: u64,
+
+    /// Message data length in bytes
+    pub message_data_length: u32,
+}
+
+impl NoCryptoPrefix {
+    /// Size of the prefix in bytes (msg_id + message_data_length, no padding).
+    pub const SIZE: usize = 12;
+
+    /// Creates a new `NoCryptoPrefix`.
+    #[must_use]
+    pub const fn new() -> Self {
+        Self {
+            msg_id: 0,
+            message_data_length: 0,
+        }
+    }
+
+    /// Creates a `NoCryptoPrefix` with the specified values.
+    #[must_use]
+    pub const fn with_values(msg_id: u64, message_data_length: u32) -> Self {
+        Self {
+            msg_id,
+            message_data_length,
+        }
+    }
+
+    /// Returns the total data size (prefix + data).
+    #[must_use]
+    pub const fn total_data_size(&self) -> usize {
+        Self::SIZE + self.message_data_length as usize
+    }
+
+    /// Writes the prefix to a byte buffer.
+    ///
+    /// # Panics
+    ///
+    /// Panics if `buf.len() < 12`.
+    pub fn write_to(&self, buf: &mut [u8]) {
+        assert!(buf.len() >= Self::SIZE, "Buffer too small for NoCryptoPrefix");
+
+        buf[0..8].copy_from_slice(&self.msg_id.to_le_bytes());
+        buf[8..12].copy_from_slice(&self.message_data_length.to_le_bytes());
+    }
+
+    /// Reads a `NoCryptoPrefix` from a byte buffer.
+    ///
+    /// # Errors
+    ///
+    /// Returns `None` if `buf.len() < 12`.
+    pub fn read_from(buf: &[u8]) -> Option<Self> {
+        if buf.len() < Self::SIZE {
+            return None;
+        }
+
+        let msg_id = u64::from_le_bytes(buf[0..8].try_into().ok()?);
+        let message_data_length = u32::from_le_bytes(buf[8..12].try_into().ok()?);
+
+        Some(Self {
+            msg_id,
+            message_data_length,
+        })
+    }
+}
+
+impl fmt::Display for NoCryptoPrefix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "NoCryptoPrefix {{ msg_id: {:016x}, length: {} }}",
+            self.msg_id, self.message_data_length
+        )
+    }
+}
+
 /// MTProto unencrypted packet header.
 ///
 /// Used for unencrypted packets during initial handshake.
 /// Format:
 /// ```text
-/// [0:8] auth_key_id (always 0 for unencrypted)
-/// [8:]  data
+/// [0:8]   auth_key_id (always 0 for unencrypted)
+/// [8:16]  msg_id (from NoCryptoPrefix)
+/// [16:20] message_data_length (from NoCryptoPrefix)
+/// [20:]   data
 /// ```
 ///
 /// # References
@@ -644,5 +742,49 @@ mod tests {
         let header = EndToEndHeader::with_values(0xFEDCBA, [0u8; 16]);
         let s = format!("{header}");
         assert!(s.contains("fedcba"));
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_default() {
+        let prefix = NoCryptoPrefix::default();
+        assert_eq!(prefix.msg_id, 0);
+        assert_eq!(prefix.message_data_length, 0);
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_with_values() {
+        let prefix = NoCryptoPrefix::with_values(0x62000000_00000001, 20);
+        assert_eq!(prefix.msg_id, 0x62000000_00000001);
+        assert_eq!(prefix.message_data_length, 20);
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_size() {
+        assert_eq!(NoCryptoPrefix::SIZE, 12); // 8 (msg_id) + 4 (message_data_length)
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_total_data_size() {
+        let prefix = NoCryptoPrefix::with_values(0, 100);
+        assert_eq!(prefix.total_data_size(), 112); // 12 + 100 (SIZE was changed from 16 to 12)
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_write_read() {
+        let prefix1 = NoCryptoPrefix::with_values(0x62000000_12345678, 512);
+        let mut buf = [0u8; 32];
+        prefix1.write_to(&mut buf);
+
+        let prefix2 = NoCryptoPrefix::read_from(&buf).expect("Failed to read prefix");
+        assert_eq!(prefix1.msg_id, prefix2.msg_id);
+        assert_eq!(prefix1.message_data_length, prefix2.message_data_length);
+    }
+
+    #[test]
+    fn test_no_crypto_prefix_display() {
+        let prefix = NoCryptoPrefix::with_values(0xABCD1234_5678, 1024);
+        let s = format!("{prefix}");
+        assert!(s.contains("abcd1234"));
+        assert!(s.contains("1024"));
     }
 }

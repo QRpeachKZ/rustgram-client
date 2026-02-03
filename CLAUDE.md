@@ -211,7 +211,7 @@ Use /orchestration skill
 ## Important
 
 **Before implementing**: Check TDLib reference in `references/td/` for expected behavior.
-
+**If you’re not sure**: Cross-check the business-logic implementation against the original library @reference/td/.
 **Security**: Cryptography must match TDLib exactly - see `crates/net/` for examples.
 
 **Testing Requirements**:

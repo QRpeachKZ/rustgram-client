@@ -11,7 +11,7 @@ use rand::Rng;
 use crate::crypto::{aes_ige_encrypt, kdf, kdf2, sha256, KdfOutput};
 use crate::packet::{PacketInfo, PacketType};
 use crate::transport::header::{
-    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader,
+    CryptoHeader, CryptoPrefix, EndToEndHeader, EndToEndPrefix, NoCryptoHeader, NoCryptoPrefix,
 };
 
 /// Options for writing MTProto packets.
@@ -283,21 +283,97 @@ impl DefaultTransportWriter {
     }
 
     /// Writes an unencrypted packet.
+    ///
+    /// Format per MTProto 2.0 specification (plaintext handshake):
+    /// ```text
+    /// auth_key_id(8) = 0
+    /// msg_id(8)
+    /// message_data_length(4)
+    /// message_data(N)
+    /// ```
+    ///
+    /// NOTE: Unlike encrypted packets, plaintext packets do NOT have a seq_no field.
+    /// Total header size is 20 bytes (8 + 8 + 4), not 24.
     fn write_no_crypto(
         &self,
         data: &[u8],
-        _packet_info: &PacketInfo,
+        packet_info: &PacketInfo,
     ) -> Result<Vec<u8>, TransportWriteError> {
         if data.is_empty() {
             return Err(TransportWriteError::EmptyData);
         }
 
-        let mut packet = vec![0u8; NoCryptoHeader::SIZE + data.len()];
+        // Add random padding to align to 16 bytes (TDLib-compatible)
+        // pad_size = (-data_len) & 15, then add 16 * random(0..15)
+        let base_pad = (16 - (data.len() % 16)) % 16;
+        let extra_blocks = rand::thread_rng().gen::<u32>() % 16;
+        let pad_size = base_pad + (extra_blocks as usize * 16);
 
+        let total_data_len = data.len() + pad_size;
+
+        // Total size: auth_key_id (8) + msg_id (8) + message_data_length (4) + data + padding
+        let mut packet = vec![0u8; NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE + total_data_len];
+
+        // Write NoCryptoHeader (auth_key_id = 0)
         let header = NoCryptoHeader::new();
         header.write_to(&mut packet);
 
-        packet[NoCryptoHeader::SIZE..].copy_from_slice(data);
+        // Write NoCryptoPrefix (msg_id + message_data_length)
+        // For client → server messages, msg_id must be even (TDLib-compatible)
+        // Use the message_id from packet_info, or generate one if empty
+        let msg_id = if packet_info.message_id.is_empty() {
+            // Generate a message ID with current time
+            // Client messages must have msg_id % 4 != 0
+            use crate::packet::MessageId;
+            MessageId::generate(
+                std::time::SystemTime::now()
+                    .duration_since(std::time::UNIX_EPOCH)
+                    .unwrap_or_default()
+                    .as_secs_f64(),
+                true,  // outgoing
+                0,     // seq_no
+            ).as_u64()
+        } else {
+            packet_info.message_id.as_u64()
+        };
+
+        let prefix = NoCryptoPrefix {
+            msg_id,
+            message_data_length: total_data_len as u32,
+        };
+        prefix.write_to(&mut packet[NoCryptoHeader::SIZE..]);
+
+        // Write data
+        let data_offset = NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE;
+        packet[data_offset..data_offset + data.len()].copy_from_slice(data);
+
+        // Write random padding
+        if pad_size > 0 {
+            let pad_start = data_offset + data.len();
+            let pad_end = pad_start + pad_size;
+            rand::thread_rng().fill(&mut packet[pad_start..pad_end]);
+        }
+
+        // Detailed logging for debugging
+        tracing::debug!(
+            "NoCrypto packet written: total_bytes={}, header_bytes={}, prefix_bytes={}, data_len={}, pad_len={}",
+            packet.len(),
+            NoCryptoHeader::SIZE,
+            NoCryptoPrefix::SIZE,
+            data.len(),
+            pad_size,
+        );
+        tracing::debug!(
+            "NoCrypto packet: auth_key_id={:016x}, msg_id={:016x} (mod4={:08x}), message_data_length={}",
+            header.auth_key_id,
+            prefix.msg_id,
+            prefix.msg_id % 4,
+            prefix.message_data_length,
+        );
+        tracing::trace!(
+            "NoCrypto packet hex (first 48 bytes): {:02x?}",
+            packet.iter().take(std::cmp::min(48, packet.len())).collect::<Vec<_>>()
+        );
 
         Ok(packet)
     }
@@ -332,16 +408,17 @@ impl DefaultTransportWriter {
 
         // Calculate packet size
         let raw_header_size = CryptoHeader::SIZE - CryptoHeader::ENCRYPTED_HEADER_SIZE;
+        let data_with_prefix = data.len() + CryptoPrefix::SIZE;
         let packet_size = if self.options.version == 2 {
             Self::calc_crypto_size_v2(
-                data.len(),
+                data_with_prefix,
                 CryptoHeader::ENCRYPTED_HEADER_SIZE,
                 raw_header_size,
                 self.options.use_random_padding,
             )
         } else {
             Self::calc_crypto_size_v1(
-                data.len(),
+                data_with_prefix,
                 CryptoHeader::ENCRYPTED_HEADER_SIZE,
                 raw_header_size,
             )
@@ -368,11 +445,17 @@ impl DefaultTransportWriter {
             message_data_length: data.len() as u32,
         };
 
-        // Write prefix to the encrypted section
-        prefix.write_to(&mut packet[encrypt_start..]);
+        // Write salt + session_id at the beginning of the encrypted section
+        let encrypted_header_end = encrypt_start + CryptoHeader::ENCRYPTED_HEADER_SIZE;
+        packet[encrypt_start..encrypt_start + 8].copy_from_slice(&packet_info.salt.to_le_bytes());
+        packet[encrypt_start + 8..encrypted_header_end]
+            .copy_from_slice(&packet_info.session_id.to_le_bytes());
+
+        // Write prefix after encrypted header
+        prefix.write_to(&mut packet[encrypted_header_end..encrypted_header_end + CryptoPrefix::SIZE]);
 
         // Write data
-        let data_offset = encrypt_start + CryptoPrefix::SIZE;
+        let data_offset = encrypted_header_end + CryptoPrefix::SIZE;
         packet[data_offset..data_offset + data.len()].copy_from_slice(data);
 
         // Calculate padding
@@ -445,16 +528,17 @@ impl DefaultTransportWriter {
 
         // Calculate packet size
         let raw_header_size = EndToEndHeader::SIZE;
+        let data_with_prefix = data.len() + EndToEndPrefix::SIZE;
         let packet_size = if self.options.version == 2 {
             Self::calc_crypto_size_v2(
-                data.len(),
+                data_with_prefix,
                 EndToEndHeader::ENCRYPTED_HEADER_SIZE,
                 raw_header_size,
                 self.options.use_random_padding,
             )
         } else {
             Self::calc_crypto_size_v1(
-                data.len(),
+                data_with_prefix,
                 EndToEndHeader::ENCRYPTED_HEADER_SIZE,
                 raw_header_size,
             )
@@ -657,8 +741,14 @@ mod tests {
             Ok(p) => p,
             Err(_) => panic!("Expected Ok packet"),
         };
-        assert!(packet.len() > data.len());
-        assert_eq!(&packet[8..], &data[..]);
+        // Packet should be: header (8) + prefix (12) + data (4) = 24 bytes
+        // (NoCryptoPrefix::SIZE is now 12, not 16)
+        assert_eq!(packet.len(), NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE + data.len());
+        // Data should start after header + prefix
+        let data_offset = NoCryptoHeader::SIZE + NoCryptoPrefix::SIZE;
+        assert_eq!(&packet[data_offset..], &data[..]);
+        // First 8 bytes should be auth_key_id = 0
+        assert_eq!(&packet[0..8], &[0u8; 8]);
     }
 
     #[test]
@@ -684,9 +774,9 @@ mod tests {
 
     #[test]
     fn test_calc_crypto_size_v2() {
-        let size = DefaultTransportWriter::calc_crypto_size_v2(100, 16, 8, false);
+        let size = DefaultTransportWriter::calc_crypto_size_v2(100, 16, 24, false);
         // Should align to one of the predefined sizes
-        assert!(size >= 100 + 16 + 8);
+        assert!(size >= 100 + 16 + 24);
     }
 
     #[test]

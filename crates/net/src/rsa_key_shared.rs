@@ -15,8 +15,11 @@ use std::fmt;
 use std::sync::Arc;
 use thiserror::Error;
 
-use crate::crypto::sha256;
+use crate::crypto::rsa::compute_fingerprint_from_key;
 use crate::dc::DcId;
+use rsa::pkcs1::DecodeRsaPublicKey;
+use rsa::pkcs8::DecodePublicKey;
+use rsa::RsaPublicKey;
 
 /// Error types for RSA key operations.
 #[derive(Debug, Error)]
@@ -65,14 +68,15 @@ impl RsaKey {
 
     /// Computes fingerprint from a PEM-encoded key.
     ///
-    /// Uses SHA-256 hash of the key data (Telegram's method).
+    /// Uses Telegram's method (see TDLib RSA::get_fingerprint).
     pub fn compute_fingerprint(pem: &str) -> i64 {
-        let hash = sha256(pem.as_bytes());
+        let parsed = RsaPublicKey::from_public_key_pem(pem)
+            .or_else(|_| RsaPublicKey::from_pkcs1_pem(pem));
 
-        // Take first 8 bytes and convert to i64 (little-endian)
-        let bytes: [u8; 8] = hash[0..8].try_into().unwrap_or([0u8; 8]);
-
-        i64::from_le_bytes(bytes)
+        match parsed {
+            Ok(key) => compute_fingerprint_from_key(&key),
+            Err(_) => 0,
+        }
     }
 
     /// Returns the key size.

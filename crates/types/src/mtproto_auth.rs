@@ -299,6 +299,14 @@ impl TlDeserialize for ResPq {
         let pq = TlHelper::read_bytes(buf)?;
 
         // Read server_public_key_fingerprints (vector of long)
+        // Vector constructor ID must be 0x1cb5c415.
+        let vector_id = TlHelper::read_constructor_id(buf)?;
+        if vector_id != 0x1cb5c415 {
+            return Err(TypeError::DeserializationError(format!(
+                "Expected vector constructor 0x1cb5c415, got 0x{:08x}",
+                vector_id
+            )));
+        }
         let fingerprints_len = TlHelper::read_i32(buf)? as usize;
         let mut server_public_key_fingerprints = Vec::with_capacity(fingerprints_len);
         for _ in 0..fingerprints_len {
